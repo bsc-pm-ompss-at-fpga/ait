@@ -1,0 +1,20 @@
+{
+	"name": "alveo_u250",
+	"chip_part": "xcu250-figd2104-2l-e",
+	"es": "",
+	"board_part": ["xilinx.com:au250"],
+
+	"arch": {
+		"type": "fpga",
+		"bits": 64
+	},
+
+	"frequency": {
+		"min": 5,
+		"max": 933
+	},
+
+	"ddr": {
+		"size": "64G"
+	}
+}
