@@ -1,0 +1,20 @@
+{
+	"name": "axiom",
+	"chip_part": "xczu9eg-ffvc900-1-e",
+	"es": "es2",
+	"board_part": "",
+
+	"arch": {
+		"type": "soc",
+		"bits": 64
+	},
+
+	"frequency": {
+		"min": 10,
+		"max": 400
+	},
+
+	"ddr": {
+		"size": "4G"
+	}
+}

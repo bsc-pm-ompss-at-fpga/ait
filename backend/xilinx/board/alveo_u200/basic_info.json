@@ -1,0 +1,20 @@
+{
+	"name": "alveo_u200",
+	"chip_part": "xcu200-fsgd2104-2-e",
+	"es": "",
+	"board_part": ["xilinx.com:au200"],
+
+	"arch": {
+		"type": "fpga",
+		"bits": 64
+	},
+
+	"frequency": {
+		"min": 5,
+		"max": 933
+	},
+
+	"ddr": {
+		"size": "64G"
+	}
+}

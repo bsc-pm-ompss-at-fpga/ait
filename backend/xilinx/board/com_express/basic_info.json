@@ -1,0 +1,20 @@
+{
+	"name": "com_express", 
+	"chip_part": "xc7z045ffg676-2",
+	"es": "",
+	"board_part": "",
+
+	"arch": {
+		"type": "soc",
+		"bits": 32
+	},
+
+	"frequency": {
+		"min": 0,
+		"max": 250
+	},
+
+	"ddr": {
+		"size": "1G"
+	}
+}

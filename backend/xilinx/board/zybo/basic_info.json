@@ -1,0 +1,20 @@
+{
+	"name": "zybo",
+	"chip_part": "xc7z010clg400-1",
+	"es": "",
+	"board_part": ["digilentinc.com:zybo"],
+
+	"arch": {
+		"type": "soc",
+		"bits": 32
+	},
+
+	"frequency": {
+		"min": 1,
+		"max": 250
+	},
+
+	"ddr": {
+		"size": "512M"
+	}
+}

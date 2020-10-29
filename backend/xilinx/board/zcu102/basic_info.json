@@ -1,0 +1,20 @@
+{
+	"name": "zcu102",
+	"chip_part": "xczu9eg-ffvb1156-2-e",
+	"es": "",
+	"board_part": ["xilinx.com:zcu102"],
+
+	"arch": {
+		"type": "soc",
+		"bits": 64
+	},
+
+	"frequency": {
+		"min": 10,
+		"max": 400
+	},
+
+	"ddr": {
+		"size": "4G"
+	}
+}

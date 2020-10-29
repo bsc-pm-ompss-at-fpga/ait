@@ -1,0 +1,99 @@
+#!/usr/bin/env python3
+#
+# ------------------------------------------------------------------------ #
+#     (C) Copyright 2017-2020 Barcelona Supercomputing Center              #
+#                             Centro Nacional de Supercomputacion          #
+#                                                                          #
+#     This file is part of OmpSs@FPGA toolchain.                           #
+#                                                                          #
+#     This code is free software; you can redistribute it and/or modify    #
+#     it under the terms of the GNU Lesser General Public License as       #
+#     published by the Free Software Foundation; either version 3 of       #
+#     the License, or (at your option) any later version.                  #
+#                                                                          #
+#     OmpSs@FPGA toolchain is distributed in the hope that it will be      #
+#     useful, but WITHOUT ANY WARRANTY; without even the implied           #
+#     warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.     #
+#     See the GNU Lesser General Public License for more details.          #
+#                                                                          #
+#     You should have received a copy of the GNU Lesser General Public     #
+#     License along with this code. If not, see <www.gnu.org/licenses/>.   #
+# ------------------------------------------------------------------------ #
+
+import os
+import sys
+import shutil
+import subprocess
+import distutils.spawn
+
+from config import msg, ait_path
+
+script_folder = os.path.basename(os.path.dirname(os.path.realpath(__file__)))
+
+
+def check_requirements():
+    if not distutils.spawn.find_executable('vivado'):
+        msg.error('vivado not found. Please set PATH correctly')
+
+
+def run_synthesis_step(project_vars):
+    global args
+    global board
+    global chip_part
+    global ait_backend_path
+    global project_backend_path
+
+    args = project_vars['args']
+    board = project_vars['board']
+    project_path = project_vars['path']
+
+    chip_part = board.chip_part + ('-' + board.es if (board.es and not args.ignore_eng_sample) else '')
+    ait_backend_path = ait_path + '/backend/' + args.backend
+    project_backend_path = project_path + '/' + args.backend
+    project_step_path = project_backend_path + '/scripts/' + script_folder
+
+    # Check if the requirements are met
+    check_requirements()
+
+    # Remove old directories used on the synthesis step
+    shutil.rmtree(project_step_path, ignore_errors=True)
+
+    # Create directories and copy necessary files for synthesis step
+    shutil.copytree(ait_backend_path + '/scripts/' + script_folder, project_step_path, ignore=shutil.ignore_patterns('*.py*'))
+
+    if os.path.isfile(project_backend_path + '/' + args.name + '/' + args.name + '.xpr'):
+        # Enable beta device on Vivado init script
+        if board.board_part:
+            p = subprocess.Popen('echo "enable_beta_device ' + chip_part + '\nset_param board.repoPaths [list '
+                                 + project_backend_path + '/board/' + board.name + '/board_files]" > '
+                                 + project_backend_path + '/scripts/Vivado_init.tcl', shell=True)
+            retval = p.wait()
+        else:
+            p = subprocess.Popen('echo "enable_beta_device ' + chip_part + '" > '
+                                 + project_backend_path + '/scripts/Vivado_init.tcl', shell=True)
+            retval = p.wait()
+
+        os.environ['MYVIVADO'] = project_backend_path + '/scripts'
+
+        p = subprocess.Popen('vivado -nojournal -nolog -notrace -mode batch -source '
+                             + project_step_path + '/synthesize_design.tcl',
+                             cwd=project_backend_path + '/scripts/',
+                             stdout=sys.stdout.subprocess,
+                             stderr=sys.stdout.subprocess, shell=True)
+
+        if args.verbose:
+            for line in iter(p.stdout.readline, b''):
+                sys.stdout.write(line.decode('utf-8'))
+
+        retval = p.wait()
+        del os.environ['MYVIVADO']
+        if retval:
+            msg.error('Hardware synthesis failed')
+        else:
+            msg.success('Hardware synthesized')
+    else:
+        sys.stdout.log.write('[AIT]: no Vivado .xpr file exists for the current project\n')
+        msg.error('Hardware synthesis failed')
+
+
+STEP_FUNC = run_synthesis_step

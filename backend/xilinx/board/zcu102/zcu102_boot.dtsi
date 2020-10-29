@@ -1,0 +1,19 @@
+&amba_pl {
+	misc_clk_0 {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <200>;
+	};
+};
+
+&gem3 {
+	phy-handle = <&phyc>;
+	phyc: phy@c {
+		reg = <0xc>;
+		ti,rx-internal-delay = <0x8>;
+		ti,tx-internal-delay = <0xa>;
+		ti,fifo-depth = <0x1>;
+	};
+	/* Cleanup from RevA */
+	/delete-node/ phy@21;
+};

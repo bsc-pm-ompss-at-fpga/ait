@@ -1,0 +1,20 @@
+{
+	"name": "alpha_data",
+	"chip_part": "xc7vx690tffg1157-2",
+	"es": "",
+	"board_part": "",
+
+	"arch": {
+		"type": "fpga",
+		"bits": 32
+	},
+
+	"frequency": {
+		"min": 5,
+		"max": 250
+	},
+
+	"ddr": {
+		"size": "8G"
+	}
+}

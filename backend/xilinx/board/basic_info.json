@@ -1,0 +1,20 @@
+{
+	"name": "BOARD_NAME", 
+	"chip_part": "CHIP_PART",
+	"es": "ENGINEERING_SAMPLE_STATUS",
+	"board_part": ["BOARD_PART"],
+
+	"arch": {
+		"type": "ARCH_TYPE",
+		"bits": ARCH_BITS
+	},
+
+	"frequency": {
+		"min": MIN_FREQ,
+		"max": MAX_FREQ
+	},
+
+	"ddr": {
+		"size": "DDR_SIZE"
+	}
+}
