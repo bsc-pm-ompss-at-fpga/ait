@@ -12,7 +12,7 @@ They are also available at [ompssatfpga.bsc.es/downloads/](https://ompssatfpga.b
  - [Git Large File Storage](https://git-lfs.github.com/)
  - [Python 3.5 or later](https://www.python.org/)
  - Vendor backends:
-   - [Xilinx Vivado 2018.3 or newer](https://www.xilinx.com/products/design-tools/vivado.html)
+   - [Xilinx Vivado 2018.3 or later](https://www.xilinx.com/products/design-tools/vivado.html)
 
 #### Git Large File Storage
 
@@ -36,15 +36,14 @@ To install AIT just clone the repository, run the `<ait>/install.sh` script and 
 ```bash
 git clone https://gitlab.bsc.es/ompss-at-fpga/ait
 cd ait
-./install.sh PREFIX/ait/ all all
+./install.sh PREFIX/ait/ all
 export PATH=PREFIX/<ait>/:$PATH
 ```
 
-This will install AIT for all the vendor backends available and all the boards supported. If you want to make a lighter installation, with fewer boards or vendors, you can change the arguments passed to `install.sh`:
+This will install AIT for all the vendor backends available and all the boards supported. If you want to make a lighter installation, with fewer vendors, you can change the arguments passed to `install.sh`:
 ```bash
-USAGE:  ./install.sh <prefix> <install mode> <backend>
+USAGE:  ./install.sh <prefix> <backend>
   <prefix> path where the AIT files will be installed
-  <install mode> supported values: all, public, ikergune
   <backend> supported values: all, xilinx
 ```
 Finally, if you plan to make any commit, you must enable Git LFS inside the repository:
