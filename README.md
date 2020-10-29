@@ -34,7 +34,7 @@ Current version supports Vivado 2018.3 onwards.
 
 To install AIT just clone the repository, run the `<ait>/install.sh` script and add `PREFIX/ait/` to PATH.
 ```bash
-git clone https://pm.bsc.es/gitlab/ompss-at-fpga/ait
+git clone https://gitlab.bsc.es/ompss-at-fpga/ait
 cd ait
 ./install.sh PREFIX/ait/ all all
 export PATH=PREFIX/<ait>/:$PATH
