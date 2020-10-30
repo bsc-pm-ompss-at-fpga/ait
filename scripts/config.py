@@ -27,14 +27,16 @@ import json
 
 from time import localtime, strftime
 
+
 class Accelerator:
     def __init__(self, accid, name, num_instances, filename, fullpath):
-        self.id = accid #< Type identifier
-        self.name = name #< Full name
-        self.short_name = name.replace('_hls_automatic_mcxx', '') #< Short name (name without mcxx suffix)
-        self.num_instances = int(num_instances) #< Number of instances
-        self.filename = filename #< Source file (basename with extension)
-        self.fullpath = fullpath #< Full source file path (with extension)
+        self.id = accid  # < Type identifier
+        self.name = name  # < Full name
+        self.short_name = name.replace('_hls_automatic_mcxx', '')  # < Short name (name without mcxx suffix)
+        self.num_instances = int(num_instances)  # < Number of instances
+        self.filename = filename  # < Source file (basename with extension)
+        self.fullpath = fullpath  # < Full source file path (with extension)
+
 
 class Color:
     GREEN = '\033[0;32m'
