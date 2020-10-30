@@ -97,7 +97,7 @@ def gen_utilization_report(out_path):
         # NOTE: Possible section names: Memory, BLOCKRAM
         ids = [idx for idx in range(len(rpt_data) - 1) if ((re.match('^[0-9]\. Memory\n', rpt_data[idx])
                                                            and rpt_data[idx + 1] == '---------\n') or
-                                                          (re.match('^[0-9]\. BLOCKRAM\n', rpt_data[idx])
+                                                           (re.match('^[0-9]\. BLOCKRAM\n', rpt_data[idx])
                                                            and rpt_data[idx + 1] == '-----------\n'))]
         if len(ids) != 1:
             msg.warning('Cannot find BRAM info in rpt file. Skipping bitstream utilization report')
@@ -105,8 +105,8 @@ def gen_utilization_report(out_path):
 
         # BRAM
         elems = rpt_data[ids[0] + 6].split('|')
-        used_resources['BRAM'] = str(int(float(elems[2].strip())*2))
-        av_resources['BRAM'] = str(int(float(elems[4].strip())*2))
+        used_resources['BRAM'] = str(int(float(elems[2].strip()) * 2))
+        av_resources['BRAM'] = str(int(float(elems[4].strip()) * 2))
         util_resources['BRAM'] = elems[5].strip()
 
         # URAM
@@ -117,12 +117,11 @@ def gen_utilization_report(out_path):
             av_resources['URAM'] = elems[4].strip()
             util_resources['URAM'] = elems[5].strip()
 
-
     resources_file = open(out_path, 'w')
     msg.log('Resources utilization summary')
     for name in ['BRAM', 'DSP', 'FF', 'LUT', 'URAM']:
         # Check if resource is available
-        if not name in used_resources:
+        if name not in used_resources:
             continue
 
         report_string = '{0:<9} {1:>6} used | {2:>6} available - {3:>6}% utilization'
@@ -168,10 +167,10 @@ def gen_wns_report(out_path):
 
     msg.log('Worst Negative Slack (WNS) summary')
     if wns >= 0.0:
-        msg.success(str(num_fail) +  ' endpoints of ' + str(num_total) + ' have negative slack (WNS: ' +
+        msg.success(str(num_fail) + ' endpoints of ' + str(num_total) + ' have negative slack (WNS: ' +
                     str(wns) + ')')
     else:
-        msg.warning(str(num_fail) +  ' endpoints of ' + str(num_total) + ' have negative slack (WNS: ' +
+        msg.warning(str(num_fail) + ' endpoints of ' + str(num_total) + ' have negative slack (WNS: ' +
                     str(wns) + ', TNS: ' + str(tns) + ')')
 
     with open(out_path, 'w') as timing_file:
@@ -179,6 +178,7 @@ def gen_wns_report(out_path):
         timing_file.write('TNS ' + str(tns) + '\n')
         timing_file.write('NUM_ENDPOINTS ' + str(num_total) + '\n')
         timing_file.write('NUM_FAIL_ENDPOINTS ' + str(num_fail))
+
 
 def run_bitstream_step(project_vars):
     global args
