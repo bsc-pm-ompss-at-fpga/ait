@@ -43,8 +43,8 @@ def check_requirements():
         msg.error('Generation of petalinux boot files failed')
 
     env = str(subprocess.Popen('bash -c "trap \'env\' exit; source ' + petalinux_install_path
-                            + '/settings.sh > /dev/null 2>&1"', shell=True,
-                           stdout=subprocess.PIPE).communicate()[0], 'utf-8').strip('\n')
+                               + '/settings.sh > /dev/null 2>&1"', shell=True,
+                               stdout=subprocess.PIPE).communicate()[0], 'utf-8').strip('\n')
 
     # NOTE: Only importing some environment variables as there may be complex functions/expansions that
     #       we do not need to handle here
