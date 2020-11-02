@@ -100,21 +100,19 @@ else
     # Create IP cache directory
     mkdir -p $PREFIX/backend/$backend/IP_cache
 
-    # Copy basic templates, scripts and ipdefs
+    # Copy basic templates, scripts, idpefs and HLS sources
     mkdir -p $PREFIX/backend/$backend/templates
     mkdir -p $PREFIX/backend/$backend/scripts
     mkdir -p $PREFIX/backend/$backend/IPs
+    mkdir -p $PREFIX/backend/$backend/HLS/src
     rsync -am $BASE_DIR/backend/$backend/templates/ $PREFIX/backend/$backend/templates/
     rsync -am $BASE_DIR/backend/$backend/scripts/ $PREFIX/backend/$backend/scripts/ --filter='+ */' --filter='+ *.pyc' --filter='- *.py*'
     rsync -am $BASE_DIR/backend/$backend/IPs/ $PREFIX/backend/$backend/IPs/
-
-    # Copy basic HLS sources, IPs and templates
-    mkdir -p $PREFIX/backend/$backend/HLS/src
     rsync -am $BASE_DIR/backend/$backend/HLS/src/ $PREFIX/backend/$backend/HLS/src/
 
+    # Copy supported boards
     mkdir -p $PREFIX/backend/$backend/board
-    pushd $BASE_DIR/backend/$backend/board >/dev/null
-    rsync -am $BASE_DIR/backend/$backend/board/ $PREFIX/backend/$backend/board/$BOARD
+    rsync -am $BASE_DIR/backend/$backend/board/ $PREFIX/backend/$backend/board/
   done
 fi
 
