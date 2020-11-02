@@ -59,9 +59,9 @@ def gen_utilization_report(out_path):
 
         # Search LUT/FF section
         # NOTE: Possible section names: Slice Logic, CLB Logic
-        ids = [idx for idx in range(len(rpt_data) - 1) if ((re.match('^[0-9]\. Slice Logic\n', rpt_data[idx])
+        ids = [idx for idx in range(len(rpt_data) - 1) if ((re.match(r'^[0-9]\. ' + 'Slice Logic\n', rpt_data[idx])
                                                             and rpt_data[idx + 1] == '--------------\n') or
-                                                           (re.match('^[0-9]\. CLB Logic\n', rpt_data[idx])
+                                                           (re.match(r'^[0-9]\. ' + 'CLB Logic\n', rpt_data[idx])
                                                             and rpt_data[idx + 1] == '------------\n'))]
         if len(ids) != 1:
             msg.warning('Cannot find LUT/FF info in rpt file. Skipping bitstream utilization report')
@@ -81,9 +81,9 @@ def gen_utilization_report(out_path):
 
         # Get DSP
         # NOTE: Possible section names: DSP, ARITHMETIC
-        ids = [idx for idx in range(len(rpt_data) - 1) if ((re.match('^[0-9]\. DSP\n', rpt_data[idx])
+        ids = [idx for idx in range(len(rpt_data) - 1) if ((re.match(r'^[0-9]\. ' + 'DSP\n', rpt_data[idx])
                                                             and rpt_data[idx + 1] == '------\n') or
-                                                           (re.match('^[0-9]\. ARITHMETIC\n', rpt_data[idx])
+                                                           (re.match(r'^[0-9]\. ' + 'ARITHMETIC\n', rpt_data[idx])
                                                             and rpt_data[idx + 1] == '-------------\n'))]
         if len(ids) != 1:
             msg.warning('Cannot find DSP info in rpt file. Skipping bitstream utilization report')
@@ -95,9 +95,9 @@ def gen_utilization_report(out_path):
 
         # Search BRAM/URAM
         # NOTE: Possible section names: Memory, BLOCKRAM
-        ids = [idx for idx in range(len(rpt_data) - 1) if ((re.match('^[0-9]\. Memory\n', rpt_data[idx])
+        ids = [idx for idx in range(len(rpt_data) - 1) if ((re.match(r'^[0-9]\. ' + 'Memory\n', rpt_data[idx])
                                                            and rpt_data[idx + 1] == '---------\n') or
-                                                           (re.match('^[0-9]\. BLOCKRAM\n', rpt_data[idx])
+                                                           (re.match(r'^[0-9]\. ' + 'BLOCKRAM\n', rpt_data[idx])
                                                            and rpt_data[idx + 1] == '-----------\n'))]
         if len(ids) != 1:
             msg.warning('Cannot find BRAM info in rpt file. Skipping bitstream utilization report')
@@ -153,7 +153,7 @@ def gen_wns_report(out_path):
         rpt_data = rpt_file.readlines()
 
         # Search header line
-        ids = [idx for idx in range(len(rpt_data) - 1) if (re.match('^\s+WNS\(ns\)\s+TNS\(ns\)\s+', rpt_data[idx]))]
+        ids = [idx for idx in range(len(rpt_data) - 1) if (re.match(r'^\s+WNS\(ns\)\s+TNS\(ns\)\s+', rpt_data[idx]))]
         if len(ids) != 1:
             msg.warning('Cannot find WNS report table header. Skipping WNS report')
             return
