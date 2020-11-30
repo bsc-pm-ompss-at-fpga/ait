@@ -110,12 +110,16 @@ def gen_utilization_report(out_path):
         util_resources['BRAM'] = elems[5].strip()
 
         # URAM
+        # NOTE: It is not placed in the same offset for all boards (search in some lines)
         # NOTE: It is not available in all boards, so check if valid data is found
-        elems = rpt_data[ids[0] + 12].split('|')
-        if len(elems) >= 6 and elems[1].strip() == 'URAM':
-            used_resources['URAM'] = elems[2].strip()
-            av_resources['URAM'] = elems[4].strip()
-            util_resources['URAM'] = elems[5].strip()
+        ids = [idx for idx in range(ids[0] + 6, ids[0] + 20) if ((re.match(r'^| URAM', rpt_data[idx])))]
+        for idx in ids:
+            elems = rpt_data[idx].split('|')
+            if len(elems) >= 6 and elems[1].strip() == 'URAM':
+                used_resources['URAM'] = elems[2].strip()
+                av_resources['URAM'] = elems[4].strip()
+                util_resources['URAM'] = elems[5].strip()
+                break
 
     resources_file = open(out_path, 'w')
     msg.log('Resources utilization summary')
