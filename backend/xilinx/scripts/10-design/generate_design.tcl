@@ -112,36 +112,79 @@ proc generateWrapper {} {
 
 ## Misc procedures
 
-# Connects the IP to the processor through the given port
-proc connectToInterface {src intf role {num ""}} {
-	upvar #0 board_interfaces intf_list interconOpt interconOpt
-	if {$num ne ""} {
-		set index [lsearch -regexp $intf_list ${intf}_${num}]
-	} else {
-		set index [lsearch -regexp $intf_list ${intf}(_[0-9])?]
-	}
-	set port [lindex [lindex $intf_list $index] 0]
-	set counter [lindex [lindex $intf_list $index] 1]
-	set intf_list [lreplace $intf_list $index $index]
-	set inter ${role}_AXI_${port}_Inter
-	set role_n [expr {$role == "M" ? "S" : "M"}]
-	if {$port eq ""} {
-		error "\[AIT\] ERROR: ${intf} interface occupation is 100%"
-	}
+# Creates and connects a nested interconnect
+proc createNestedInterconnect {} {
+	upvar #0 interconOpt interconOpt
+	upvar interface interface counter counter
 
-	set_property -dict [list CONFIG.NUM_${role}I [expr $counter + 1]] [get_bd_cells $inter]
-	set_property -quiet -dict [list CONFIG.STRATEGY $interconOpt] [get_bd_cells $inter]
-	connectClock [get_bd_pins $inter/${role}[format %02u $counter]_ACLK]
-	connectRst [get_bd_pins $inter/${role}[format %02u $counter]_ARESETN] "peripheral"
-	connect_bd_intf_net -boundary_type upper [get_bd_intf_pins $src] [get_bd_intf_pins $inter/${role}[format %02u $counter]_AXI]
+	puts "\[AIT\] INFO: creating nested interconnect for $interface"
+
+	set parent_inter "${interface}_Inter"
+	set nested_inter "${interface}_Inter_[expr $counter/16 - 1]"
+
+	# Create new nested interconnect and configure it
+	create_bd_cell -vlnv xilinx.com:ip:axi_interconnect $nested_inter
+	set_property -dict [list CONFIG.NUM_MI {1} CONFIG.NUM_SI {1} CONFIG.STRATEGY $interconOpt] [get_bd_cells $nested_inter]
+
+	# Connect clocks and resets
+	connectClock [get_bd_pins $nested_inter/ACLK]
+	connectClock [get_bd_pins $nested_inter/S00_ACLK]
+	connectClock [get_bd_pins $nested_inter/M00_ACLK]
+	connectRst [get_bd_pins $nested_inter/ARESETN] "interconnect"
+	connectRst [get_bd_pins $nested_inter/M00_ARESETN] "peripheral"
+	connectRst [get_bd_pins $nested_inter/S00_ARESETN] "peripheral"
+
+	# Disconnect lastly used port of parent interconnect
+	set parent_intf_net [get_bd_intf_nets -of_objects [get_bd_intf_pins $parent_inter/S[format %02u [expr 15 - ($counter/16 - 1)]]_AXI]]
+	set parent_intf_pin [get_bd_intf_pins -of_objects [get_bd_intf_nets $parent_intf_net] -filter {PATH !~ "*_AXI_*_Inter*"}]
+	delete_bd_objs [get_bd_intf_nets $parent_intf_net]
+
+	# Reconnect to new nested interconnect
+	connect_bd_intf_net -boundary_type upper [get_bd_intf_pins $parent_intf_pin] [get_bd_intf_pins $nested_inter/S00_AXI]
+
+	# Connect nested interconnect to parent interconnect
+	connect_bd_intf_net -boundary_type upper [get_bd_intf_pins $parent_inter/S[format %02u [expr 15 - ($counter/16 - 1)]]_AXI] [get_bd_intf_pins $nested_inter/M00_AXI]
 
 	incr counter
-	if {$counter < 16} {
-		lappend intf_list "$port $counter"
+	save_bd_design
+}
+
+# Connects the IP to the host through the given port
+proc connectToInterface {src intf role {num ""}} {
+	upvar #0 board_interfaces intf_list interconOpt interconOpt
+
+	if {$num ne ""} {
+		set index [lsearch -regexp $intf_list ${role}_AXI_${intf}.*_${num}]
+	} else {
+		set index [lsearch -regexp $intf_list ${role}_AXI_${intf}(_[0-9])?]
+	}
+	set interface [lindex [lindex $intf_list $index] 0]
+	set counter [lindex [lindex $intf_list $index] 1]
+	set intf_list [lreplace $intf_list $index $index]
+
+	# If interconnect already full, create a new nested one
+	if {!($counter % 16) && ($counter > 0)} {
+		if {$counter == 256} {
+			# We already have filled 16 nested interconnects
+			error "\[AIT\] ERROR: ${intf} interface occupation is 100%"
+		} else {
+			createNestedInterconnect
+		}
 	}
 
+	set inter [expr ($counter > 15) ? "{${interface}_Inter_[expr ($counter/16) - 1]}" : "{${interface}_Inter}"]
+
+	set_property -dict [list CONFIG.NUM_${role}I [expr ($counter%16) + 1]] [get_bd_cells $inter]
+	set_property -quiet -dict [list CONFIG.STRATEGY $interconOpt] [get_bd_cells $inter]
+	connectClock [get_bd_pins $inter/${role}[format %02u [expr $counter%16]]_ACLK]
+	connectRst [get_bd_pins $inter/${role}[format %02u [expr $counter%16]]_ARESETN] "peripheral"
+	connect_bd_intf_net -boundary_type upper [get_bd_intf_pins $src] [get_bd_intf_pins $inter/${role}[format %02u [expr $counter%16]]_AXI]
+
+	incr counter
+	lappend intf_list "$interface $counter"
+
 	set intf_list [lsort -integer -index 1 -increasing $intf_list]
-	return "$port"
+	return "$interface"
 }
 
 proc connectToMasterInterface {src {num ""}} {
@@ -211,9 +254,8 @@ proc removeUnusedInter {} {
 	set interconnect_list [get_bd_cells -regexp (M|S)_AXI_(([join $access_type_list "|"])_?)+(_[0-9])?_Inter]
 
 	foreach interconnect $interconnect_list {
-		set intf [string trim [regsub -all {/[S,M]_AXI_} [regsub -all {(_[0-9])?_Inter} $interconnect ""] ""] "/"]
-		set port [string trim [regsub -all {/[S,M]_AXI_} [regsub -all {_Inter} $interconnect ""] ""] "/"]
-		upvar 1 board_interfaces intf_list
+		set port [string trim [regsub -all {_Inter} $interconnect ""] "/"]
+		upvar #0 board_interfaces intf_list
 		set index [lsearch $intf_list "$port *"]
 		set counter [lindex [lindex $intf_list $index] 1]
 		if {$counter == 0} {
@@ -228,14 +270,14 @@ proc removeUnusedInter {} {
 proc getInterfaceOccupation {} {
 	set access_type_list {data coherent control master}
 	set interconnect_list [get_bd_cells -regexp (M|S)_AXI_(([join $access_type_list "|"])_?)+(_[0-9])?_Inter]
-	upvar 1 board_interfaces intf_list
+	upvar #0 board_interfaces intf_list
 
 	foreach interconnect $interconnect_list {
-		set port [regsub -all {/[S,M]_AXI_} [regsub -all {_Inter} $interconnect ""] ""]
+		set port [string trim [regsub -all {_Inter} $interconnect ""] "/"]
 		set role [string trim [regsub -all {_AXI_.+$} $interconnect ""] "/"]
 		set counter [expr [get_property CONFIG.NUM_${role}I $interconnect] - 1]
 		if {$counter < 16} {
-			lappend intf_list "$port $counter"
+			lappend intf_list "${port} $counter"
 			set intf_list [lsort -integer -index 1 -increasing $intf_list]
 		}
 	}
