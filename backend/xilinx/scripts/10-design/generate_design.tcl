@@ -910,6 +910,34 @@ if {[file exists $script_path/userPostDesign.tcl]} {
 	}
 }
 
+# If enabled, configure register slices on AXI Interconnects
+# 0 == none
+# 1 == DDR
+# 2 == all
+if {$interconRegSlice == 1} {
+	set interconnects [get_bd_cells -hierarchical -regexp -filter {VLNV =~ xilinx.com:ip:axi_interconnect.* && NAME =~ {.*(data|control|coherent|master).*}} .*]
+
+	foreach inter $interconnects {
+		for {set i 0} {$i < [get_property CONFIG.NUM_MI [get_bd_cells $inter]]} {incr i} {
+			set_property -dict [list CONFIG.M[format %02u $i]_HAS_REGSLICE {4}] [get_bd_cells $inter]
+		}
+		for {set i 0} {$i < [get_property CONFIG.NUM_SI [get_bd_cells $inter]]} {incr i} {
+			set_property -dict [list CONFIG.S[format %02u $i]_HAS_REGSLICE {4}] [get_bd_cells $inter]
+		}
+	}
+} elseif {$interconRegSlice == 2} {
+	set interconnects [get_bd_cells -hierarchical -regexp -filter {VLNV =~ xilinx.com:ip:axi_interconnect.*} .*]
+
+	foreach inter $interconnects {
+		for {set i 0} {$i < [get_property CONFIG.NUM_MI [get_bd_cells $inter]]} {incr i} {
+			set_property -dict [list CONFIG.M[format %02u $i]_HAS_REGSLICE {4}] [get_bd_cells $inter]
+		}
+		for {set i 0} {$i < [get_property CONFIG.NUM_SI [get_bd_cells $inter]]} {incr i} {
+			set_property -dict [list CONFIG.S[format %02u $i]_HAS_REGSLICE {4}] [get_bd_cells $inter]
+		}
+	}
+}
+
 # Regenerate layout and validate BD
 regenerate_bd_layout
 regenerate_bd_layout -routing

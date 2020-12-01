@@ -82,8 +82,9 @@ def generate_Vivado_variables_tcl():
                                 + 'variable size_DDR ' + board.ddr.size + '\n' \
                                 + 'variable arch_type ' + board.arch.type + '\n' \
                                 + 'variable arch_bits ' + str(board.arch.bits) + '\n' \
-                                + 'variable interconOpt ' + str(args.interconnection_opt + 1) + '\n' \
-                                + 'variable interconLevel ' + str(args.interconnection_level) + '\n'
+                                + 'variable interconOpt ' + str(args.interconnect_opt + 1) + '\n' \
+                                + 'variable interconLevel ' + str(args.interconnection_level) + '\n' \
+                                + 'variable interconRegSlice ' + str(args.interconnect_regslice) + '\n'
 
     if board.arch.type == 'soc':
         if board.arch.bits == 32:
