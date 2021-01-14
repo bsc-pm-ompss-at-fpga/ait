@@ -83,7 +83,7 @@ class ArgParser:
                 self.vendor_parser[backend] = getattr(module, 'parser')
 
         # Create main parser
-        self.parser = CustomParser(formatter_class=argparse.RawTextHelpFormatter, epilog='\n'.join(self.vendor_parser[backend].format_help().split('\n')[0] + '\n' + '\n'.join(self.vendor_parser[backend].format_help().split('\n')[2:]) for backend in self.vendor_parser), prog='ait', add_help=False, usage='%(prog)s -b BOARD -n NAME\nThe Accelerator Integration Tool (AIT) automatically integrates OmpSs@FPGA accelerators into FPGA designs using different vendor backends.')
+        self.parser = CustomParser(formatter_class=argparse.RawTextHelpFormatter, epilog='\n'.join(self.vendor_parser[backend].parser.format_help().split('\n')[0] + '\n' + '\n'.join(self.vendor_parser[backend].parser.format_help().split('\n')[2:]) for backend in self.vendor_parser), prog='ait', add_help=False, usage='%(prog)s -b BOARD -n NAME\nThe Accelerator Integration Tool (AIT) automatically integrates OmpSs@FPGA accelerators into FPGA designs using different vendor backends.')
 
         # Required arguments
         required_args = self.parser.add_argument_group('Required')

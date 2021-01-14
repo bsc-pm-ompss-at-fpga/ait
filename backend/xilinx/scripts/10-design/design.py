@@ -84,7 +84,8 @@ def generate_Vivado_variables_tcl():
                                 + 'variable arch_bits ' + str(board.arch.bits) + '\n' \
                                 + 'variable interconOpt ' + str(args.interconnect_opt + 1) + '\n' \
                                 + 'variable interconLevel ' + str(args.interconnection_level) + '\n' \
-                                + 'variable interconRegSlice ' + str(args.interconnect_regslice) + '\n'
+                                + 'variable interconRegSlice ' + str(args.interconnect_regslice) + '\n' \
+                                + 'variable debugInterfaces ' + str(args.debug_intfs) + '\n'
 
     if board.arch.type == 'soc':
         if board.arch.bits == 32:
@@ -144,6 +145,25 @@ def generate_Vivado_variables_tcl():
         vivado_project_variables += '\n' \
                                     + '# List of datainterfaces map\n' \
                                     + 'set dataInterfaces_map [list]\n'
+
+    if args.debug_intfs == 'custom' and os.path.exists(args.debug_intfs_list):
+        if args.verbose_info:
+            msg.log('Parsing user-defined interfaces to debug: ' + args.debug_intfs_list)
+
+        vivado_project_variables += '\n' \
+                                    + '# List of debugInterfaces list\n' \
+                                    + 'set debugInterfaces_list [list'
+
+        with open(args.debug_intfs_list) as map_file:
+            map_data = map_file.readlines()
+            for map_line in map_data:
+                elems = map_line.strip().replace('\n', '').split('\t')
+                if len(elems) >= 2 and len(elems[0]) > 0 and elems[0][0] != '#':
+                    vivado_project_variables += ' {' + elems[0] + ' ' + elems[1] + '}'
+
+        vivado_project_variables += ']\n'
+    elif args.debug_intfs == 'custom':
+        msg.error('User-defined interfaces to debug file not found: ' + args.debug_intfs_list)
 
     vivado_project_variables_file = open(project_backend_path + '/scripts/projectVariables.tcl', 'w')
     vivado_project_variables_file.write(vivado_project_variables)

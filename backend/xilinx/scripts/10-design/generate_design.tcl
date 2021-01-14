@@ -747,6 +747,68 @@ close $dataInterfaces_file
 
 removeUnusedInter
 
+file delete $path_Project/../${name_Project}.debuginterfaces.txt
+
+# Mark AXI interfaces for debug
+if {[expr {$debugInterfaces == "AXI"} || {$debugInterfaces == "both"}]} {
+	# Create .debuginterfaces.txt file
+	set debugInterfaces_file [open $path_Project/../${name_Project}.debuginterfaces.txt "w"]
+
+	set axi_pin_list [get_bd_intf_pins -hierarchical -filter {PATH =~ *hls_automatic_mcxx*m_axi_mcxx*} -of_objects [get_bd_cells -hierarchical -filter {NAME =~ *_hls_automatic_mcxx}]]
+	foreach axi_pin $axi_pin_list {
+		set_property HDL_ATTRIBUTE.DEBUG true [get_bd_intf_nets [get_bd_intf_nets -of_objects [get_bd_intf_pins $axi_pin]]]
+		apply_bd_automation -rule xilinx.com:bd_rule:debug -dict [list [get_bd_intf_nets [get_bd_intf_nets -of_objects [get_bd_intf_pins $axi_pin]]] {AXI_R_ADDRESS "Data and Trigger" AXI_R_DATA "Data and Trigger" AXI_W_ADDRESS "Data and Trigger" AXI_W_DATA "Data and Trigger" AXI_W_RESPONSE "Data and Trigger" CLK_SRC clock_generator/clk_out1 SYSTEM_ILA "Auto" APC_EN "0" }]
+
+		# Add a line to debuginterfaces.txt
+		puts $debugInterfaces_file "DEBUG_AXI\t$axi_pin"
+	}
+	set_property -dict [list CONFIG.C_EN_STRG_QUAL {1} CONFIG.C_PROBE0_MU_CNT {2} CONFIG.ALL_PROBE_SAME_MU_CNT {2}] [get_bd_cells -hierarchical -filter {VLNV =~ xilinx.com:ip:system_ila*}]
+	close $debugInterfaces_file
+}
+
+# Mark AXI-Stream interfaces for debug
+if {[expr {$debugInterfaces == "stream"} || {$debugInterfaces == "both"}]} {
+	# Open .debuginterfaces.txt file
+	set debugInterfaces_file [open $path_Project/../${name_Project}.debuginterfaces.txt "a"]
+
+	set stream_pin_list [get_bd_intf_pins -hierarchical -filter {VLNV =~ xilinx.com:interface:axis_rtl:* && PATH =~ *hls_automatic_mcxx*mcxx_*} -of_objects [get_bd_cells -hierarchical -filter {NAME =~ *_hls_automatic_mcxx}]]
+	foreach stream_pin $stream_pin_list {
+		set_property HDL_ATTRIBUTE.DEBUG true [get_bd_intf_nets [get_bd_intf_nets -of_objects [get_bd_intf_pins $stream_pin]]]
+		apply_bd_automation -rule xilinx.com:bd_rule:debug -dict [list [get_bd_intf_nets [get_bd_intf_nets -of_objects [get_bd_intf_pins $stream_pin]]] {AXIS_SIGNALS "Data and Trigger" CLK_SRC clock_generator/clk_out1 SYSTEM_ILA "Auto" APC_EN "0" }]
+
+		# Add a line to debuginterfaces.txt
+		puts $debugInterfaces_file "DEBUG_STREAM\t$stream_pin"
+	}
+	set_property -dict [list CONFIG.C_EN_STRG_QUAL {1} CONFIG.C_PROBE0_MU_CNT {2} CONFIG.ALL_PROBE_SAME_MU_CNT {2}] [get_bd_cells -hierarchical -filter {VLNV =~ xilinx.com:ip:system_ila*}]
+	close $debugInterfaces_file
+}
+
+# Mark custom interfaces for debug
+if {$debugInterfaces == "custom"} {
+	# Open .debuginterfaces.txt file
+	set debugInterfaces_file [open $path_Project/../${name_Project}.debuginterfaces.txt "w"]
+
+	foreach element $debugInterfaces_list {
+		foreach {type intf} $element {
+			set_property HDL_ATTRIBUTE.DEBUG true [get_bd_intf_nets [get_bd_intf_nets -of_objects [get_bd_intf_pins $intf]]]
+
+			if {$type == "DEBUG_AXI"} {
+				apply_bd_automation -rule xilinx.com:bd_rule:debug -dict [list [get_bd_intf_nets [get_bd_intf_nets -of_objects [get_bd_intf_pins $intf]]] {AXI_R_ADDRESS "Data and Trigger" AXI_R_DATA "Data and Trigger" AXI_W_ADDRESS "Data and Trigger" AXI_W_DATA "Data and Trigger" AXI_W_RESPONSE "Data and Trigger" CLK_SRC clock_generator/clk_out1 SYSTEM_ILA "Auto" APC_EN "0" }]
+			} elseif {$type == "DEBUG_STREAM"} {
+				apply_bd_automation -rule xilinx.com:bd_rule:debug -dict [list [get_bd_intf_nets [get_bd_intf_nets -of_objects [get_bd_intf_pins $intf]]] {AXIS_SIGNALS "Data and Trigger" CLK_SRC clock_generator/clk_out1 SYSTEM_ILA "Auto" APC_EN "0" }]
+			} else {
+				error "\[AIT\] ERROR: Debug interface type $type not recognized"
+			}
+			puts $debugInterfaces_file "$type\t$intf"
+		}
+	}
+
+	set_property -dict [list CONFIG.C_EN_STRG_QUAL {1} CONFIG.C_PROBE0_MU_CNT {2} CONFIG.ALL_PROBE_SAME_MU_CNT {2}] [get_bd_cells -hierarchical -filter {VLNV =~ xilinx.com:ip:system_ila*}]
+
+	# Add a line to debuginterfaces.txt
+	close $debugInterfaces_file
+}
+
 # Propagate parameters
 validate_bd_design -force -quiet
 
