@@ -18,10 +18,22 @@
 #    License along with this code. If not, see <www.gnu.org/licenses/>.  #
 #------------------------------------------------------------------------#
 
+## AIT messages procedures
+# Error
+proc aitError {msg} {
+	puts "\[AIT\] ERROR: $msg"
+	exit 1
+}
+
+# Info
+proc aitInfo {msg} {
+	puts "\[AIT\] INFO: $msg"
+}
+
 # Configuration variables
 set script_path [file dirname [file normalize [info script]]]
 if {[catch {source -notrace $script_path/../projectVariables.tcl}]} {
-	error "\[AIT\] ERROR: Failed sourcing project variables"
+	aitError "Failed sourcing project variables"
 }
 
 variable bitmap_bitInfo "0x00000000"
@@ -39,25 +51,25 @@ if {$arch_type == "fpga"} {
 set dataInterfaces_file [open $path_Project/../${name_Project}.datainterfaces.txt "w"]
 
 ## Board-specific generic procedures
-## Can be overridden through the file procs.tcl on the board folder
+## Can be overwritten through the file procs.tcl on the board folder
 
 # Connects source pin received as argument to the output of the clock generator IP
 proc connectClock {srcPin} {
-	puts "\[AIT\] INFO: using generic connectClock procedure"
+	aitInfo "Using generic connectClock procedure"
 
 	connect_bd_net -quiet [get_bd_pins $srcPin] [get_bd_pins clock_generator/clk_out1]
 }
 
 # Connects reset
 proc connectRst {rst_source rst_name} {
-	puts "\[AIT\] INFO: using generic connectRst procedure"
+	aitInfo "Using generic connectRst procedure"
 
 	connect_bd_net -quiet $rst_source [get_bd_pins processor_system_reset/${rst_name}_aresetn]
 }
 
 # Sets target frequency, retrieves actual achieved frequency and returns it
 proc setAndGetFreq {targetFreq} {
-	puts "\[AIT\] INFO: using generic setAndGetFreq procedure"
+	aitInfo "Using generic setAndGetFreq procedure"
 
 	set_property -dict [list CONFIG.CLKOUT1_REQUESTED_OUT_FREQ $targetFreq] [get_bd_cells clock_generator]
 	set actFreq [expr [get_property CONFIG.FREQ_HZ [get_bd_pins clock_generator/clk_out1]]/1000000]
@@ -72,7 +84,7 @@ proc getBaseFreq {} {
 
 # Enables IRQ and instantiates concat IP to aggregate up to 8 interrupts
 proc configureDMAIntr {} {
-	puts "\[AIT\] INFO: using generic configureDMAIntr procedure"
+	aitInfo "Using generic configureDMAIntr procedure"
 
 	upvar #0 arch_bits arch_bits
 
@@ -90,7 +102,7 @@ proc configureDMAIntr {} {
 
 # Maps board DDR to the address map
 proc configureAddressMap {addr_list size_DDR} {
-	puts "\[AIT\] INFO: using generic configureAddressMap procedure"
+	aitInfo "Using generic configureAddressMap procedure"
 
 	# Assign DDR address space
 	assign_bd_address [get_bd_addr_segs -regexp ".*_DDR_LOW.*"]
@@ -101,7 +113,7 @@ proc configureAddressMap {addr_list size_DDR} {
 
 # Generates HDL wrapper
 proc generateWrapper {} {
-	puts "\[AIT\] INFO: using generic generateWrapper procedure"
+	aitInfo "Using generic generateWrapper procedure"
 
 	upvar #0 target_lang target_lang
 
@@ -117,7 +129,7 @@ proc createNestedInterconnect {} {
 	upvar #0 interconOpt interconOpt
 	upvar interface interface counter counter
 
-	puts "\[AIT\] INFO: creating nested interconnect for $interface"
+	aitInfo "Creating nested interconnect for $interface"
 
 	set parent_inter "${interface}_Inter"
 	set nested_inter "${interface}_Inter_[expr $counter/16 - 1]"
@@ -166,7 +178,7 @@ proc connectToInterface {src intf role {num ""}} {
 	if {!($counter % 16) && ($counter > 0)} {
 		if {$counter == 256} {
 			# We already have filled 16 nested interconnects
-			error "\[AIT\] ERROR: ${intf} interface occupation is 100%"
+			aitError "${intf} interface occupation is 100%"
 		} else {
 			createNestedInterconnect
 		}
@@ -242,7 +254,7 @@ proc connectInterrupt {intr} {
 		configureDMAIntr
 		set num_ports 0
 	} elseif {$num_ports >= 8} {
-		error "\[AIT\] ERROR: IRQ occupation is 100%."
+		aitError "IRQ occupation is 100%."
 	}
 
 	set_property -dict [list CONFIG.NUM_PORTS [expr $num_ports + 1]] [get_bd_cells Concat_IRQ]
@@ -283,10 +295,10 @@ proc getInterfaceOccupation {} {
 	}
 }
 
-# If available, override board-specific procedures
+# If available, overwrite board-specific procedures
 if {[file exists $path_Project/board/$board/procs.tcl]} {
 	if {[catch {source -notrace $path_Project/board/$board/procs.tcl}]} {
-		error "\[AIT\] ERROR: Failed sourcing board pre base design"
+		aitError "Failed overwritting board-specific procedures"
 	}
 }
 
@@ -350,7 +362,7 @@ update_ip_catalog
 # Generate Block Design from template
 set argv $name_Project
 if {[catch {source -notrace $path_Project/board/$board/baseDesign.tcl}]} {
-	error "\[AIT\] ERROR: Failed sourcing board base design"
+	aitError "Failed sourcing board base design"
 }
 
 # Open Block Design
@@ -370,7 +382,7 @@ if {$IP_caching} {
 # If available, execute the user defined pre-design tcl script
 if {[file exists $script_path/userPreDesign.tcl]} {
 	if {[catch {source -notrace $script_path/userPreDesign.tcl}]} {
-		error "\[AIT\] ERROR: Failed sourcing board pre base design"
+		aitError "Failed sourcing board pre base design"
 	}
 }
 
@@ -379,7 +391,7 @@ getInterfaceOccupation
 # Add Smart OmpSs Manager template
 if {$hwruntime == "som"} {
 	if {[catch {source -notrace $path_Project/templates/Smart_OmpSs_Manager.tcl}]} {
-		error "\[AIT\] ERROR: Failed sourcing Smart OmpSs Manager template"
+		aitError "Failed sourcing Smart OmpSs Manager template"
 	}
 
 	variable name_hwruntime Smart_OmpSs_Manager
@@ -406,7 +418,7 @@ if {$hwruntime == "som"} {
 	variable name_ManagedRst Hardware_Runtime/managed_aresetn
 } elseif {$hwruntime == "pom"} {
 	if {[catch {source -notrace $path_Project/templates/Picos_OmpSs_Manager.tcl}]} {
-		error "\[AIT\] ERROR: Failed sourcing Picos OmpSs Manager template"
+		aitError "Failed sourcing Picos OmpSs Manager template"
 	}
 
 	variable name_hwruntime Picos_OmpSs_Manager
@@ -453,7 +465,7 @@ foreach acc $accels {
 	for {set j 0} {$j < $accNumInstances} {incr j} {
 
 		if {[catch {source -notrace $path_Project/templates/dummy_acc.tcl}]} {
-			error "\[AIT\] ERROR: Failed sourcing dummy acc template"
+			aitError "Failed sourcing dummy acc template"
 		}
 
 		# Create dummy acc hierarchy and instantiate IP
@@ -498,7 +510,7 @@ foreach acc $accels {
 			if {$arch_type == "soc"} {
 				# Instantiate DMA and move it inside the accelerator hierarchy
 				if {[catch {source -notrace $path_Project/templates/acc_DMA.tcl}]} {
-					error "\[AIT\] ERROR: Failed sourcing acc DMA template"
+					aitError "ERROR: Failed sourcing acc DMA template"
 				}
 				move_bd_cells [get_bd_cells ${accName}_$j] [get_bd_cells acc_DMA]
 
@@ -797,15 +809,16 @@ if {$debugInterfaces == "custom"} {
 			} elseif {$type == "DEBUG_STREAM"} {
 				apply_bd_automation -rule xilinx.com:bd_rule:debug -dict [list [get_bd_intf_nets [get_bd_intf_nets -of_objects [get_bd_intf_pins $intf]]] {AXIS_SIGNALS "Data and Trigger" CLK_SRC clock_generator/clk_out1 SYSTEM_ILA "Auto" APC_EN "0" }]
 			} else {
-				error "\[AIT\] ERROR: Debug interface type $type not recognized"
+				aitError "Debug interface type $type not recognized"
 			}
+
+			# Add a line to debuginterfaces.txt
 			puts $debugInterfaces_file "$type\t$intf"
 		}
 	}
 
 	set_property -dict [list CONFIG.C_EN_STRG_QUAL {1} CONFIG.C_PROBE0_MU_CNT {2} CONFIG.ALL_PROBE_SAME_MU_CNT {2}] [get_bd_cells -hierarchical -filter {VLNV =~ xilinx.com:ip:system_ila*}]
 
-	# Add a line to debuginterfaces.txt
 	close $debugInterfaces_file
 }
 
@@ -968,15 +981,12 @@ if {[file isdirectory $path_Project/board/$board/constraints/]} {
 # If available, execute the user defined post-design tcl script
 if {[file exists $script_path/userPostDesign.tcl]} {
 	if {[catch {source -notrace $script_path/userPostDesign.tcl}]} {
-		error "\[AIT\] ERROR: Failed sourcing board post base design"
+		aitError "Failed sourcing board post base design"
 	}
 }
 
 # If enabled, configure register slices on AXI Interconnects
-# 0 == none
-# 1 == DDR
-# 2 == all
-if {$interconRegSlice == 1} {
+if {$interconRegSlice == "DDR"} {
 	set interconnects [get_bd_cells -hierarchical -regexp -filter {VLNV =~ xilinx.com:ip:axi_interconnect.* && NAME =~ {.*(data|control|coherent|master).*}} .*]
 
 	foreach inter $interconnects {
@@ -987,7 +997,7 @@ if {$interconRegSlice == 1} {
 			set_property -dict [list CONFIG.S[format %02u $i]_HAS_REGSLICE {4}] [get_bd_cells $inter]
 		}
 	}
-} elseif {$interconRegSlice == 2} {
+} elseif {$interconRegSlice == "all"} {
 	set interconnects [get_bd_cells -hierarchical -regexp -filter {VLNV =~ xilinx.com:ip:axi_interconnect.*} .*]
 
 	foreach inter $interconnects {
@@ -1005,7 +1015,7 @@ regenerate_bd_layout
 regenerate_bd_layout -routing
 if {[catch {validate_bd_design -force}]} {
 	save_bd_design
-	error "\[AIT\] ERROR: Block Design could not be validated"
+	aitError "Block Design could not be validated"
 }
 
 generateWrapper

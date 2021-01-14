@@ -163,7 +163,7 @@ if __name__ == '__main__':
     if args.from_step not in generation_steps[args.backend]:
         msg.error('Initial step \'' + args.from_step + '\' is not a valid generation step for \'' + args.backend + '\' backend. Set it correctly', True)
 
-    if args.from_step not in generation_steps[args.backend]:
+    if args.to_step not in generation_steps[args.backend]:
         msg.error('Final step \'' + args.to_step + '\' is not a valid generation step for \'' + args.backend + '\' backend. Set it correctly', True)
 
     if generation_steps[args.backend].index(args.from_step) > generation_steps[args.backend].index(args.to_step):
