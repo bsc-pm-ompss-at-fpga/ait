@@ -153,6 +153,19 @@ class ArgParser:
         hwruntime_args.add_argument('--spawnout_queue_len', help='length (64-bit words) of the hwruntime spawn out queue\nMust be power of 2', type=IntRange(4), default=1024)
         hwruntime_args.add_argument('--hwruntime_interconnect', help='type of hardware runtime interconnection with accelerators', choices=['centralized', 'distributed'], default='centralized')
 
+        # Picos arguments
+        picos_args = self.parser.add_argument_group('Picos')
+        picos_args.add_argument('--picos_max_args_per_task', help='Max number of arguments for any task in the bitstream\n(def: \'15\')', type=IntRange(1), default=15)
+        picos_args.add_argument('--picos_max_deps_per_task', help='Max number of dependencies for any task in the bitstream\n(def: \'8\')', type=IntRange(2), default=8)
+        picos_args.add_argument('--picos_max_copies_per_task', help='Max number of copies for any task in the bitstream\n(def: \'15\')', type=IntRange(1), default=15)
+        picos_args.add_argument('--picos_num_dcts', help='Number of DCTs instantiated\n(def: \'1\')', type=int, default=1)
+        picos_args.add_argument('--picos_tm_size', help='Size of the TM memory\n(def: \'128\')', type=IntRange(2), default=128)
+        picos_args.add_argument('--picos_dm_size', help='Size of the DM memory\n(def: \'512\')', type=IntRange(2), default=512)
+        picos_args.add_argument('--picos_vm_size', help='Size of the VM memory\n(def: \'512\')', type=IntRange(2), default=512)
+        picos_args.add_argument('--picos_dm_ds', help='Data structure of the DM memory\nBINTREE: Binary search tree (not autobalanced)\nLINKEDLIST: Linked list\n(def: \'BINTREE\')', choices=['BINTREE', 'LINKEDLIST'], metavar='DATA_STRUCT', default='BINTREE')
+        picos_args.add_argument('--picos_dm_hash', help='Hashing function applied to dependence addresses\nP_PEARSON: Parallel Pearson function\nXOR\n(def: \'P_PEARSON\')', choices=['P_PEARSON', 'XOR'], metavar='HASH_FUN', default='P_PEARSON')
+        picos_args.add_argument('--picos_hash_t_size', help='DCT hash table size\n(def: \'64\')', type=IntRange(2), default=64)
+
         # Miscellaneous arguments
         misc_args = self.parser.add_argument_group('Miscellaneous')
         misc_args.add_argument('-h', '--help', action='help', help='show this help message and exit')
@@ -274,6 +287,17 @@ class ArgParser:
             msg.error('--spawnout_queue_len must be power of 2')
         if args.spawnout_queue_len < 79:
             msg.warning('Value of --spawnout_queue_len={} is less than 79, which is the length of the longest task possible. This design might not work if an accelerator creates SMP tasks with enough copies, dependencies and/or arguments.'.format(args.spawnout_queue_len))
+
+    def check_picos_args(self, args):
+        # Validate Picos args
+        if (args.picos_num_dcts != 1 and args.picos_num_dcts != 2 and args.picos_num_dcts != 4):
+            msg.error('Invalid --picos_num_dcts, only 1, 2 and 4 values are valid')
+        if (args.picos_dm_hash == 'P_PEARSON' and args.picos_hash_t_size != 64):
+            msg.error('With P_PEARSON hash function, --picos_hash_t_size must be 64')
+        if (args.picos_hash_t_size > args.picos_dm_size):
+            msg.error('Invalid --picos_hash_t_size, maximum value is --picos_dm_size')
+        if (ceil(log2(args.picos_hash_t_size)) + ceil(log2(args.picos_num_dcts)) > 8):
+            msg.error('Invalid combination of --picos_hash_t_size and --picos_num_dcts, ceil(log2(args.picos_hash_t_size))+ceil(log2(args.picos_num_dcts)) <= 8')
 
     def is_default(self, dest, backend):
         value = False

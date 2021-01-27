@@ -328,5 +328,27 @@ def run_design_step(project_args):
     else:
         msg.success('Block Design generated')
 
+    if (args.hwruntime == 'pom'):
+        regex_strings = [
+            (r'MAX_ARGS_PER_TASK = [0-9]*', 'MAX_ARGS_PER_TASK = {}'.format(args.picos_max_args_per_task)),
+            (r'MAX_DEPS_PER_TASK = [0-9]*', 'MAX_DEPS_PER_TASK = {}'.format(args.picos_max_deps_per_task)),
+            (r'MAX_COPIES_PER_TASK = [0-9]*', 'MAX_COPIES_PER_TASK = {}'.format(args.picos_max_copies_per_task)),
+            (r'NUM_DCTS = [0-9]*', 'NUM_DCTS = {}'.format(args.picos_num_dcts)),
+            (r'TM_SIZE = [0-9]*', 'TM_SIZE = {}'.format(args.picos_tm_size)),
+            (r'DM_SIZE = [0-9]*', 'DM_SIZE = {}'.format(args.picos_dm_size)),
+            (r'VM_SIZE = [0-9]*', 'VM_SIZE = {}'.format(args.picos_vm_size)),
+            (r'DM_DS = "[a-zA-Z_]*"', 'DM_DS = "{}"'.format(args.picos_dm_ds)),
+            (r'DM_HASH = "[a-zA-Z_]*"', 'DM_HASH = "{}"'.format(args.picos_dm_hash)),
+            (r'HASH_T_SIZE = [0-9]*', 'HASH_T_SIZE = {}'.format(args.picos_hash_t_size))]
+
+        config_file_path = glob.glob(project_backend_path + '/IPs/bsc_ompss_picosompssmanager_*/')[0] + 'src/config.sv'
+
+        with open(config_file_path, 'r') as config_file:
+            config_str = config_file.read()
+        for regex_str in regex_strings:
+            config_str = re.sub(regex_str[0], regex_str[1], config_str, count=1)
+        with open(config_file_path, 'w') as config_file:
+            config_file.write(config_str)
+
 
 STEP_FUNC = run_design_step
