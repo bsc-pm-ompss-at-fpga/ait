@@ -30,8 +30,7 @@ import importlib
 import subprocess
 
 from parser import ArgParser
-from config import msg, ait_path, generation_steps, Accelerator, MIN_PYTHON_VERSION, \
-    MIN_WRAPPER_VERSION
+from config import msg, ait_path, generation_steps, Accelerator, MIN_PYTHON_VERSION
 
 if sys.version_info < MIN_PYTHON_VERSION:
     sys.exit('Python %s.%s or later is required.\n' % MIN_PYTHON_VERSION)
@@ -160,46 +159,8 @@ if __name__ == '__main__':
 
     board = json.load(open(ait_path + '/backend/' + args.backend + '/board/' + args.board + '/basic_info.json'), object_hook=JSONObject)
 
-    if args.from_step not in generation_steps[args.backend]:
-        msg.error('Initial step \'' + args.from_step + '\' is not a valid generation step for \'' + args.backend + '\' backend. Set it correctly', True)
-
-    if args.to_step not in generation_steps[args.backend]:
-        msg.error('Final step \'' + args.to_step + '\' is not a valid generation step for \'' + args.backend + '\' backend. Set it correctly', True)
-
-    if generation_steps[args.backend].index(args.from_step) > generation_steps[args.backend].index(args.to_step):
-        msg.error('Initial step \'' + args.from_step + '\' is posterior to the final step \'' + args.to_step + '\'. Set them correctly', True)
-
-    if not args.disable_IP_caching and not os.path.isdir(args.IP_cache_location):
-        if parser.is_default('IP_cache_location', args.backend):
-            os.mkdir(args.IP_cache_location)
-        else:
-            msg.error('Cache location (' + args.IP_cache_location + ') does not exist or is not a folder', True)
-
-    if args.hwruntime is None and not args.enable_DMA:
-        msg.error('You have to select at least one type of communication with the FPGA: --hwruntime or --enable_DMA', True)
-
-    if args.enable_DMA:
-        msg.info('**********************************************************************************************************\n'
-                 '**********************************************************************************************************\n'
-                 '           The stream backend has been deprecated and will be removed in the following releases\n'
-                 '                        You will need to switch to hwruntime backend\n'
-                 '                       For support contact: ompss-fpga-support@bsc.es\n'
-                 '**********************************************************************************************************\n'
-                 '**********************************************************************************************************\n')
-
-    if not re.match('^[A-Za-z][A-Za-z0-9_]*$', args.name):
-        msg.error('Invalid project name. Must start with a letter and contain only letters, numbers or underscores', True)
-
     if not int(board.frequency.min) <= args.clock <= int(board.frequency.max):
         msg.error('Clock frequency requested (' + str(args.clock) + 'MHz) is not within the board range (' + str(board.frequency.min) + '-' + str(board.frequency.max) + 'MHz)', True)
-
-    if args.wrapper_version and args.wrapper_version < MIN_WRAPPER_VERSION:
-        msg.error('Unsupported wrapper version (' + str(args.wrapper_version) + '). Minimum version is ' + str(MIN_WRAPPER_VERSION))
-
-    if not os.path.isdir(args.dir):
-        msg.error('Project directory (' + args.dir + ') does not exist or is not a folder', True)
-    elif not os.path.exists(args.dir + '/' + args.name + '_ait'):
-        os.mkdir(args.dir + '/' + args.name + '_ait')
 
     project_backend_path = os.path.normpath(project_vars['path'] + '/' + args.backend)
 

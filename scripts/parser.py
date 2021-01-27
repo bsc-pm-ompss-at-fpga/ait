@@ -21,14 +21,16 @@
 # ------------------------------------------------------------------------ #
 
 import os
+import re
 import sys
 import json
 import argparse
 import importlib
 
 from config import msg, ait_path, supported_boards, generation_steps, \
-    available_hwruntimes, BITINFO_VERSION, VERSION_MAJOR, VERSION_MINOR, \
-    VERSION_COMMIT
+    available_hwruntimes, BITINFO_VERSION, MIN_WRAPPER_VERSION, VERSION_MAJOR, \
+    VERSION_MINOR, VERSION_COMMIT
+
 
 
 class StorePath(argparse.Action):
@@ -157,7 +159,59 @@ class ArgParser:
                 args_vars[arg] = self.defaults[args_vars['backend']][arg]['value']
                 self.defaults[args_vars['backend']][arg]['used'] = True
 
+        self.check_args(args)
+
         return args
+
+    def check_args(self, args):
+        # Validate arguments
+        self.check_required_args(args)
+        self.check_flow_args(args)
+        self.check_bitstream_args(args)
+
+    def check_required_args(self, args):
+        # Validate required args
+        if not re.match('^[A-Za-z][A-Za-z0-9_]*$', args.name):
+            msg.error('Invalid project name. Must start with a letter and contain only letters, numbers or underscores', True)
+
+        if args.wrapper_version and args.wrapper_version < MIN_WRAPPER_VERSION:
+            msg.error('Unsupported wrapper version (' + str(args.wrapper_version) + '). Minimum version is ' + str(MIN_WRAPPER_VERSION))
+
+        if not os.path.isdir(args.dir):
+            msg.error('Project directory (' + args.dir + ') does not exist or is not a folder', True)
+        elif not os.path.exists(args.dir + '/' + args.name + '_ait'):
+            os.mkdir(args.dir + '/' + args.name + '_ait')
+
+    def check_flow_args(self, args):
+        # Validate flow args
+        if args.from_step not in generation_steps[args.backend]:
+            msg.error('Initial step \'' + args.from_step + '\' is not a valid generation step for \'' + args.backend + '\' backend. Set it correctly', True)
+
+        if args.to_step not in generation_steps[args.backend]:
+            msg.error('Final step \'' + args.to_step + '\' is not a valid generation step for \'' + args.backend + '\' backend. Set it correctly', True)
+
+        if generation_steps[args.backend].index(args.from_step) > generation_steps[args.backend].index(args.to_step):
+            msg.error('Initial step \'' + args.from_step + '\' is posterior to the final step \'' + args.to_step + '\'. Set them correctly', True)
+
+        if not args.disable_IP_caching and not os.path.isdir(args.IP_cache_location):
+            if parser.is_default('IP_cache_location', args.backend):
+                os.mkdir(args.IP_cache_location)
+            else:
+                msg.error('Cache location (' + args.IP_cache_location + ') does not exist or is not a folder', True)
+
+    def check_bitstream_args(self, args):
+        # Validate bitstream args
+        if args.hwruntime is None and not args.enable_DMA:
+            msg.error('You have to select at least one type of communication with the FPGA: --hwruntime or --enable_DMA', True)
+
+        if args.enable_DMA:
+            msg.info('**********************************************************************************************************\n'
+                     '**********************************************************************************************************\n'
+                     '           The stream backend has been deprecated and will be removed in the following releases\n'
+                     '                        You will need to switch to hwruntime backend\n'
+                     '                       For support contact: ompss-fpga-support@bsc.es\n'
+                     '**********************************************************************************************************\n'
+                     '**********************************************************************************************************\n')
 
     def is_default(self, dest, backend):
         value = False
