@@ -492,6 +492,17 @@ foreach acc $accels {
 			connect_bd_net [get_bd_pins ${accName}_$j/Adapter_outStream/accID] [get_bd_pins ${accName}_$j/accID/dout]
 		}
 
+		# If available, forward the inPort
+		if {[get_bd_pins -quiet ${accName}_$j/$accName/mcxx_inPort_*] != ""} {
+			# Create and connect the streamToHsAdapter
+			create_bd_cell -type module -reference streamToHsAdapter ${accName}_$j/Adapter_inStream
+			connect_bd_net [get_bd_pins ${accName}_$j/Adapter_inStream/out_hs_ap_vld] [get_bd_pins ${accName}_$j/$accName/mcxx_inPort_V_ap_vld]
+			connect_bd_net [get_bd_pins ${accName}_$j/Adapter_inStream/out_hs_ap_ack] [get_bd_pins ${accName}_$j/$accName/mcxx_inPort_V_ap_ack]
+			connect_bd_net [get_bd_pins ${accName}_$j/Adapter_inStream/out_hs] [get_bd_pins ${accName}_$j/$accName/mcxx_inPort_V]
+			connect_bd_net [get_bd_pins ${accName}_$j/Adapter_inStream/clk] [get_bd_pins ${accName}_$j/aclk]
+			connect_bd_net [get_bd_pins ${accName}_$j/Adapter_inStream/aresetn] [get_bd_pins ${accName}_$j/managed_aresetn]
+		}
+
 		# If enabled, instantiate and connect acc DMA
 		if {$DMA_enabled} {
 			# Create and connect reset pins
@@ -554,13 +565,13 @@ foreach acc $accels {
 				incr PCIe_Inter
 			}
 
-			connect_bd_intf_net -boundary_type upper [get_bd_intf_pins ${accName}_$j/$accName/mcxx_inStream] [get_bd_intf_pins ${accName}_$j/inStream_Inter/M00_AXIS]
+			connect_bd_intf_net -boundary_type upper [get_bd_intf_pins ${accName}_$j/Adapter_inStream/inStream] [get_bd_intf_pins ${accName}_$j/inStream_Inter/M00_AXIS]
 			connect_bd_intf_net -boundary_type upper [get_bd_intf_pins ${accName}_$j/Adapter_outStream/outStream] [get_bd_intf_pins ${accName}_$j/outStream_Inter/S00_AXIS]
 
 			connect_bd_intf_net [get_bd_intf_pins ${accName}_$j/inStream] [get_bd_intf_pins ${accName}_$j/inStream_Inter/S00_AXIS]
 			connect_bd_intf_net [get_bd_intf_pins ${accName}_$j/outStream] [get_bd_intf_pins ${accName}_$j/outStream_Inter/M00_AXIS]
 		} else {
-			connect_bd_intf_net [get_bd_intf_pins ${accName}_$j/inStream] [get_bd_intf_pins ${accName}_$j/$accName/mcxx_inStream]
+			connect_bd_intf_net [get_bd_intf_pins ${accName}_$j/inStream] [get_bd_intf_pins ${accName}_$j/Adapter_inStream/inStream]
 			connect_bd_intf_net [get_bd_intf_pins ${accName}_$j/outStream] [get_bd_intf_pins ${accName}_$j/Adapter_outStream/outStream]
 		}
 

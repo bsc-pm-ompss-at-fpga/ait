@@ -39,6 +39,7 @@ module hsToStreamAdapter #(
     output        outStream_tvalid,
     input         outStream_tready
 );
+
     if (USE_BUFFER) begin
 
     localparam IDLE = 0;
