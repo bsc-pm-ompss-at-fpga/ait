@@ -73,7 +73,8 @@ def synthesize_accelerator(acc):
                        + 'add_files ' + acc.short_name + '/' + acc.filename + ' -cflags "-I' + os.getcwd() + '"\n' \
                        + 'open_solution "solution1"\n' \
                        + 'set_part {' + chip_part + '} -tool vivado\n' \
-                       + 'create_clock -period ' + str(args.clock) + 'MHz -name default\n'
+                       + 'create_clock -period ' + str(args.clock) + 'MHz -name default\n' \
+                       + 'config_rtl -reset control -reset_level low -reset_async\n'
 
     if board.arch.bits == 64 or board.arch.type == 'fpga':
         accel_tcl_script += 'config_interface -m_axi_addr64\n'
