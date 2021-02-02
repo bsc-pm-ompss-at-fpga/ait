@@ -625,26 +625,6 @@ foreach acc $accels {
 			connect_bd_net [get_bd_pins ${accName}_$j/accFreq/dout] [get_bd_pins ${accName}_$j/$accName/mcxx_freqPort*]
 		}
 
-		# If available, forward the eInPort
-		if {[get_bd_pins -quiet ${accName}_$j/$accName/mcxx_eInPort_*] != ""} {
-			set num_tw_accs [get_property CONFIG.num_tw_accs [get_bd_cells Hardware_Runtime/$name_hwruntime]]
-			set_property CONFIG.num_tw_accs [expr 1 + $num_tw_accs] [get_bd_cells Hardware_Runtime/$name_hwruntime]
-
-			# Create and connect the Adapter_eInStream
-			create_bd_cell -type module -reference adapter_eInstream ${accName}_$j/Adapter_eInStream
-			connect_bd_net [get_bd_pins ${accName}_$j/Adapter_eInStream/out_V_ap_vld] [get_bd_pins ${accName}_$j/$accName/mcxx_eInPort_V_ap_vld]
-			connect_bd_net [get_bd_pins ${accName}_$j/Adapter_eInStream/out_V_ap_ack] [get_bd_pins ${accName}_$j/$accName/mcxx_eInPort_V_ap_ack]
-			connect_bd_net [get_bd_pins ${accName}_$j/Adapter_eInStream/out_V] [get_bd_pins ${accName}_$j/$accName/mcxx_eInPort_V]
-			connect_bd_net [get_bd_pins ${accName}_$j/Adapter_eInStream/clk] [get_bd_pins ${accName}_$j/aclk]
-			connect_bd_net [get_bd_pins ${accName}_$j/Adapter_eInStream/aresetn] [get_bd_pins ${accName}_$j/managed_aresetn]
-
-			# Create eInStream pin and connect it
-			create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 ${accName}_$j/eInStream
-			connect_bd_intf_net [get_bd_intf_pins ${accName}_$j/eInStream] [get_bd_intf_pins ${accName}_$j/Adapter_eInStream/in_r]
-			connect_bd_intf_net -boundary_type upper [get_bd_intf_pins ${accName}_$j/eInStream] [get_bd_intf_pins Hardware_Runtime/$name_hwruntime/twOutStream_$num_tw_accs]
-
-		}
-
 		# Compute number of interfaces needed for the outStream interconnect
 		set accNumInterfaces [expr {$hwruntime == "som"} || {$hwruntime == "pom"}]
 		if {[expr $interconLevel == 2]} {
