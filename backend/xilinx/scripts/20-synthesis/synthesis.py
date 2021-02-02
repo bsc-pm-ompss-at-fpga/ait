@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # ------------------------------------------------------------------------ #
-#     (C) Copyright 2017-2020 Barcelona Supercomputing Center              #
+#     (C) Copyright 2017-2021 Barcelona Supercomputing Center              #
 #                             Centro Nacional de Supercomputacion          #
 #                                                                          #
 #     This file is part of OmpSs@FPGA toolchain.                           #
