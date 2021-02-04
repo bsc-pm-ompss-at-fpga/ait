@@ -29,7 +29,7 @@ module streamToHsAdapter #(
 
     input [63:0] inStream_tdata,
     input        inStream_tvalid,
-    input        inStream_tready,
+    output       inStream_tready,
 
     output [63:0] out_hs,
     output        out_hs_ap_vld,
