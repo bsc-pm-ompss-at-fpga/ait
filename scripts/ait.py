@@ -105,8 +105,8 @@ def get_accelerators():
             msg.error('Two accelerators use the same id: \'' + accel.id + '\' (maybe you should use the onto clause)')
         accel_ids.append(accel.id)
 
-        # Check if the accel has a port called: mcxx_eInPort
-        if 'ap_hs port=mcxx_eInPort' in open(file_).read():
+        # Check if the accel uses extended hwruntime features
+        if 'nanos_fpga_current_wd' in open(file_).read():
             args.extended_hwruntime = True
             accels.insert(0, accel)
         else:
