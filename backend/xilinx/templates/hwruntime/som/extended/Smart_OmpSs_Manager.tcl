@@ -171,7 +171,7 @@ proc create_hier_cell_Hardware_Runtime { parentCell nameHier } {
   # Create instance: Smart_OmpSs_Manager, and set properties
   set Smart_OmpSs_Manager [ create_bd_cell -type ip -vlnv bsc:ompss:smartompssmanager Smart_OmpSs_Manager ]
   set_property -dict [ list \
-   CONFIG.extended_mode {1} \
+   CONFIG.EXTENDED_MODE {1} \
  ] $Smart_OmpSs_Manager
 
   # Create instance: cmdInQueue, and set properties
@@ -211,15 +211,28 @@ proc create_hier_cell_Hardware_Runtime { parentCell nameHier } {
   set cmdOutQueue [ create_bd_cell -type ip -vlnv xilinx.com:ip:blk_mem_gen cmdOutQueue ]
   set_property -dict [ list \
    CONFIG.Assume_Synchronous_Clk {true} \
+   CONFIG.Byte_Size {8} \
    CONFIG.EN_SAFETY_CKT {false} \
+   CONFIG.Enable_32bit_Address {true} \
    CONFIG.Enable_B {Use_ENB_Pin} \
    CONFIG.Memory_Type {True_Dual_Port_RAM} \
+   CONFIG.Operating_Mode_A {READ_FIRST} \
+   CONFIG.Operating_Mode_B {READ_FIRST} \
    CONFIG.Port_B_Clock {100} \
    CONFIG.Port_B_Enable_Rate {100} \
    CONFIG.Port_B_Write_Rate {50} \
+   CONFIG.Read_Width_A {64} \
+   CONFIG.Read_Width_B {32} \
+   CONFIG.Register_PortA_Output_of_Memory_Primitives {false} \
+   CONFIG.Register_PortB_Output_of_Memory_Primitives {false} \
+   CONFIG.Use_Byte_Write_Enable {true} \
+   CONFIG.Use_RSTA_Pin {false} \
    CONFIG.Use_RSTB_Pin {true} \
+   CONFIG.Write_Depth_A {1024} \
+   CONFIG.Write_Width_A {64} \
+   CONFIG.Write_Width_B {32} \
+   CONFIG.use_bram_block {Stand_Alone} \
  ] $cmdOutQueue
-
   # Create instance: cmdOutQueue_BRAM_Ctrl, and set properties
   set cmdOutQueue_BRAM_Ctrl [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl cmdOutQueue_BRAM_Ctrl ]
   set_property -dict [ list \
@@ -270,13 +283,28 @@ proc create_hier_cell_Hardware_Runtime { parentCell nameHier } {
   # Create instance: spawnOutQueue, and set properties
   set spawnOutQueue [ create_bd_cell -type ip -vlnv xilinx.com:ip:blk_mem_gen spawnOutQueue ]
   set_property -dict [ list \
+   CONFIG.Assume_Synchronous_Clk {true} \
+   CONFIG.Byte_Size {8} \
    CONFIG.EN_SAFETY_CKT {false} \
+   CONFIG.Enable_32bit_Address {true} \
    CONFIG.Enable_B {Use_ENB_Pin} \
    CONFIG.Memory_Type {True_Dual_Port_RAM} \
+   CONFIG.Operating_Mode_A {READ_FIRST} \
+   CONFIG.Operating_Mode_B {READ_FIRST} \
    CONFIG.Port_B_Clock {100} \
    CONFIG.Port_B_Enable_Rate {100} \
    CONFIG.Port_B_Write_Rate {50} \
+   CONFIG.Read_Width_A {64} \
+   CONFIG.Read_Width_B {32} \
+   CONFIG.Register_PortA_Output_of_Memory_Primitives {false} \
+   CONFIG.Register_PortB_Output_of_Memory_Primitives {false} \
+   CONFIG.Use_Byte_Write_Enable {true} \
+   CONFIG.Use_RSTA_Pin {false} \
    CONFIG.Use_RSTB_Pin {true} \
+   CONFIG.Write_Depth_A {1024} \
+   CONFIG.Write_Width_A {64} \
+   CONFIG.Write_Width_B {32} \
+   CONFIG.use_bram_block {Stand_Alone} \
  ] $spawnOutQueue
 
   # Create instance: spawnOutQueue_BRAM_Ctrl, and set properties
@@ -293,10 +321,10 @@ proc create_hier_cell_Hardware_Runtime { parentCell nameHier } {
   connect_bd_intf_net -intf_net GP_Inter_M04_AXI [get_bd_intf_pins GP_Inter/M04_AXI] [get_bd_intf_pins spawnInQueue_BRAM_Ctrl/S_AXI]
   connect_bd_intf_net -intf_net S_AXI_GP_1 [get_bd_intf_pins S_AXI_GP] [get_bd_intf_pins GP_Inter/S00_AXI]
   connect_bd_intf_net -intf_net Smart_OmpSs_Manager_bitInfo [get_bd_intf_pins bitInfo] [get_bd_intf_pins Smart_OmpSs_Manager/bitInfo]
-  connect_bd_intf_net -intf_net Smart_OmpSs_Manager_cmdInQueue [get_bd_intf_pins Smart_OmpSs_Manager/cmdInQueue] [get_bd_intf_pins cmdInQueue/BRAM_PORTA]
-  connect_bd_intf_net -intf_net Smart_OmpSs_Manager_cmdOutQueue [get_bd_intf_pins Smart_OmpSs_Manager/cmdOutQueue] [get_bd_intf_pins cmdOutQueue/BRAM_PORTA]
-  connect_bd_intf_net -intf_net Smart_OmpSs_Manager_spawnInQueue [get_bd_intf_pins Smart_OmpSs_Manager/spawnInQueue] [get_bd_intf_pins spawnInQueue/BRAM_PORTA]
-  connect_bd_intf_net -intf_net Smart_OmpSs_Manager_spawnOutQueue [get_bd_intf_pins Smart_OmpSs_Manager/spawnOutQueue] [get_bd_intf_pins spawnOutQueue/BRAM_PORTA]
+  connect_bd_intf_net -intf_net Smart_OmpSs_Manager_cmdInQueue [get_bd_intf_pins Smart_OmpSs_Manager/cmdin_queue] [get_bd_intf_pins cmdInQueue/BRAM_PORTA]
+  connect_bd_intf_net -intf_net Smart_OmpSs_Manager_cmdOutQueue [get_bd_intf_pins Smart_OmpSs_Manager/cmdout_queue] [get_bd_intf_pins cmdOutQueue/BRAM_PORTA]
+  connect_bd_intf_net -intf_net Smart_OmpSs_Manager_spawnInQueue [get_bd_intf_pins Smart_OmpSs_Manager/spawnin_queue] [get_bd_intf_pins spawnInQueue/BRAM_PORTA]
+  connect_bd_intf_net -intf_net Smart_OmpSs_Manager_spawnOutQueue [get_bd_intf_pins Smart_OmpSs_Manager/spawnout_queue] [get_bd_intf_pins spawnOutQueue/BRAM_PORTA]
   connect_bd_intf_net -intf_net cmdInQueue_BRAM_Ctrl_BRAM_PORTA [get_bd_intf_pins cmdInQueue/BRAM_PORTB] [get_bd_intf_pins cmdInQueue_BRAM_Ctrl/BRAM_PORTA]
   connect_bd_intf_net -intf_net cmdOutQueue_BRAM_Ctrl_BRAM_PORTA [get_bd_intf_pins cmdOutQueue/BRAM_PORTB] [get_bd_intf_pins cmdOutQueue_BRAM_Ctrl/BRAM_PORTA]
   connect_bd_intf_net -intf_net spawnInQueue_BRAM_Ctrl_BRAM_PORTA [get_bd_intf_pins spawnInQueue/BRAM_PORTB] [get_bd_intf_pins spawnInQueue_BRAM_Ctrl/BRAM_PORTA]

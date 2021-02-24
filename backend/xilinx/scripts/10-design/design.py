@@ -74,6 +74,18 @@ def generate_Vivado_variables_tcl():
     if not args.disable_IP_caching:
         vivado_project_variables += 'variable path_CacheLocation ' + os.path.realpath(args.IP_cache_location) + '\n'
 
+    regslice_all = '0'
+    regslice_ddr = '0'
+    regslice_hwruntime = '0'
+    if args.interconnect_regslice is not None:
+        for opt in args.interconnect_regslice:
+           if opt == 'all':
+               regslice_all = '1'
+           elif opt == 'DDR':
+               regslice_ddr = '1'
+           elif opt == 'hwruntime':
+               regslice_hwruntime = '1'
+
     vivado_project_variables += '\n' \
                                 + '# ' + board.name + ' board variables\n' \
                                 + 'variable board ' + board.name + '\n' \
@@ -84,8 +96,10 @@ def generate_Vivado_variables_tcl():
                                 + 'variable arch_bits ' + str(board.arch.bits) + '\n' \
                                 + 'variable interconOpt ' + str(args.interconnect_opt + 1) + '\n' \
                                 + 'variable interconLevel ' + str(args.interconnection_level) + '\n' \
-                                + 'variable interconRegSlice ' + str(args.interconnect_regslice) + '\n' \
-                                + 'variable debugInterfaces ' + str(args.debug_intfs) + '\n'
+                                + 'variable debugInterfaces ' + str(args.debug_intfs) + '\n' \
+                                + 'variable interconRegSlice_all ' + regslice_all + '\n' \
+                                + 'variable interconRegSlice_ddr ' + regslice_ddr + '\n' \
+                                + 'variable interconRegSlice_hwruntime ' + regslice_hwruntime + '\n'
 
     if board.arch.type == 'soc':
         if board.arch.bits == 32:

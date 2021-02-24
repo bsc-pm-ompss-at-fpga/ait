@@ -147,7 +147,6 @@ proc create_hier_cell_Hardware_Runtime { parentCell nameHier } {
 
   # Create interface pins
   create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S_AXI_GP
-  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:bram_rtl:1.0 bitInfo
 
   # Create pins
   create_bd_pin -dir I -type clk aclk
@@ -161,9 +160,7 @@ proc create_hier_cell_Hardware_Runtime { parentCell nameHier } {
    CONFIG.M00_HAS_REGSLICE {4} \
    CONFIG.M01_HAS_REGSLICE {4} \
    CONFIG.M02_HAS_REGSLICE {4} \
-   CONFIG.M03_HAS_REGSLICE {4} \
-   CONFIG.M04_HAS_REGSLICE {4} \
-   CONFIG.NUM_MI {5} \
+   CONFIG.NUM_MI {3} \
    CONFIG.S00_HAS_REGSLICE {4} \
    CONFIG.STRATEGY {1} \
  ] $GP_Inter
@@ -208,33 +205,6 @@ proc create_hier_cell_Hardware_Runtime { parentCell nameHier } {
   set cmdOutQueue [ create_bd_cell -type ip -vlnv xilinx.com:ip:blk_mem_gen cmdOutQueue ]
   set_property -dict [ list \
    CONFIG.Assume_Synchronous_Clk {true} \
-   CONFIG.EN_SAFETY_CKT {false} \
-   CONFIG.Enable_B {Use_ENB_Pin} \
-   CONFIG.Memory_Type {True_Dual_Port_RAM} \
-   CONFIG.Port_B_Clock {100} \
-   CONFIG.Port_B_Enable_Rate {100} \
-   CONFIG.Port_B_Write_Rate {50} \
-   CONFIG.Use_RSTB_Pin {true} \
- ] $cmdOutQueue
-
-  # Create instance: cmdOutQueue_BRAM_Ctrl, and set properties
-  set cmdOutQueue_BRAM_Ctrl [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl cmdOutQueue_BRAM_Ctrl ]
-  set_property -dict [ list \
-   CONFIG.SINGLE_PORT_BRAM {1} \
- ] $cmdOutQueue_BRAM_Ctrl
-
-  # Create instance: hwruntime_rst, and set properties
-  set hwruntime_rst [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_gpio hwruntime_rst ]
-  set_property -dict [ list \
-   CONFIG.C_ALL_OUTPUTS {1} \
-   CONFIG.C_DOUT_DEFAULT {0x00000000} \
-   CONFIG.C_GPIO_WIDTH {1} \
- ] $hwruntime_rst
-
-  # Create instance: spawnInQueue, and set properties
-  set spawnInQueue [ create_bd_cell -type ip -vlnv xilinx.com:ip:blk_mem_gen spawnInQueue ]
-  set_property -dict [ list \
-   CONFIG.Assume_Synchronous_Clk {true} \
    CONFIG.Byte_Size {8} \
    CONFIG.EN_SAFETY_CKT {false} \
    CONFIG.Enable_32bit_Address {true} \
@@ -256,55 +226,37 @@ proc create_hier_cell_Hardware_Runtime { parentCell nameHier } {
    CONFIG.Write_Width_A {64} \
    CONFIG.Write_Width_B {32} \
    CONFIG.use_bram_block {Stand_Alone} \
- ] $spawnInQueue
-
-  # Create instance: spawnInQueue_BRAM_Ctrl, and set properties
-  set spawnInQueue_BRAM_Ctrl [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl spawnInQueue_BRAM_Ctrl ]
+ ] $cmdOutQueue
+  # Create instance: cmdOutQueue_BRAM_Ctrl, and set properties
+  set cmdOutQueue_BRAM_Ctrl [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl cmdOutQueue_BRAM_Ctrl ]
   set_property -dict [ list \
    CONFIG.SINGLE_PORT_BRAM {1} \
- ] $spawnInQueue_BRAM_Ctrl
+ ] $cmdOutQueue_BRAM_Ctrl
 
-  # Create instance: spawnOutQueue, and set properties
-  set spawnOutQueue [ create_bd_cell -type ip -vlnv xilinx.com:ip:blk_mem_gen spawnOutQueue ]
+  # Create instance: hwruntime_rst, and set properties
+  set hwruntime_rst [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_gpio hwruntime_rst ]
   set_property -dict [ list \
-   CONFIG.EN_SAFETY_CKT {false} \
-   CONFIG.Enable_B {Use_ENB_Pin} \
-   CONFIG.Memory_Type {True_Dual_Port_RAM} \
-   CONFIG.Port_B_Clock {100} \
-   CONFIG.Port_B_Enable_Rate {100} \
-   CONFIG.Port_B_Write_Rate {50} \
-   CONFIG.Use_RSTB_Pin {true} \
- ] $spawnOutQueue
-
-  # Create instance: spawnOutQueue_BRAM_Ctrl, and set properties
-  set spawnOutQueue_BRAM_Ctrl [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl spawnOutQueue_BRAM_Ctrl ]
-  set_property -dict [ list \
-   CONFIG.SINGLE_PORT_BRAM {1} \
- ] $spawnOutQueue_BRAM_Ctrl
+   CONFIG.C_ALL_OUTPUTS {1} \
+   CONFIG.C_DOUT_DEFAULT {0x00000000} \
+   CONFIG.C_GPIO_WIDTH {1} \
+ ] $hwruntime_rst
 
   # Create interface connections
   connect_bd_intf_net -intf_net GP_Inter_M00_AXI [get_bd_intf_pins GP_Inter/M00_AXI] [get_bd_intf_pins cmdInQueue_BRAM_Ctrl/S_AXI]
   connect_bd_intf_net -intf_net GP_Inter_M01_AXI [get_bd_intf_pins GP_Inter/M01_AXI] [get_bd_intf_pins cmdOutQueue_BRAM_Ctrl/S_AXI]
   connect_bd_intf_net -intf_net GP_Inter_M02_AXI [get_bd_intf_pins GP_Inter/M02_AXI] [get_bd_intf_pins hwruntime_rst/S_AXI]
-  connect_bd_intf_net -intf_net GP_Inter_M03_AXI [get_bd_intf_pins GP_Inter/M03_AXI] [get_bd_intf_pins spawnOutQueue_BRAM_Ctrl/S_AXI]
-  connect_bd_intf_net -intf_net GP_Inter_M04_AXI [get_bd_intf_pins GP_Inter/M04_AXI] [get_bd_intf_pins spawnInQueue_BRAM_Ctrl/S_AXI]
-  connect_bd_intf_net -intf_net Picos_OmpSs_Manager_bitInfo [get_bd_intf_pins bitInfo] [get_bd_intf_pins Picos_OmpSs_Manager/bitInfo]
-  connect_bd_intf_net -intf_net Picos_OmpSs_Manager_cmdInQueue [get_bd_intf_pins Picos_OmpSs_Manager/cmdInQueue] [get_bd_intf_pins cmdInQueue/BRAM_PORTA]
-  connect_bd_intf_net -intf_net Picos_OmpSs_Manager_cmdOutQueue [get_bd_intf_pins Picos_OmpSs_Manager/cmdOutQueue] [get_bd_intf_pins cmdOutQueue/BRAM_PORTA]
-  connect_bd_intf_net -intf_net Picos_OmpSs_Manager_spawnInQueue [get_bd_intf_pins Picos_OmpSs_Manager/spawnInQueue] [get_bd_intf_pins spawnInQueue/BRAM_PORTA]
-  connect_bd_intf_net -intf_net Picos_OmpSs_Manager_spawnOutQueue [get_bd_intf_pins Picos_OmpSs_Manager/spawnOutQueue] [get_bd_intf_pins spawnOutQueue/BRAM_PORTA]
+  connect_bd_intf_net -intf_net Picos_OmpSs_Manager_cmdInQueue [get_bd_intf_pins Picos_OmpSs_Manager/cmdin_queue] [get_bd_intf_pins cmdInQueue/BRAM_PORTA]
+  connect_bd_intf_net -intf_net Picos_OmpSs_Manager_cmdOutQueue [get_bd_intf_pins Picos_OmpSs_Manager/cmdout_queue] [get_bd_intf_pins cmdOutQueue/BRAM_PORTA]
   connect_bd_intf_net -intf_net S_AXI_GP_1 [get_bd_intf_pins S_AXI_GP] [get_bd_intf_pins GP_Inter/S00_AXI]
   connect_bd_intf_net -intf_net cmdInQueue_BRAM_Ctrl_BRAM_PORTA [get_bd_intf_pins cmdInQueue/BRAM_PORTB] [get_bd_intf_pins cmdInQueue_BRAM_Ctrl/BRAM_PORTA]
   connect_bd_intf_net -intf_net cmdOutQueue_BRAM_Ctrl_BRAM_PORTA [get_bd_intf_pins cmdOutQueue/BRAM_PORTB] [get_bd_intf_pins cmdOutQueue_BRAM_Ctrl/BRAM_PORTA]
-  connect_bd_intf_net -intf_net spawnInQueue_BRAM_Ctrl_BRAM_PORTA [get_bd_intf_pins spawnInQueue/BRAM_PORTB] [get_bd_intf_pins spawnInQueue_BRAM_Ctrl/BRAM_PORTA]
-  connect_bd_intf_net -intf_net spawnOutQueue_BRAM_Ctrl_BRAM_PORTA [get_bd_intf_pins spawnOutQueue/BRAM_PORTB] [get_bd_intf_pins spawnOutQueue_BRAM_Ctrl/BRAM_PORTA]
 
   # Create port connections
   connect_bd_net -net Picos_OmpSs_Manager_managed_aresetn [get_bd_pins managed_aresetn] [get_bd_pins Picos_OmpSs_Manager/managed_aresetn]
-  connect_bd_net -net aclk_1 [get_bd_pins aclk] [get_bd_pins GP_Inter/ACLK] [get_bd_pins GP_Inter/M00_ACLK] [get_bd_pins GP_Inter/M01_ACLK] [get_bd_pins GP_Inter/M02_ACLK] [get_bd_pins GP_Inter/M03_ACLK] [get_bd_pins GP_Inter/M04_ACLK] [get_bd_pins GP_Inter/S00_ACLK] [get_bd_pins Picos_OmpSs_Manager/aclk] [get_bd_pins cmdInQueue_BRAM_Ctrl/s_axi_aclk] [get_bd_pins cmdOutQueue_BRAM_Ctrl/s_axi_aclk] [get_bd_pins hwruntime_rst/s_axi_aclk] [get_bd_pins spawnInQueue_BRAM_Ctrl/s_axi_aclk] [get_bd_pins spawnOutQueue_BRAM_Ctrl/s_axi_aclk]
+  connect_bd_net -net aclk_1 [get_bd_pins aclk] [get_bd_pins GP_Inter/ACLK] [get_bd_pins GP_Inter/M00_ACLK] [get_bd_pins GP_Inter/M01_ACLK] [get_bd_pins GP_Inter/M02_ACLK] [get_bd_pins GP_Inter/M03_ACLK] [get_bd_pins GP_Inter/M04_ACLK] [get_bd_pins GP_Inter/S00_ACLK] [get_bd_pins Picos_OmpSs_Manager/aclk] [get_bd_pins cmdInQueue_BRAM_Ctrl/s_axi_aclk] [get_bd_pins cmdOutQueue_BRAM_Ctrl/s_axi_aclk] [get_bd_pins hwruntime_rst/s_axi_aclk]
   connect_bd_net -net hwruntime_rst_gpio_io_o [get_bd_pins Picos_OmpSs_Manager/ps_rst] [get_bd_pins hwruntime_rst/gpio_io_o]
   connect_bd_net -net interconnect_aresetn_1 [get_bd_pins interconnect_aresetn] [get_bd_pins GP_Inter/ARESETN] [get_bd_pins Picos_OmpSs_Manager/interconnect_aresetn]
-  connect_bd_net -net peripheral_aresetn_1 [get_bd_pins peripheral_aresetn] [get_bd_pins GP_Inter/M00_ARESETN] [get_bd_pins GP_Inter/M01_ARESETN] [get_bd_pins GP_Inter/M02_ARESETN] [get_bd_pins GP_Inter/M03_ARESETN] [get_bd_pins GP_Inter/M04_ARESETN] [get_bd_pins GP_Inter/S00_ARESETN] [get_bd_pins Picos_OmpSs_Manager/peripheral_aresetn] [get_bd_pins cmdInQueue_BRAM_Ctrl/s_axi_aresetn] [get_bd_pins cmdOutQueue_BRAM_Ctrl/s_axi_aresetn] [get_bd_pins hwruntime_rst/s_axi_aresetn] [get_bd_pins spawnInQueue_BRAM_Ctrl/s_axi_aresetn] [get_bd_pins spawnOutQueue_BRAM_Ctrl/s_axi_aresetn]
+  connect_bd_net -net peripheral_aresetn_1 [get_bd_pins peripheral_aresetn] [get_bd_pins GP_Inter/M00_ARESETN] [get_bd_pins GP_Inter/M01_ARESETN] [get_bd_pins GP_Inter/M02_ARESETN] [get_bd_pins GP_Inter/M03_ARESETN] [get_bd_pins GP_Inter/M04_ARESETN] [get_bd_pins GP_Inter/S00_ARESETN] [get_bd_pins Picos_OmpSs_Manager/peripheral_aresetn] [get_bd_pins cmdInQueue_BRAM_Ctrl/s_axi_aresetn] [get_bd_pins cmdOutQueue_BRAM_Ctrl/s_axi_aresetn] [get_bd_pins hwruntime_rst/s_axi_aresetn]
 
   # Restore current instance
   current_bd_instance $oldCurInst

@@ -124,6 +124,9 @@ def get_accelerators():
     if num_accels == 0:
         msg.error('No accelerators found in this folder')
 
+    if num_instances > 16:
+        msg.error('Found {} instances of accelerators. Max value is 16'.format(num_instances))
+
     if args.extended_hwruntime and args.hwruntime is None:
         msg.error('Some accelerator use Extended Hardware Runtime features but there is no Hardware Runtime enabled. Enable one using the --hwruntime option', True)
 

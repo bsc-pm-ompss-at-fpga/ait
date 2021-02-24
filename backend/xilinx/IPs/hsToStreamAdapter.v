@@ -21,12 +21,13 @@
 `timescale 1ns / 1ps
 
 module hsToStreamAdapter #(
-    parameter USE_BUFFER = 0
+    parameter USE_BUFFER = 0,
+    parameter ACCID_WIDTH = 4
 )
 (
-    input       clk,
+    input       aclk,
     input       aresetn,
-    input [4:0] accID,
+    input [ACCID_WIDTH-1:0] accID,
 
     input [71:0] in_hs,
     input        in_hs_ap_vld,
@@ -34,7 +35,7 @@ module hsToStreamAdapter #(
 
     output [63:0] outStream_tdata,
     output [4:0]  outStream_tdest,
-    output [4:0]  outStream_tid,
+    output [ACCID_WIDTH-1:0]  outStream_tid,
     output        outStream_tlast,
     output        outStream_tvalid,
     input         outStream_tready
@@ -59,7 +60,7 @@ module hsToStreamAdapter #(
 
     assign in_hs_ap_ack = ack;
 
-    always @(posedge clk) begin
+    always @(posedge aclk) begin
 
         ack <= 0;
 

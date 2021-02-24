@@ -49,9 +49,7 @@ class ArgParser():
 
         # Parse values from argv
         args, extras = self.parser.parse_known_args(args, namespace)
-
-        if args.debug_intfs == 'custom' and args.debug_intfs_list is None:
-            msg.error('A file specifying which interfaces to mark for debug is required when choosing \'custom\' value on --debug_intfs argument')
+        self.check_args(args)
 
         return args, extras
 
@@ -74,9 +72,16 @@ class ArgParser():
         self.parser.add_argument('--debug_intfs_list', help='path of file with the list of interfaces to debug', action=StorePath)
         self.parser.add_argument('--ignore_eng_sample', help='ignore engineering sample status from chip part number', action='store_true', default=False)
         self.parser.add_argument('--interconnect_opt', help='AXI interconnect optimization strategy: Minimize \'area\' or maximize \'performance\'\n(def: \'area\')', choices=['area', 'performance'], metavar='OPT_STRATEGY', action=StoreChoiceValue, default=0)
-        self.parser.add_argument('--interconnect_regslice', help='enable register slices on AXI interconnects\nall: enables them on all interconnects\nDDR: enables them on interconnects in DDR datapath\nnone: do not enable any register slice\n(def: \'none\')', choices=['none', 'DDR', 'all'], metavar='INTER_REGSLICE', default='none')
+        self.parser.add_argument('--interconnect_regslice', help='enable register slices on AXI interconnects\nall: enables them on all interconnects\nDDR: enables them on interconnects in DDR datapath\nhwruntime: enables them on the AXI-stream interconnects betwen the hwruntime and the accelerators\n', nargs='+', choices=['DDR', 'hwruntime', 'all'], metavar='INTER_REGSLICE_LIST')
         self.parser.add_argument('-j', '--jobs', help='specify the number of Vivado jobs to run simultaneously. By default it uses the value returned by `nproc`', type=int, default=int(subprocess.check_output(['nproc'])))
         self.parser.add_argument('--target_language', help='choose target language to synthesize files to: VHDL or Verilog\n(def: \'VHDL\')', choices=['VHDL', 'Verilog'], metavar='TARGET_LANG', default='VHDL')
 
+    def check_args(self, args):
+        if args.debug_intfs == 'custom' and args.debug_intfs_list is None:
+            msg.error('A file specifying which interfaces to mark for debug is required when choosing \'custom\' value on --debug_intfs argument')
+        if args.interconnect_regslice is not None:
+            for opt in args.interconnect_regslice:
+                if opt == 'all' and len(args.interconnect_regslice) != 1:
+                    msg.error("Invalid combination of values for --interconnect_regslice")
 
 parser = ArgParser()

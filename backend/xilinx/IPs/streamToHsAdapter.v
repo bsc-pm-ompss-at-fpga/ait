@@ -24,7 +24,7 @@ module streamToHsAdapter #(
     parameter USE_BUFFER = 0
 )
 (
-    input clk,
+    input aclk,
     input aresetn,
 
     input [63:0] inStream_tdata,
@@ -49,7 +49,7 @@ module streamToHsAdapter #(
     assign out_hs_ap_vld = state == WAIT_ACK;
     assign out_hs = buf_data;
 
-    always @(posedge clk) begin
+    always @(posedge aclk) begin
 
         case (state)
 
