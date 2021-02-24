@@ -61,7 +61,6 @@ def generate_Vivado_variables_tcl():
                                + 'variable target_lang ' + args.target_language + '\n' \
                                + 'variable num_accs ' + str(num_instances) + '\n' \
                                + 'variable num_jobs ' + str(args.jobs) + '\n' \
-                               + 'variable DMA_enabled ' + str(args.enable_DMA).lower() + '\n' \
                                + 'variable ait_call "' + str(re.escape(os.path.basename(sys.argv[0]) + ' ' + ' '.join(sys.argv[1:]))) + '"\n' \
                                + 'variable version_major_ait ' + str(VERSION_MAJOR) + '\n' \
                                + 'variable version_minor_ait ' + str(VERSION_MINOR) + '\n' \
@@ -235,9 +234,6 @@ def run_design_step(project_vars):
 
         for ipdef in glob.glob(ait_backend_path + '/IPs/hwruntime/' + args.hwruntime + '/*.zip'):
             shutil.copy2(ipdef, project_backend_path + '/IPs')
-
-    if args.enable_DMA:
-        shutil.copy2(ait_backend_path + '/templates/acc_DMA.tcl', project_backend_path + '/templates')
 
     if args.user_constraints and os.path.exists(args.user_constraints):
         constraints_path = project_backend_path + '/board/' + board.name + '/constraints'

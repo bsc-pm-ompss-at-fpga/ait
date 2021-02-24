@@ -18,66 +18,6 @@
 #    License along with this code. If not, see <www.gnu.org/licenses/>.  #
 #------------------------------------------------------------------------#
 
-proc configureDMAIntr {} {
-	if {[get_bd_cells -hierarchical *PCIe_inStream_Inter*] == ""} {
-
-    	# Create instance: PCIe_inStream_Inter, and set properties
-    	set PCIe_inStream_Inter [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_interconnect PCIe_inStream_Inter ]
-    	set_property -dict [ list \
-    	 CONFIG.ARB_ON_MAX_XFERS {0} \
-    	 CONFIG.ARB_ON_TLAST {0} \
-    	 CONFIG.M00_AXIS_HIGHTDEST {0x000000FF} \
-    	 CONFIG.NUM_MI {1} \
-    	 CONFIG.NUM_SI {1} \
- 		]   $PCIe_inStream_Inter
-
-    	# Create instance: PCIe_outStream_Inter, and set properties
-    	set PCIe_outStream_Inter [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_interconnect PCIe_outStream_Inter ]
-    	set_property -dict [ list \
-    	 CONFIG.NUM_MI {1} \
- 		]   $PCIe_outStream_Inter
-
-    	#create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 inStream
-    	#create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 outStream
-
-    	# Create instance: PCIe_packet_decoder, and set properties
-    	set PCIe_packet_decoder [ create_bd_cell -type ip -vlnv bsc:ompss:PCIe_packet_decoder PCIe_packet_decoder ]
-
-    	# Create instance: PCIe_packet_encoder, and set properties
-    	set PCIe_packet_encoder [ create_bd_cell -type ip -vlnv bsc:ompss:PCIe_packet_encoder PCIe_packet_encoder ]
-
-		set bridge_to_host [get_bd_cells -hierarchical *bridge_to_host*]
-
-    	set_property -dict [ list \
-    	   CONFIG.dma_engine1_config {4} \
-    	   CONFIG.dma_engine2_config {3} \
-    	   CONFIG.number_of_dma_engines {4} \
-    	 ] $bridge_to_host
-
-    	connect_bd_intf_net [get_bd_intf_pins PCIe_packet_decoder/inStream_V_V] [get_bd_intf_pins $bridge_to_host/dma1_m_axis]
-    	connect_bd_intf_net [get_bd_intf_pins PCIe_packet_encoder/outStream_V_V] [get_bd_intf_pins $bridge_to_host/dma2_s_axis]
-    	connect_bd_intf_net [get_bd_intf_pins $PCIe_inStream_Inter/M00_AXIS] [get_bd_intf_pins PCIe_packet_encoder/inStream]
-    	connect_bd_intf_net [get_bd_intf_pins $PCIe_outStream_Inter/S00_AXIS] [get_bd_intf_pins PCIe_packet_decoder/outStream]
-
-    	connect_bd_net -net aclk_1 [get_bd_pins aclk] [get_bd_pins PCIe_packet_decoder/ap_clk] [get_bd_pins PCIe_packet_encoder/ap_clk]
-    	connect_bd_net -net aresetn_1 [get_bd_pins aresetn] [get_bd_pins PCIe_packet_decoder/ap_rst_n] [get_bd_pins PCIe_packet_encoder/ap_rst_n]
-
-    	#connect_bd_intf_net [get_bd_intf_pins inStream] [get_bd_intf_pins PCIe/inStream]
-    	#connect_bd_intf_net [get_bd_intf_pins outStream] [get_bd_intf_pins PCIe/outStream]
-
-    	#connect_bd_intf_net [get_bd_intf_pins PCIe_inStream_Inter/M00_AXIS] [get_bd_intf_pins alpha_data_mem_PCIe/inStream]
-    	#connect_bd_intf_net [get_bd_intf_pins PCIe_outStream_Inter/S00_AXIS] [get_bd_intf_pins alpha_data_mem_PCIe/outStream]
-
-    	connect_bd_net -net ARESETN_2 [get_bd_pins $PCIe_inStream_Inter/ARESETN] [get_bd_pins $PCIe_outStream_Inter/ARESETN]
-    	connect_bd_net -net aclk_1 [get_bd_pins $PCIe_inStream_Inter/M00_AXIS_ACLK] [get_bd_pins $PCIe_outStream_Inter/S00_AXIS_ACLK]
-    	connect_bd_net -net aresetn_1 [get_bd_pins $PCIe_inStream_Inter/M00_AXIS_ARESETN] [get_bd_pins $PCIe_outStream_Inter/S00_AXIS_ARESETN]
-    	connect_bd_net -net clk_wiz_0_clk_out1 [get_bd_pins $PCIe_inStream_Inter/ACLK] [get_bd_pins $PCIe_inStream_Inter/S00_AXIS_ACLK] [get_bd_pins $PCIe_outStream_Inter/ACLK] [get_bd_pins $PCIe_outStream_Inter/M00_AXIS_ACLK]
-
-    	connect_bd_net -net rst_admpcie7v3_axi4_demo_200M_peripheral_aresetn [get_bd_pins $PCIe_inStream_Inter/S00_AXIS_ARESETN] [get_bd_pins $PCIe_outStream_Inter/M00_AXIS_ARESETN]
-	}
-}
-
-
 proc configureAddressMap {addr_list size_DDR} {
 	assign_bd_address [get_bd_addr_segs -regexp ".*c1.*memaddr"]
 	assign_bd_address -quiet $addr_list

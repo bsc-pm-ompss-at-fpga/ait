@@ -20,10 +20,6 @@
 
 set addr_base 0x0
 
-proc configureDMAIntr {} {
-	error "DMA is not available for the alveo_u200 board"
-}
-
 proc configureAddressMap {addr_list size_DDR} {
 	assign_bd_address [get_bd_addr_segs -regexp ".*_DDR4_ADDRESS_BLOCK"]
 	assign_bd_address -quiet $addr_list

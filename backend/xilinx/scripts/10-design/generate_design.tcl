@@ -82,24 +82,6 @@ proc getBaseFreq {} {
 	return [get_property CONFIG.FREQ_HZ [get_bd_pins clock_generator/clk_in1]]
 }
 
-# Enables IRQ and instantiates concat IP to aggregate up to 8 interrupts
-proc configureDMAIntr {} {
-	aitInfo "Using generic configureDMAIntr procedure"
-
-	upvar #0 arch_bits arch_bits
-
-	create_bd_cell -vlnv xilinx.com:ip:xlconcat Concat_IRQ
-	set_property -dict [list CONFIG.NUM_PORTS 1] [get_bd_cells Concat_IRQ]
-
-	if {$arch_bits == 64} {
-		set_property -dict [list "CONFIG.PSU__USE__IRQ0" 1] [get_bd_cells bridge_to_host]
-	} else {
-		set_property -dict [list "CONFIG.PCW_IRQ_F2P_INTR" 1] [get_bd_cells bridge_to_host]
-
-	}
-	connect_bd_net [get_bd_pins Concat_IRQ/dout] [lindex [get_bd_pins [get_bd_cells bridge_to_host]/*irq*] 0]
-}
-
 # Maps board DDR to the address map
 proc configureAddressMap {addr_list size_DDR} {
 	aitInfo "Using generic configureAddressMap procedure"
@@ -460,21 +442,6 @@ proc createAXISInterconnect {name numSlaves numMasters} {
 
 }
 
-proc connectInterrupt {intr} {
-	upvar #0 config_IRQ config_IRQ
-	set num_ports [get_property -quiet CONFIG.NUM_PORTS [get_bd_cells -quiet Concat_IRQ]]
-
-	if {$num_ports eq ""} {
-		configureDMAIntr
-		set num_ports 0
-	} elseif {$num_ports >= 8} {
-		aitError "IRQ occupation is 100%."
-	}
-
-	set_property -dict [list CONFIG.NUM_PORTS [expr $num_ports + 1]] [get_bd_cells Concat_IRQ]
-	connect_bd_net [get_bd_pins $intr] [get_bd_pins Concat_IRQ/In$num_ports]
-}
-
 proc removeUnusedInter {} {
 	set access_type_list {data coherent control master}
 	set interconnect_list [get_bd_cells -regexp (M|S)_AXI_(([join $access_type_list "|"])_?)+(_[0-9])?_Inter]
@@ -781,77 +748,8 @@ foreach acc $accels {
 			connect_bd_net [get_bd_pins ${accName}_$j/Adapter_inStream/aresetn] [get_bd_pins ${accName}_$j/managed_aresetn]
 		}
 
-		# If enabled, instantiate and connect acc DMA
-		if {$DMA_enabled} {
-			# Create and connect reset pins
-			create_bd_pin -dir I -type rst ${accName}_$j/interconnect_aresetn
-			create_bd_pin -dir I -type rst ${accName}_$j/peripheral_aresetn
-			connectRst [get_bd_pins ${accName}_$j/interconnect_aresetn] "interconnect"
-			connectRst [get_bd_pins ${accName}_$j/peripheral_aresetn] "peripheral"
-
-			# Instantiate and configure accelerator internal AXIS interconnects
-			createAXISInterconnect ${accName}_$j/inStream_Inter 2 1
-			createAXISInterconnect ${accName}_$j/outStream_Inter 1 2
-			set_property -dict [list CONFIG.M01_AXIS_BASETDEST {0x1F} CONFIG.M01_AXIS_HIGHTDEST {0x1F}] [get_bd_cells ${accName}_$j/outStream_Inter]
-			set_property -dict [list CONFIG.M00_AXIS_BASETDEST {0x00} CONFIG.M00_AXIS_HIGHTDEST {0x1D}] [get_bd_cells ${accName}_$j/outStream_Inter]
-			set_property -dict [list CONFIG.M00_AXIS_BASETDEST {0x00} CONFIG.M00_AXIS_HIGHTDEST {0x1D}] [get_bd_cells ${accName}_$j/inStream_Inter]
-
-			if {$arch_type == "soc"} {
-				# Instantiate DMA and move it inside the accelerator hierarchy
-				if {[catch {source -notrace $path_Project/templates/acc_DMA.tcl}]} {
-					aitError "ERROR: Failed sourcing acc DMA template"
-				}
-				move_bd_cells [get_bd_cells ${accName}_$j] [get_bd_cells acc_DMA]
-
-				# Connect DMA clock and resets
-				connect_bd_net [get_bd_pins ${accName}_$j/acc_DMA/DMA_aclk] [get_bd_pins ${accName}_$j/aclk]
-				connect_bd_net [get_bd_pins ${accName}_$j/acc_DMA/DMA_peripheral_aresetn] [get_bd_pins ${accName}_$j/peripheral_aresetn]
-				connect_bd_net [get_bd_pins ${accName}_$j/acc_DMA/DMA_interconnect_aresetn] [get_bd_pins ${accName}_$j/interconnect_aresetn]
-
-				# Connect DMA control ports to PS
-				connectToMasterInterface ${accName}_$j/acc_DMA/S_AXI_GP
-				connectToCoherentInterface ${accName}_$j/acc_DMA/M_AXI_ACP
-
-				# Connect DMA interrupts
-				connectInterrupt ${accName}_$j/acc_DMA/mm2s_introut
-				connectInterrupt ${accName}_$j/acc_DMA/s2mm_introut
-
-				# Connect DMA to AXIS interconnects
-				connect_bd_intf_net -boundary_type upper [get_bd_intf_pins ${accName}_$j/acc_DMA/DMA_outStream] [get_bd_intf_pins ${accName}_$j/inStream_Inter/S01_AXIS]
-				connect_bd_intf_net -boundary_type upper [get_bd_intf_pins ${accName}_$j/acc_DMA/DMA_inStream] [get_bd_intf_pins ${accName}_$j/outStream_Inter/M01_AXIS]
-
-			} elseif {$arch_type == "fpga"} {
-				configureDMAIntr
-
-				# Add another port on PCIe AXIS interconnects
-				set_property CONFIG.NUM_SI [expr $PCIe_Inter + 1] [get_bd_cells PCIe_inStream_Inter]
-				set_property -quiet CONFIG.NUM_MI [expr $PCIe_Inter + 1] [get_bd_cells PCIe_outStream_Inter]
-
-				# Connect PCIe AXIS clocks and resets
-				connectClock [get_bd_pins PCIe_outStream_Inter/M[format %02u $PCIe_Inter]_AXIS_ACLK]
-				connectRst [get_bd_pins PCIe_outStream_Inter/M[format %02u $PCIe_Inter]_AXIS_ARESETN] "peripheral"
-				connectClock [get_bd_pins PCIe_inStream_Inter/S[format %02u $PCIe_Inter]_AXIS_ACLK]
-				connectRst [get_bd_pins PCIe_inStream_Inter/S[format %02u $PCIe_Inter]_AXIS_ARESETN] "peripheral"
-
-				# Connect accelerator to PCIe
-				connect_bd_intf_net -boundary_type upper [get_bd_intf_pins PCIe_outStream_Inter/M[format %02u $PCIe_Inter]_AXIS] [get_bd_intf_pins ${accName}_$j/inStream_Inter/S01_AXIS]
-				connect_bd_intf_net -boundary_type upper [get_bd_intf_pins PCIe_inStream_Inter/S[format %02u $PCIe_Inter]_AXIS] [get_bd_intf_pins ${accName}_$j/outStream_Inter/M01_AXIS]
-
-				set_property name inStream_PCIe [get_bd_intf_pins ${accName}_$j/S01_AXIS]
-				set_property name outStream_PCIe [get_bd_intf_pins ${accName}_$j/M01_AXIS]
-
-				incr PCIe_Inter
-			}
-
-			connect_bd_intf_net -boundary_type upper [get_bd_intf_pins ${accName}_$j/Adapter_inStream/inStream] [get_bd_intf_pins ${accName}_$j/inStream_Inter/M00_AXIS]
-			connect_bd_intf_net -boundary_type upper [get_bd_intf_pins ${accName}_$j/Adapter_outStream/outStream] [get_bd_intf_pins ${accName}_$j/outStream_Inter/S00_AXIS]
-
-			connect_bd_intf_net [get_bd_intf_pins ${accName}_$j/inStream] [get_bd_intf_pins ${accName}_$j/inStream_Inter/S00_AXIS]
-			connect_bd_intf_net [get_bd_intf_pins ${accName}_$j/outStream] [get_bd_intf_pins ${accName}_$j/outStream_Inter/M00_AXIS]
-		} else {
-			connect_bd_intf_net [get_bd_intf_pins ${accName}_$j/inStream] [get_bd_intf_pins ${accName}_$j/Adapter_inStream/inStream]
-			connect_bd_intf_net [get_bd_intf_pins ${accName}_$j/outStream] [get_bd_intf_pins ${accName}_$j/Adapter_outStream/outStream]
-		}
+		connect_bd_intf_net [get_bd_intf_pins ${accName}_$j/inStream] [get_bd_intf_pins ${accName}_$j/Adapter_inStream/inStream]
+		connect_bd_intf_net [get_bd_intf_pins ${accName}_$j/outStream] [get_bd_intf_pins ${accName}_$j/Adapter_outStream/outStream]
 
 		# Get list of M_AXI ports
 		# NOTE: Only handle the ports generated by mcxx, which start with the "mcxx_" prefix
@@ -966,7 +864,7 @@ foreach acc $accels {
 			}
 		}
 
-		# Basic interconnection. Connect accelerator to communication interface (Hardware Runtime/DMA)
+		# Basic interconnection. Connect accelerator to hwruntime
 		if {[expr {$hwruntime == "som"} || {$hwruntime == "pom"}]} {
 			if {$accNumInterfaces > 1} {
 				set TM_interfaceNum [expr [get_property CONFIG.NUM_MI [get_bd_cells ${accName}_${j}_outStream]] - 1]
@@ -1154,39 +1052,9 @@ if {[get_bd_cells -quiet HW_Counter] != ""} {
 	set bitmap_bitInfo [format 0x%08x [expr $bitmap_bitInfo | 0x1<<0]]
 }
 
-set DMAnum 0
-if $DMA_enabled {
-	if {$arch_type == "soc"} {
-		# Map acc DMAs to address space
-		foreach acc $accels {
-			lassign [split $acc ":"] accHash accNumInstances accName
-			for {set j 0} {$j < $accNumInstances} {incr j} {
-				# Add acc DMA to pl_ompss_at_fpga.dtsi file
-				lappend dmas "&${accName}_${j}_acc_DMA_DMA 0 &${accName}_${j}_acc_DMA_DMA 1"
-				lappend dma_names "\"acc${DMAnum}_to_dev\", \"acc${DMAnum}_from_dev\""
-
-				assign_bd_address [get_bd_addr_segs ${accName}_$j/acc_DMA/DMA/S_AXI_LITE/Reg]
-
-				incr DMAnum
-			}
-		}
-
-		set bitmap_bitInfo [format 0x%08x [expr $bitmap_bitInfo | 0x1<<1]]
-	}
-}
-
 assign_bd_address [get_bd_addr_segs *bitInfo_BRAM_Ctrl*] -range 4K -offset $addr_bitInfo
 
 configureAddressMap $addr_list $size_DDR
-
-# Write DMA info to pl_ompss_at_fpga.dtsi file
-if {[info exists dmas]} {
-	set dmas [join $dmas "\n\t\t\t\t"]
-	set dma_names [join $dma_names ",\n\t\t\t\t\t"]
-
-	append ompss_at_fpga_node "\t\tdmas = <$dmas>;\n"
-	append ompss_at_fpga_node "\t\tdma-names =\t$dma_names;\n"
-}
 
 append ompss_at_fpga_node "\t};\n};"
 puts $ompss_at_fpga_DeviceTree_file $ompss_at_fpga_node

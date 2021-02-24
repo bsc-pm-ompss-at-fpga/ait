@@ -32,7 +32,6 @@ from config import msg, ait_path, supported_boards, generation_steps, \
     VERSION_MINOR, VERSION_COMMIT
 
 
-
 class StorePath(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
         setattr(namespace, self.dest, os.path.realpath(values))
@@ -105,10 +104,9 @@ class ArgParser:
         # Bitstream configuration arguments
         bitstream_args = self.parser.add_argument_group('Bitstream configuration')
         bitstream_args.add_argument('-c', '--clock', help='FPGA clock frequency in MHz\n(def: \'100\')', type=int, default='100')
-        bitstream_args.add_argument('--enable_DMA', help='enable DMAs for synchronous communication. Increases FPGA utilization', action='store_true', default=False)
-        bitstream_args.add_argument('--hwruntime', help='add a hardware runtime. Available hardware runtimes by vendor:\n' + '\n'.join([key + ': ' + ', '.join([value for value in values]) for key, values in available_hwruntimes.items()]) + '\n(def: None)', choices=[value for key, values in available_hwruntimes.items() for value in values], metavar='HWRUNTIME', default=None)
+        bitstream_args.add_argument('--hwruntime', help='add a hardware runtime. Available hardware runtimes by vendor:\n' + '\n'.join([key + ': ' + ', '.join([value for value in values]) for key, values in available_hwruntimes.items()]) + '\n(def: som)', choices=[value for key, values in available_hwruntimes.items() for value in values], metavar='HWRUNTIME', default='som')
         bitstream_args.add_argument('--hwcounter', help='add a hardware counter to the bitstream', action='store_true', default=False)
-        bitstream_args.add_argument('--interconnection_level', help='specify the desired level of interconnection between accelerators. Affects resource utilization\nbasic: accelerators are only connected to themselves and: HW runtime, DMA\ntype: adds interconnection between accelerators of the same type\nfull: all accelerators are interconnected\n(def: \'basic\')', choices=['basic', 'type', 'full'], metavar='LEVEL', action=StoreChoiceValue, default=0)
+        bitstream_args.add_argument('--interconnection_level', help='specify the desired level of interconnection between accelerators. Affects resource utilization\nbasic: accelerators are only connected to themselves and hwruntime\ntype: adds interconnection between accelerators of the same type\nfull: all accelerators are interconnected\n(def: \'basic\')', choices=['basic', 'type', 'full'], metavar='LEVEL', action=StoreChoiceValue, default=0)
         bitstream_args.add_argument('--wrapper_version', help='version of accelerator wrapper shell. This information will be placed in the bitstream information', type=int)
         bitstream_args.add_argument('--datainterfaces_map', help='path of mappings file for the data interfaces', action=StorePath)
 
@@ -198,20 +196,6 @@ class ArgParser:
                 os.mkdir(args.IP_cache_location)
             else:
                 msg.error('Cache location (' + args.IP_cache_location + ') does not exist or is not a folder', True)
-
-    def check_bitstream_args(self, args):
-        # Validate bitstream args
-        if args.hwruntime is None and not args.enable_DMA:
-            msg.error('You have to select at least one type of communication with the FPGA: --hwruntime or --enable_DMA', True)
-
-        if args.enable_DMA:
-            msg.info('**********************************************************************************************************\n'
-                     '**********************************************************************************************************\n'
-                     '           The stream backend has been deprecated and will be removed in the following releases\n'
-                     '                        You will need to switch to hwruntime backend\n'
-                     '                       For support contact: ompss-fpga-support@bsc.es\n'
-                     '**********************************************************************************************************\n'
-                     '**********************************************************************************************************\n')
 
     def is_default(self, dest, backend):
         value = False
