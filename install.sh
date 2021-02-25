@@ -97,9 +97,6 @@ else
       mv $s/__pycache__/*.pyc $s/
     done
 
-    # Create IP cache directory
-    mkdir -p $PREFIX/backend/$backend/IP_cache
-
     # Copy basic templates, scripts, idpefs and HLS sources
     mkdir -p $PREFIX/backend/$backend/templates
     mkdir -p $PREFIX/backend/$backend/scripts

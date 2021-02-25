@@ -65,7 +65,7 @@ class ArgParser:
 
         # IP cache location defaults
         defaults[key]['IP_cache_location'] = {
-            'value': ait_path + '/backend/' + key + '/IP_cache',
+            'value': '/var/tmp/ait/' + key + '/IP_cache',
             'used': False
         }
 
@@ -98,7 +98,7 @@ class ArgParser:
         flow_args.add_argument('--disable_utilization_check', help='disable resources utilization check during HLS generation', action='store_true', default=False)
         flow_args.add_argument('--disable_board_support_check', help='disable board support check', action='store_true', default=False)
         flow_args.add_argument('--from_step', help='initial generation step. Generation steps by vendor:\n' + '\n'.join([key + ': ' + ', '.join([value for value in values]) for key, values in generation_steps.items()]) + '\n(def: \'HLS\')', choices=[value for key, values in generation_steps.items() for value in values], metavar='FROM_STEP', default='HLS')
-        flow_args.add_argument('--IP_cache_location', help='path where the IP cache will be located\n(def: \'<ait>/backend/<vendor>/IP_cache/\')', action=StorePath)
+        flow_args.add_argument('--IP_cache_location', help='path where the IP cache will be located\n(def: \'/var/tmp/ait/<vendor>/IP_cache/\')', action=StorePath)
         flow_args.add_argument('--to_step', help='final generation step. Generation steps by vendor:\n' + '\n'.join([key + ': ' + ', '.join([value for value in values]) for key, values in generation_steps.items()]) + '\n(def: \'bitstream\')', choices=[value for key, values in generation_steps.items() for value in values], metavar='TO_STEP', default='bitstream')
 
         # Bitstream configuration arguments
@@ -192,7 +192,9 @@ class ArgParser:
 
         if not args.disable_IP_caching and not os.path.isdir(args.IP_cache_location):
             if parser.is_default('IP_cache_location', args.backend):
-                os.mkdir(args.IP_cache_location)
+                # Create cache folder and set perms to allow all users writing there
+                os.makedirs(args.IP_cache_location)
+                os.chmod(args.IP_cache_location, 0o777)
             else:
                 msg.error('Cache location (' + args.IP_cache_location + ') does not exist or is not a folder', True)
 
