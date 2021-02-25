@@ -60,16 +60,16 @@ class CustomParser(argparse.ArgumentParser):
 
 class ArgParser:
     defaults = dict()
-    for key in supported_boards:
-        defaults[key] = dict()
+    for backend in supported_boards:
+        defaults[backend] = dict()
 
         # IP cache location defaults
-        defaults[key]['IP_cache_location'] = {
-            'value': '/var/tmp/ait/' + key + '/IP_cache',
+        defaults[backend]['IP_cache_location'] = {
+            'value': '/var/tmp/ait/' + backend + '/IP_cache',
             'used': False
         }
 
-        defaults[key]['hwinst'] = {
+        defaults[backend]['hwinst'] = {
             'value': False,
             'used': False
         }
