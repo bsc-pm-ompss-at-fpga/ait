@@ -165,7 +165,6 @@ class ArgParser:
         # Validate arguments
         self.check_required_args(args)
         self.check_flow_args(args)
-        self.check_bitstream_args(args)
 
     def check_required_args(self, args):
         # Validate required args
