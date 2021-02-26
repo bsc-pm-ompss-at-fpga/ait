@@ -191,7 +191,7 @@ class ArgParser:
             msg.error('Initial step \'' + args.from_step + '\' is posterior to the final step \'' + args.to_step + '\'. Set them correctly', True)
 
         if not args.disable_IP_caching and not os.path.isdir(args.IP_cache_location):
-            if parser.is_default('IP_cache_location', args.backend):
+            if self.is_default('IP_cache_location', args.backend):
                 # Create cache folder and set perms to allow all users writing there
                 os.makedirs(args.IP_cache_location)
                 os.chmod(args.IP_cache_location, 0o777)
