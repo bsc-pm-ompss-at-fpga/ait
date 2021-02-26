@@ -29,7 +29,7 @@ import subprocess
 import distutils.spawn
 
 from config import msg, ait_path, MIN_OD_VERSION, BITINFO_VERSION, VERSION_MAJOR, \
-    VERSION_MINOR
+    VERSION_MINOR, MIN_VIVADO_VERSION
 
 script_folder = os.path.basename(os.path.dirname(os.path.realpath(__file__)))
 
@@ -45,6 +45,10 @@ def check_requirements():
             msg.error('Installed od version not supported (>= ' + str(MIN_OD_VERSION[0]) + '.' + str(MIN_OD_VERSION[1]) + ')')
     else:
         msg.error('vivado not found. Please set PATH correctly')
+
+    vivado_version = str(subprocess.check_output(['vivado -version | head -n1 | sed "s/\(Vivado.\+v\)\(\([0-9]\|\.\)\+\).\+/\\2/"'], shell=True), 'utf-8').strip()
+    if vivado_version < MIN_VIVADO_VERSION:
+        msg.error('Installed Vivado version ({}) not supported (>= {})'.format(vivado_version, MIN_VIVADO_VERSION))
 
 
 def generate_Vivado_variables_tcl():

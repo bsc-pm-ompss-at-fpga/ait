@@ -26,7 +26,7 @@ import shutil
 import subprocess
 import distutils.spawn
 
-from config import msg, ait_path
+from config import msg, ait_path, MIN_VIVADO_VERSION
 
 script_folder = os.path.basename(os.path.dirname(os.path.realpath(__file__)))
 
@@ -34,6 +34,10 @@ script_folder = os.path.basename(os.path.dirname(os.path.realpath(__file__)))
 def check_requirements():
     if not distutils.spawn.find_executable('vivado'):
         msg.error('vivado not found. Please set PATH correctly')
+
+    vivado_version = str(subprocess.check_output(['vivado -version | head -n1 | sed "s/\(Vivado.\+v\)\(\([0-9]\|\.\)\+\).\+/\\2/"'], shell=True), 'utf-8').strip()
+    if vivado_version < MIN_VIVADO_VERSION:
+        msg.error('Installed Vivado version ({}) not supported (>= {})'.format(vivado_version, MIN_VIVADO_VERSION))
 
 
 def run_implementation_step(project_vars):

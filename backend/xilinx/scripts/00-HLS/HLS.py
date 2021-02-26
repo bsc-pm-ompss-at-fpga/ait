@@ -28,7 +28,7 @@ import subprocess
 import distutils.spawn
 import xml.etree.cElementTree as cET
 
-from config import Accelerator, msg, ait_path, hwruntime_resources
+from config import Accelerator, msg, ait_path, hwruntime_resources, MIN_VIVADO_HLS_VERSION
 
 script_folder = os.path.basename(os.path.dirname(os.path.realpath(__file__)))
 
@@ -36,6 +36,10 @@ script_folder = os.path.basename(os.path.dirname(os.path.realpath(__file__)))
 def check_requirements():
     if not distutils.spawn.find_executable('vivado_hls'):
         msg.error('vivado_hls not found. Please set PATH correctly')
+
+    vivado_hls_version = str(subprocess.check_output(['vivado_hls -version | head -n1 | sed "s/\(Vivado.\+v\)\(\([0-9]\|\.\)\+\).\+/\\2/"'], shell=True), 'utf-8').strip()
+    if vivado_hls_version < MIN_VIVADO_HLS_VERSION:
+        msg.error('Installed Vivado HLS version ({}) not supported (>= {})'.format(vivado_hls_version, MIN_VIVADO_HLS_VERSION))
 
 
 def update_resource_utilization(acc):
