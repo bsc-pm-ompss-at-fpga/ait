@@ -28,6 +28,7 @@ from unittest.mock import ANY, patch, MagicMock
 sys.path.append('scripts')
 from scripts.parser import ArgParser
 
+
 class Test_IP_caching(unittest.TestCase):
     def test_disabled_exists(self):
         # Create the args object which could contain any attribute
@@ -41,7 +42,7 @@ class Test_IP_caching(unittest.TestCase):
         parser = ArgParser()
         parser.check_flow_args(args)
 
-        self.assertTrue(True) # Just check no errors are thrown
+        self.assertTrue(True)  # Just check no errors are thrown
 
     def test_disabled_not_exists(self):
         # Create the args object which could contain any attribute
@@ -55,7 +56,7 @@ class Test_IP_caching(unittest.TestCase):
         parser = ArgParser()
         parser.check_flow_args(args)
 
-        self.assertTrue(True) # Just check no errors are thrown
+        self.assertTrue(True)  # Just check no errors are thrown
 
     def test_enabled_exists(self):
         # Create the args object which could contain any attribute
@@ -69,7 +70,7 @@ class Test_IP_caching(unittest.TestCase):
         parser = ArgParser()
         parser.check_flow_args(args)
 
-        self.assertTrue(True) # Just check no errors are thrown
+        self.assertTrue(True)  # Just check no errors are thrown
 
     @patch('config.msg.error')
     def test_enabled_not_exists(self, msg_error):
@@ -131,6 +132,7 @@ class Test_IP_caching(unittest.TestCase):
         # Check POST conditions
         self.assertTrue(os.path.exists(args.IP_cache_location))
         os.rmdir(args.IP_cache_location)
+
 
 if __name__ == '__main__':
     unittest.main()
