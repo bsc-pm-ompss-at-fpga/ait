@@ -700,13 +700,14 @@ if {$hwruntime == "som"} {
 	set hwruntime_max_accs [expr max($num_accs, 2)]
 	set_property -dict [list CONFIG.Write_Depth_A [expr $cmdInSubqueue_len*$hwruntime_max_accs] CONFIG.Write_Width_B {32} CONFIG.Read_Width_B {32}] [get_bd_cells Hardware_Runtime/cmdInQueue]
 	set_property -dict [list CONFIG.Write_Depth_A [expr $cmdOutSubqueue_len*$hwruntime_max_accs] CONFIG.Write_Width_B {32} CONFIG.Read_Width_B {32}] [get_bd_cells Hardware_Runtime/cmdOutQueue]
-	set_property -dict [list CONFIG.MAX_ACCS $hwruntime_max_accs] [get_bd_cells Hardware_Runtime/$name_hwruntime]
+	set_property -dict [list CONFIG.MAX_ACCS $hwruntime_max_accs CONFIG.MAX_ACC_CREATORS $hwruntime_max_accs CONFIG.PICOS_ARGS $picos_args_hash] [get_bd_cells Hardware_Runtime/$name_hwruntime]
 
 	if {$extended_hwruntime} {
 		set hwruntime_max_acc_creators [expr max($num_acc_creators, 2)]
 		set_property -dict [list CONFIG.MAX_ACC_CREATORS $hwruntime_max_acc_creators] [get_bd_cells Hardware_Runtime/$name_hwruntime]
 		set_property -dict [list CONFIG.Write_Depth_A $spawnInQueue_len CONFIG.Write_Width_B {32} CONFIG.Read_Width_B {32}] [get_bd_cells Hardware_Runtime/spawnInQueue]
 		set_property -dict [list CONFIG.Write_Depth_A $spawnOutQueue_len CONFIG.Write_Width_B {32} CONFIG.Read_Width_B {32}] [get_bd_cells Hardware_Runtime/spawnOutQueue]
+
 		# Add the second port to bitInfo and connect it to POM
 		set_property -dict [list CONFIG.Memory_Type {Dual_Port_ROM} CONFIG.Register_PortA_Output_of_Memory_Primitives {false} CONFIG.Register_PortB_Output_of_Memory_Primitives {false}] [get_bd_cells bitInfo]
 		connect_bd_intf_net -boundary_type upper [get_bd_intf_pins Hardware_Runtime/bitInfo] [get_bd_intf_pins bitInfo/BRAM_PORTB]
