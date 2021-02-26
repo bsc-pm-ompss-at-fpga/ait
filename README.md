@@ -51,3 +51,8 @@ Finally, if you plan to make any commit, you must enable Git LFS inside the repo
 cd ait
 git lfs install
 ```
+
+# Tests
+
+The `test` folder contains some unitary tests for python sources.
+To run all tests the command `python3 -m unittest` can be executed in the root directory of the repository.
