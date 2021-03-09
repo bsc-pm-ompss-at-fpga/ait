@@ -127,7 +127,11 @@ def generate_Vivado_variables_tcl():
                                 + '# HW runtime variables\n' \
                                 + 'variable hwruntime ' + str(args.hwruntime) + '\n' \
                                 + 'variable extended_hwruntime ' + str(args.extended_hwruntime) + '\n' \
-                                + 'variable lock_hwruntime ' + str(args.lock_hwruntime) + '\n'
+                                + 'variable lock_hwruntime ' + str(args.lock_hwruntime) + '\n' \
+                                + 'variable cmdInSubqueue_len ' + str(args.cmdin_subqueue_len) + '\n' \
+                                + 'variable cmdOutSubqueue_len ' + str(args.cmdout_subqueue_len) + '\n' \
+                                + 'variable spawnInQueue_len ' + str(args.spawnin_queue_len) + '\n' \
+                                + 'variable spawnOutQueue_len ' + str(args.spawnout_queue_len)
 
     vivado_project_variables += '\n' \
                                 + '# List of accelerators\n' \

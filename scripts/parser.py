@@ -26,10 +26,38 @@ import sys
 import json
 import argparse
 import importlib
+from math import log2
+from math import ceil
 
 from config import msg, ait_path, supported_boards, generation_steps, \
     available_hwruntimes, BITINFO_VERSION, MIN_WRAPPER_VERSION, VERSION_MAJOR, \
     VERSION_MINOR, VERSION_COMMIT
+
+
+# Custom argparse type representing a bounded int
+class IntRange:
+    def __init__(self, imin=None, imax=None):
+        self.imin = imin
+        self.imax = imax
+
+    def __call__(self, arg):
+        try:
+            value = int(arg)
+        except ValueError:
+            raise self.exception()
+        if (self.imin is not None and value < self.imin) or (self.imax is not None and value > self.imax):
+            raise self.exception()
+        return value
+
+    def exception(self):
+        if self.imin is not None and self.imax is not None:
+            return argparse.ArgumentTypeError('must be an integer in the range [{}, {}]'.format(self.imin, self.imax))
+        elif self.imin is not None:
+            return argparse.ArgumentTypeError('must be an integer >= {}'.format(self.imin))
+        elif self.imax is not None:
+            return argparse.ArgumentTypeError('must be an integer <= {}'.format(self.imax))
+        else:
+            return argparse.ArgumentTypeError('must be an integer')
 
 
 class StorePath(argparse.Action):
@@ -116,6 +144,15 @@ class ArgParser:
         user_args.add_argument('--user_pre_design', help='path of user TCL script to be executed before the design step (not after the board base design)', action=StorePath)
         user_args.add_argument('--user_post_design', help='path of user TCL script to be executed after the design step', action=StorePath)
 
+        # Hwruntime arguments
+        hwruntime_args = self.parser.add_argument_group('Hwruntime')
+        hwruntime_args.add_argument('--cmdin_queue_len', help='Maximum length (64-bit words) of the queue for the hwruntime command in\nThis argument is mutually exclusive with --cmdin_subqueue_len', type=IntRange(4))
+        hwruntime_args.add_argument('--cmdin_subqueue_len', help='Length (64-bit words) of each accelerator subqueue for the hwruntime command in.\nThis argument is mutually exclusive with --cmdin_queue_len\nMust be power of 2\nDef. max(64, 1024/num_accs)', type=IntRange(4))
+        hwruntime_args.add_argument('--cmdout_queue_len', help='Maximum length (64-bit words) of the queue for the hwruntime command out\nThis argument is mutually exclusive with --cmdout_subqueue_len', type=IntRange(2))
+        hwruntime_args.add_argument('--cmdout_subqueue_len', help='Length (64-bit words) of each accelerator subqueue for the hwruntime command out. This argument is mutually exclusive with --cmdout_queue_len\nMust be power of 2\nDef. max(64, 1024/num_accs)', type=IntRange(2))
+        hwruntime_args.add_argument('--spawnin_queue_len', help='Length (64-bit words) of the hwruntime spawn in queue\nMust be power of 2', type=IntRange(4), default=1024)
+        hwruntime_args.add_argument('--spawnout_queue_len', help='Length (64-bit words) of the hwruntime spawn out queue\nMust be power of 2', type=IntRange(4), default=1024)
+
         # Miscellaneous arguments
         misc_args = self.parser.add_argument_group('Miscellaneous')
         misc_args.add_argument('-h', '--help', action='help', help='show this help message and exit')
@@ -197,6 +234,50 @@ class ArgParser:
                 os.chmod(args.IP_cache_location, 0o777)
             else:
                 msg.error('Cache location (' + args.IP_cache_location + ') does not exist or is not a folder', True)
+
+    # This check has to be delayed because arguments are parsed before the number of accelerators is calculated
+    def check_hwruntime_args(self, args, num_accs):
+
+        def prev_power_of_2(num):
+            if num & (num - 1) != 0:
+                num = int(log2(num))
+                num = int(pow(2, num))
+            return num
+
+        if args.cmdin_subqueue_len is not None and args.cmdin_queue_len is not None:
+            msg.error('--cmdin_subqueue_len and --cmdin_queue_len are mutually exclusive')
+        if args.cmdout_subqueue_len is not None and args.cmdout_queue_len is not None:
+            msg.error('--cmdout_subqueue_len and --cmdout_queue_len are mutually exclusive')
+
+        if args.cmdin_queue_len is not None:
+            args.cmdin_subqueue_len = prev_power_of_2(int(args.cmdin_queue_len / num_accs))
+            msg.info('Setting --cmdin_subqueue_len to {}'.format(args.cmdin_subqueue_len))
+        elif args.cmdin_subqueue_len is None:
+            args.cmdin_subqueue_len = max(64, prev_power_of_2(int(1024 / num_accs)))
+        if args.cmdout_queue_len is not None:
+            args.cmdout_subqueue_len = prev_power_of_2(int(args.cmdout_queue_len / num_accs))
+            msg.info('Setting --cmdout_subqueue_len to {}'.format(args.cmdout_subqueue_len))
+        elif args.cmdout_subqueue_len is None:
+            args.cmdout_subqueue_len = max(64, prev_power_of_2(int(1024 / num_accs)))
+
+        if args.cmdin_subqueue_len & (args.cmdin_subqueue_len - 1) != 0:
+            msg.error('--cmdin_subqueue_len must be power of 2')
+        # The subqueue length has to be checked here in the case the user provides the cmdin queue length
+        if args.cmdin_subqueue_len < 4:
+            msg.error('--cmdin_subqueue_len min value is 4')
+        if args.cmdin_subqueue_len < 34:
+            msg.warning('WARNING: Value of --cmdin_subqueue_len={} is less than 34, which is the length of the longest command possible. This design might not work with tasks with enough arguments.'.format(args.cmdin_subqueue_len))
+        if args.cmdout_subqueue_len & (args.cmdout_subqueue_len - 1) != 0:
+            msg.error('--cmdout_subqueue_len must be power of 2')
+        # Same for the cmdout subqueue length
+        if args.cmdout_subqueue_len < 2:
+            msg.error('--cmdout_subqueue_len min value is 2')
+        if args.spawnin_queue_len & (args.spawnin_queue_len - 1) != 0:
+            msg.error('--spawnin_queue_len must be power of 2')
+        if args.spawnout_queue_len & (args.spawnout_queue_len - 1) != 0:
+            msg.error('--spawnout_queue_len must be power of 2')
+        if args.spawnout_queue_len < 79:
+            msg.warning('WARNING: Value of --spawnout_queue_len={} is less than 79, which is the length of the longest task possible. This design might not work if an accelerator creates SMP tasks with enough copies, dependencies and/or arguments.'.format(args.spawnout_queue_len))
 
     def is_default(self, dest, backend):
         value = False

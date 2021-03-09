@@ -124,9 +124,6 @@ def get_accelerators():
     if num_accels == 0:
         msg.error('No accelerators found in this folder')
 
-    if num_instances > 16:
-        msg.error('Found {} instances of accelerators. Max value is 16'.format(num_instances))
-
     if args.extended_hwruntime and args.hwruntime is None:
         msg.error('Some accelerator use Extended Hardware Runtime features but there is no Hardware Runtime enabled. Enable one using the --hwruntime option', True)
 
@@ -178,6 +175,8 @@ if __name__ == '__main__':
     sys.stdout.log.write(os.path.basename(sys.argv[0]) + ' ' + ' '.join(sys.argv[1:]) + '\n\n')
 
     get_accelerators()
+
+    parser.check_hwruntime_args(args, max(2, num_instances))
 
     project_args = {
         'path': os.path.normpath(os.path.realpath(args.dir) + '/' + args.name + '_ait'),

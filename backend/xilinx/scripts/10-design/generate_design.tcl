@@ -55,15 +55,11 @@ set dataInterfaces_file [open $path_Project/../${name_Project}.datainterfaces.tx
 
 # Connects source pin received as argument to the output of the clock generator IP
 proc connectClock {srcPin} {
-	aitInfo "Using generic connectClock procedure"
-
 	connect_bd_net -quiet [get_bd_pins $srcPin] [get_bd_pins clock_generator/clk_out1]
 }
 
 # Connects reset
 proc connectRst {rst_source rst_name} {
-	aitInfo "Using generic connectRst procedure"
-
 	connect_bd_net -quiet $rst_source [get_bd_pins processor_system_reset/${rst_name}_aresetn]
 }
 
@@ -105,6 +101,17 @@ proc generateWrapper {} {
 }
 
 ## Misc procedures
+
+# Compares a bd address segment dictinary with the segment size
+proc comp_bd_addr_seg {a b} {
+	if {[expr [dict get $a size] < [dict get $b size]]} {
+		return -1
+	} elseif {[expr [dict get $a size] == [dict get $b size]]} {
+		return 0
+	} else {
+		return 1
+	}
+}
 
 # Creates and connects a tree of interconnects that allows an arbitrary number of AXI-stream slaves to connect to up to 16 AXI-stream masters
 proc create_inStream_Inter_tree { stream_name nmasters nslaves } {
@@ -185,7 +192,7 @@ proc create_inStream_Inter_tree { stream_name nmasters nslaves } {
 
 				for {set j 0} {$j < $num_si} {incr j} {
 					set master_inter_num [ expr $i*16 + $j ]
-					set master_inter_level [ expr $inter_level-1]
+					set master_inter_level [ expr $inter_level-1 ]
 					if {$inter_level == 1} {
 						set master_inf [ format %02u $m ]
 						set master_inter ${stream_name}_lvl${master_inter_level}_$master_inter_num
@@ -194,7 +201,7 @@ proc create_inStream_Inter_tree { stream_name nmasters nslaves } {
 						set master_inter ${stream_name}_lvl${master_inter_level}_m${m}_$master_inter_num
 					}
 					set slave [ format %02u [ expr $j%16 ] ]
-					connect_bd_intf_net -intf_net ${inter_name}_S${slave} [get_bd_intf_pins $master_inter/M${master_inf}_AXIS] [get_bd_intf_pins $inter_name/S${slave}_AXIS]
+					connect_bd_intf_net [get_bd_intf_pins $master_inter/M${master_inf}_AXIS] [get_bd_intf_pins $inter_name/S${slave}_AXIS]
 				}
 			}
 		}
@@ -202,7 +209,7 @@ proc create_inStream_Inter_tree { stream_name nmasters nslaves } {
 		set ninter [ expr int(ceil($ninter/16.)) ]
 		incr inter_level
 	}
-	return $inter_level
+	return [expr $inter_level-1]
 }
 
 # Creates and connects a tree of interconnects that allows up to 16 AXI-stream masters to connect with an arbitrary number of AXI-stream slaves
@@ -299,7 +306,7 @@ proc create_outStream_Inter_tree { stream_name nslaves nmasters } {
 
 				for {set j 0} {$j < $num_mi} {incr j} {
 					set slave_inter_num [ expr $i*16+$j ]
-					set slave_inter_level [ expr $inter_level-1]
+					set slave_inter_level [ expr $inter_level-1 ]
 					set master [ format %02u $j ]
 					if {$inter_level == 1} {
 						set slave_inf [format %02u $s]
@@ -308,7 +315,7 @@ proc create_outStream_Inter_tree { stream_name nslaves nmasters } {
 						set slave_inf 00
 						set slave_inter ${stream_name}_lvl${slave_inter_level}_s${s}_$slave_inter_num
 					}
-					connect_bd_intf_net -intf_net ${inter_name}_M$master [get_bd_intf_pins $slave_inter/S${slave_inf}_AXIS] [get_bd_intf_pins $inter_name/M${master}_AXIS]
+					connect_bd_intf_net [get_bd_intf_pins $slave_inter/S${slave_inf}_AXIS] [get_bd_intf_pins $inter_name/M${master}_AXIS]
 				}
 			}
 		}
@@ -317,7 +324,7 @@ proc create_outStream_Inter_tree { stream_name nslaves nmasters } {
 		set stride [ expr $stride*16 ]
 		incr inter_level
 	}
-	return $inter_level
+	return [expr $inter_level-1]
 }
 
 # Creates and connects a nested interconnect
@@ -484,18 +491,68 @@ if {[file exists $path_Project/board/$board/procs.tcl]} {
 }
 
 # Compute addresses
-# TODO: Reorder address map to compact it
-#variable addr_bitInfo          [format 0x%08x [expr $addr_base + 0x00000]] ;# 4kB
-variable addr_hwruntime_cmdInQueue    [format 0x%08x [expr $addr_base + 0x04000]] ;# 16kB
-variable addr_hwruntime_cmdOutQueue   [format 0x%08x [expr $addr_base + 0x08000]] ;# 16kB
-variable addr_hwruntime_rst           [format 0x%08x [expr $addr_base + 0x0C000]] ;# 4kB
-variable addr_hwcounter               [format 0x%08x [expr $addr_base + 0x10000]] ;# 4kB
-variable addr_hwruntime_spawnOutQueue [format 0x%08x [expr $addr_base + 0x14000]] ;# 16kB
-variable addr_hwruntime_spawnInQueue  [format 0x%08x [expr $addr_base + 0x18000]] ;# 16kB
+# Lenght unit is 64-bit words
+set bd_addr_segments [list \
+	[dict create name cmdInQueue bd_seg_name Hardware_Runtime/cmdInQueue_BRAM_Ctrl/S_AXI/Mem0 size [expr $cmdInSubqueue_len*$num_accs*8]] \
+	[dict create name cmdOutQueue bd_seg_name Hardware_Runtime/cmdOutQueue_BRAM_Ctrl/S_AXI/Mem0 size [expr $cmdOutSubqueue_len*$num_accs*8]] \
+	[dict create name hwruntime_rst bd_seg_name Hardware_Runtime/hwruntime_rst/S_AXI/Reg size 4096] \
+]
+if {$extended_hwruntime} {
+	lappend bd_addr_segments [dict create name spawnInQueue bd_seg_name Hardware_Runtime/spawnInQueue_BRAM_Ctrl/S_AXI/Mem0 size [expr $spawnInQueue_len*8]]
+	lappend bd_addr_segments [dict create name spawnOutQueue bd_seg_name Hardware_Runtime/spawnOutQueue_BRAM_Ctrl/S_AXI/Mem0 size [expr $spawnOutQueue_len*8]]
+}
+if {$hwcounter || $hwinst} {
+	lappend bd_addr_segments [dict create name hwcounter bd_seg_name HW_Counter/s_axi/reg0 size 4096]
+}
+# Sort the segments in decreasing size to minimize fragmentation when assigning addresses
+set bd_addr_segments [lsort -decreasing -command comp_bd_addr_seg $bd_addr_segments]
+
+set addr_hwruntime_spawnInQueue 0x00000000
+set addr_hwruntime_spawnOutQueue 0x00000000
+set addr_hwcounter 0x00000000
+if {!$extended_hwruntime} {
+	set spawnInQueue_len 0
+	set spawnOutQueue_len 0
+}
+
+set bitInfo_offset 0x20000
+set addr [expr $bitInfo_offset + 4096]
+for {set i 0} {$i < [llength $bd_addr_segments]} {incr i} {
+	set cur_dict [lindex $bd_addr_segments $i]
+	set size [dict get $cur_dict size]
+	if {$size <= 4096} {
+		set size 4096
+	} elseif {[expr ($size & ($size-1)) != 0]} { # Not power of 2
+		set size_clog2 [expr int(ceil(log($size)/log(2)))]
+		set size [expr int(pow(2, $size_clog2))]
+	}
+	if {[expr ($addr % $size) != 0]} {
+		set addr [expr $addr + $size - ($addr % $size)]
+	}
+	set format_addr [format 0x%08x [expr $addr_base + $addr]]
+	lset bd_addr_segments $i [dict replace $cur_dict addr $format_addr size $size]
+
+	set name [dict get $cur_dict name]
+	if {$name == "cmdInQueue"} {
+		set addr_hwruntime_cmdInQueue $format_addr
+	} elseif {$name == "cmdOutQueue"} {
+		set addr_hwruntime_cmdOutQueue $format_addr
+	} elseif {$name == "spawnInQueue"} {
+		set addr_hwruntime_spawnInQueue $format_addr
+	} elseif {$name == "spawnOutQueue"} {
+		set addr_hwruntime_spawnOutQueue $format_addr
+	} elseif {$name == "hwruntime_rst"} {
+		set addr_hwruntime_rst $format_addr
+	} elseif {$name == "hwcounter"} {
+		set addr_hwcounter $format_addr
+	}
+	set addr [expr $addr + $size]
+}
+
 if {$arch_type == "soc"} {
 	variable addr_bitInfo "0x80020000"
 } elseif {$arch_type == "fpga"} {
-	variable addr_bitInfo [format 0x%08x [expr $addr_base + 0x20000]]
+	variable addr_bitInfo [format 0x%08x [expr $addr_base + $bitInfo_offset]]
 }
 
 # Create project and set board files
@@ -589,9 +646,13 @@ if {$hwruntime == "som"} {
 
 	# Min value of MAX_ACCS is 2
 	set hwruntime_max_accs [expr max($num_accs, 2)]
+	set_property -dict [list CONFIG.Write_Depth_A [expr $cmdInSubqueue_len*$hwruntime_max_accs] CONFIG.Write_Width_B {32} CONFIG.Read_Width_B {32}] [get_bd_cells Hardware_Runtime/cmdInQueue]
+	set_property -dict [list CONFIG.Write_Depth_A [expr $cmdOutSubqueue_len*$hwruntime_max_accs] CONFIG.Write_Width_B {32} CONFIG.Read_Width_B {32}] [get_bd_cells Hardware_Runtime/cmdOutQueue]
 	set_property -dict [list CONFIG.MAX_ACCS $hwruntime_max_accs CONFIG.MAX_ACC_CREATORS $hwruntime_max_accs] [get_bd_cells Hardware_Runtime/$name_hwruntime]
 
 	if {$extended_hwruntime} {
+		set_property -dict [list CONFIG.Write_Depth_A $spawnInQueue_len CONFIG.Write_Width_B {32} CONFIG.Read_Width_B {32}] [get_bd_cells Hardware_Runtime/spawnInQueue]
+		set_property -dict [list CONFIG.Write_Depth_A $spawnOutQueue_len CONFIG.Write_Width_B {32} CONFIG.Read_Width_B {32}] [get_bd_cells Hardware_Runtime/spawnOutQueue]
 		# Add the second port to bitInfo and connect it to SOM
 		set_property -dict [list CONFIG.Memory_Type {Dual_Port_ROM} CONFIG.Register_PortA_Output_of_Memory_Primitives {false} CONFIG.Register_PortB_Output_of_Memory_Primitives {false}] [get_bd_cells bitInfo]
 		connect_bd_intf_net -boundary_type upper [get_bd_intf_pins Hardware_Runtime/bitInfo] [get_bd_intf_pins bitInfo/BRAM_PORTB]
@@ -618,80 +679,86 @@ if {$hwruntime == "som"} {
 
 	# Min value of MAX_ACCS is 2
 	set hwruntime_max_accs [expr max($num_accs, 2)]
+	set_property -dict [list CONFIG.Write_Depth_A [expr $cmdInSubqueue_len*$hwruntime_max_accs] CONFIG.Write_Width_B {32} CONFIG.Read_Width_B {32}] [get_bd_cells Hardware_Runtime/cmdInQueue]
+	set_property -dict [list CONFIG.Write_Depth_A [expr $cmdOutSubqueue_len*$hwruntime_max_accs] CONFIG.Write_Width_B {32} CONFIG.Read_Width_B {32}] [get_bd_cells Hardware_Runtime/cmdOutQueue]
 	set_property -dict [list CONFIG.MAX_ACCS $hwruntime_max_accs CONFIG.MAX_ACC_CREATORS $hwruntime_max_accs] [get_bd_cells Hardware_Runtime/$name_hwruntime]
 
-	# Add the second port to bitInfo and connect it to SOM
-	set_property -dict [list CONFIG.Memory_Type {Dual_Port_ROM} CONFIG.Register_PortA_Output_of_Memory_Primitives {false} CONFIG.Register_PortB_Output_of_Memory_Primitives {false}] [get_bd_cells bitInfo]
-	connect_bd_intf_net -boundary_type upper [get_bd_intf_pins Hardware_Runtime/bitInfo] [get_bd_intf_pins bitInfo/BRAM_PORTB]
+	if {$extended_hwruntime} {
+		set_property -dict [list CONFIG.Write_Depth_A $spawnInQueue_len CONFIG.Write_Width_B {32} CONFIG.Read_Width_B {32}] [get_bd_cells Hardware_Runtime/spawnInQueue]
+		set_property -dict [list CONFIG.Write_Depth_A $spawnOutQueue_len CONFIG.Write_Width_B {32} CONFIG.Read_Width_B {32}] [get_bd_cells Hardware_Runtime/spawnOutQueue]
+		# Add the second port to bitInfo and connect it to POM
+		set_property -dict [list CONFIG.Memory_Type {Dual_Port_ROM} CONFIG.Register_PortA_Output_of_Memory_Primitives {false} CONFIG.Register_PortB_Output_of_Memory_Primitives {false}] [get_bd_cells bitInfo]
+		connect_bd_intf_net -boundary_type upper [get_bd_intf_pins Hardware_Runtime/bitInfo] [get_bd_intf_pins bitInfo/BRAM_PORTB]
+	}
 
 	# Use managed reset for the accelerators reset signal
 	variable name_ManagedRst Hardware_Runtime/managed_aresetn
 }
 
-if {[expr {$hwruntime == "som"} || {$hwruntime == "pom"}]} {
-	set_property -dict [list CONFIG.MAX_ACC_TYPES [expr max([llength $accels], 2)]] [get_bd_cells Hardware_Runtime/$name_hwruntime]
-	set num_hwruntime_intf 1
-	if {$lock_hwruntime} {
-		incr num_hwruntime_intf 1
-		# Enable lock support if needed
-		set_property -dict [list CONFIG.LOCK_SUPPORT {1}] [get_bd_cells Hardware_Runtime/$name_hwruntime]
-	}
+set_property -dict [list CONFIG.MAX_ACC_TYPES [expr max([llength $accels], 2)]] [get_bd_cells Hardware_Runtime/$name_hwruntime]
+set_property -dict [list CONFIG.CMDIN_SUBQUEUE_LEN $cmdInSubqueue_len CONFIG.CMDOUT_SUBQUEUE_LEN $cmdOutSubqueue_len] [get_bd_cells Hardware_Runtime/$name_hwruntime]
+set num_hwruntime_intf 1
+if {$lock_hwruntime} {
+	incr num_hwruntime_intf 1
+	# Enable lock support if needed
+	set_property -dict [list CONFIG.LOCK_SUPPORT {1}] [get_bd_cells Hardware_Runtime/$name_hwruntime]
+}
+if {$extended_hwruntime} {
+   set_property -dict [list CONFIG.SPAWNIN_QUEUE_LEN $spawnInQueue_len CONFIG.SPAWNOUT_QUEUE_LEN $spawnOutQueue_len] [get_bd_cells Hardware_Runtime/$name_hwruntime]
+	incr num_hwruntime_intf 2
+}
+# Create interconnect hierarchy to connect with accelerators
+create_inStream_Inter_tree Hardware_Runtime/inStream_Inter $num_hwruntime_intf $num_accs
+set max_level [create_outStream_Inter_tree Hardware_Runtime/outStream_Inter $num_hwruntime_intf $num_accs]
+set ninter [expr int(ceil($num_accs/16.))]
+for {set i 0} {$i < $ninter} {incr i} {
+	set_property -dict [ list \
+		CONFIG.M00_AXIS_BASETDEST {0x00000011} \
+		CONFIG.M00_AXIS_HIGHTDEST {0x00000011} \
+		CONFIG.M01_AXIS_BASETDEST {0x00000012} \
+		CONFIG.M01_AXIS_HIGHTDEST {0x00000013} \
+		CONFIG.M02_AXIS_BASETDEST {0x00000014} \
+		CONFIG.M02_AXIS_HIGHTDEST {0x00000014} \
+		CONFIG.M03_AXIS_BASETDEST {0x00000015} \
+		CONFIG.M03_AXIS_HIGHTDEST {0x00000015} \
+	] [ get_bd_cell Hardware_Runtime/inStream_Inter_lvl0_$i ]
+}
+set hwruntime_path Hardware_Runtime/$name_hwruntime
+set lock_intf_num [format %02u [expr $num_hwruntime_intf-1]]
+if {$max_level == 0} {
+	connect_bd_intf_net [get_bd_intf_pins $hwruntime_path/cmdout_in] [get_bd_intf_pins Hardware_Runtime/inStream_Inter_lvl0_0/M00_AXIS]
+	connect_bd_intf_net [get_bd_intf_pins $hwruntime_path/cmdin_out] [get_bd_intf_pins Hardware_Runtime/outStream_Inter_lvl0_0/S00_AXIS]
 	if {$extended_hwruntime} {
-		incr num_hwruntime_intf 2
+		connect_bd_intf_net [get_bd_intf_pins $hwruntime_path/spawn_in] [get_bd_intf_pins Hardware_Runtime/inStream_Inter_lvl0_0/M01_AXIS]
+		connect_bd_intf_net [get_bd_intf_pins $hwruntime_path/taskwait_in] [get_bd_intf_pins Hardware_Runtime/inStream_Inter_lvl0_0/M02_AXIS]
+		connect_bd_intf_net [get_bd_intf_pins $hwruntime_path/spawn_out] [get_bd_intf_pins Hardware_Runtime/outStream_Inter_lvl0_0/S01_AXIS]
+		connect_bd_intf_net [get_bd_intf_pins $hwruntime_path/taskwait_out] [get_bd_intf_pins Hardware_Runtime/outStream_Inter_lvl0_0/S02_AXIS]
 	}
-	# Create interconnect hierarchy to connect with accelerators
-	create_inStream_Inter_tree Hardware_Runtime/inStream_Inter $num_hwruntime_intf $num_accs
-	set max_level [create_outStream_Inter_tree Hardware_Runtime/outStream_Inter $num_hwruntime_intf $num_accs]
-	set ninter [expr int(ceil($num_accs/16.))]
-	for {set i 0} {$i < $ninter} {incr i} {
-		set_property -dict [ list \
-			CONFIG.M00_AXIS_BASETDEST {0x00000011} \
-			CONFIG.M00_AXIS_HIGHTDEST {0x00000011} \
-			CONFIG.M01_AXIS_BASETDEST {0x00000012} \
-			CONFIG.M01_AXIS_HIGHTDEST {0x00000013} \
-			CONFIG.M02_AXIS_BASETDEST {0x00000014} \
-			CONFIG.M02_AXIS_HIGHTDEST {0x00000014} \
-			CONFIG.M03_AXIS_BASETDEST {0x00000015} \
-			CONFIG.M03_AXIS_HIGHTDEST {0x00000015} \
-		] [ get_bd_cell Hardware_Runtime/inStream_Inter_lvl0_$i ]
+	if {$lock_hwruntime} {
+		connect_bd_intf_net [get_bd_intf_pins $hwruntime_path/lock_in] [get_bd_intf_pins Hardware_Runtime/inStream_Inter_lvl0_0/M${lock_intf_num}_AXIS]
+		connect_bd_intf_net [get_bd_intf_pins $hwruntime_path/lock_out] [get_bd_intf_pins Hardware_Runtime/outStream_Inter_lvl0_0/S${lock_intf_num}_AXIS]
 	}
-	set hwruntime_path Hardware_Runtime/$name_hwruntime
-	set lock_intf_num [format %02u [expr $num_hwruntime_intf-1]]
-	if {$max_level == 1} {
-		connect_bd_intf_net [get_bd_intf_pins $hwruntime_path/cmdout_in] [get_bd_intf_pins Hardware_Runtime/inStream_Inter_lvl0_0/M00_AXIS]
-		connect_bd_intf_net [get_bd_intf_pins $hwruntime_path/cmdin_out] [get_bd_intf_pins Hardware_Runtime/outStream_Inter_lvl0_0/S00_AXIS]
-		if {$extended_hwruntime} {
-			connect_bd_intf_net [get_bd_intf_pins $hwruntime_path/spawn_in] [get_bd_intf_pins Hardware_Runtime/inStream_Inter_lvl0_0/M01_AXIS]
-			connect_bd_intf_net [get_bd_intf_pins $hwruntime_path/taskwait_in] [get_bd_intf_pins Hardware_Runtime/inStream_Inter_lvl0_0/M02_AXIS]
-			connect_bd_intf_net [get_bd_intf_pins $hwruntime_path/spawn_out] [get_bd_intf_pins Hardware_Runtime/outStream_Inter_lvl0_0/S01_AXIS]
-			connect_bd_intf_net [get_bd_intf_pins $hwruntime_path/taskwait_out] [get_bd_intf_pins Hardware_Runtime/outStream_Inter_lvl0_0/S02_AXIS]
-		}
-		if {$lock_hwruntime} {
-			connect_bd_intf_net [get_bd_intf_pins $hwruntime_path/lock_in] [get_bd_intf_pins Hardware_Runtime/inStream_Inter_lvl0_0/M${lock_intf_num}_AXIS]
-			connect_bd_intf_net [get_bd_intf_pins $hwruntime_path/lock_out] [get_bd_intf_pins Hardware_Runtime/outStream_Inter_lvl0_0/S${lock_intf_num}_AXIS]
-		}
-	} else {
-		connect_bd_intf_net [get_bd_intf_pins $hwruntime_path/cmdout_in] [get_bd_intf_pins Hardware_Runtime/inStream_Inter_lvl${max_level}_0/M00_AXIS]
-		connect_bd_intf_net [get_bd_intf_pins $hwruntime_path/cmdin_out] [get_bd_intf_pins Hardware_Runtime/outStream_Inter_lvl${max_level}_0/S00_AXIS]
-		if {$extended_hwruntime} {
-			connect_bd_intf_net [get_bd_intf_pins $hwruntime_path/spawn_in] [get_bd_intf_pins Hardware_Runtime/inStream_Inter_lvl${max_level}_1/M00_AXIS]
-			connect_bd_intf_net [get_bd_intf_pins $hwruntime_path/taskwait_in] [get_bd_intf_pins Hardware_Runtime/inStream_Inter_lvl${max_level}_2/M00_AXIS]
-			connect_bd_intf_net [get_bd_intf_pins $hwruntime_path/spawn_out] [get_bd_intf_pins Hardware_Runtime/outStream_Inter_lvl${max_level}_1/S00_AXIS]
-			connect_bd_intf_net [get_bd_intf_pins $hwruntime_path/taskwait_out] [get_bd_intf_pins Hardware_Runtime/outStream_Inter_lvl${max_level}_2/S00_AXIS]
-		}
-		if {$lock_hwruntime} {
-			connect_bd_intf_net [get_bd_intf_pins $hwruntime_path/lock_in] [get_bd_intf_pins Hardware_Runtime/inStream_Inter_lvl${max_level}_${lock_intf_num}/M00_AXIS]
-			connect_bd_intf_net [get_bd_intf_pins $hwruntime_path/lock_out] [get_bd_intf_pins Hardware_Runtime/outStream_Inter_lvl${max_level}_${lock_intf_num}/S00_AXIS]
-		}
+} else {
+	connect_bd_intf_net [get_bd_intf_pins $hwruntime_path/cmdout_in] [get_bd_intf_pins Hardware_Runtime/inStream_Inter_lvl${max_level}_m0_0/M00_AXIS]
+	connect_bd_intf_net [get_bd_intf_pins $hwruntime_path/cmdin_out] [get_bd_intf_pins Hardware_Runtime/outStream_Inter_lvl${max_level}_s0_0/S00_AXIS]
+	if {$extended_hwruntime} {
+		connect_bd_intf_net [get_bd_intf_pins $hwruntime_path/spawn_in] [get_bd_intf_pins Hardware_Runtime/inStream_Inter_lvl${max_level}_m1_0/M00_AXIS]
+		connect_bd_intf_net [get_bd_intf_pins $hwruntime_path/taskwait_in] [get_bd_intf_pins Hardware_Runtime/inStream_Inter_lvl${max_level}_m2_0/M00_AXIS]
+		connect_bd_intf_net [get_bd_intf_pins $hwruntime_path/spawn_out] [get_bd_intf_pins Hardware_Runtime/outStream_Inter_lvl${max_level}_s1_0/S00_AXIS]
+		connect_bd_intf_net [get_bd_intf_pins $hwruntime_path/taskwait_out] [get_bd_intf_pins Hardware_Runtime/outStream_Inter_lvl${max_level}_s2_0/S00_AXIS]
 	}
-	for {set i 0} {$i < $num_accs} {incr i} {
-		set inStream_intf [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 Hardware_Runtime/inStream_$i]
-		set outStream_intf [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 Hardware_Runtime/outStream_$i]
-		set inter_i [expr int($i/16)]
-		set intf_i [format %02u [expr $i%16]]
-		connect_bd_intf_net $inStream_intf [get_bd_intf_pins Hardware_Runtime/inStream_Inter_lvl0_${inter_i}/S${intf_i}_AXIS]
-		connect_bd_intf_net $outStream_intf [get_bd_intf_pins Hardware_Runtime/outStream_Inter_lvl0_${inter_i}/M${intf_i}_AXIS]
+	if {$lock_hwruntime} {
+		connect_bd_intf_net [get_bd_intf_pins $hwruntime_path/lock_in] [get_bd_intf_pins Hardware_Runtime/inStream_Inter_lvl${max_level}_m${lock_intf_num}_0/M00_AXIS]
+		connect_bd_intf_net [get_bd_intf_pins $hwruntime_path/lock_out] [get_bd_intf_pins Hardware_Runtime/outStream_Inter_lvl${max_level}_s${lock_intf_num}_0/S00_AXIS]
 	}
+}
+for {set i 0} {$i < $num_accs} {incr i} {
+	set inStream_intf [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 Hardware_Runtime/inStream_$i]
+	set outStream_intf [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 Hardware_Runtime/outStream_$i]
+	set inter_i [expr int($i/16)]
+	set intf_i [format %02u [expr $i%16]]
+	connect_bd_intf_net $inStream_intf [get_bd_intf_pins Hardware_Runtime/inStream_Inter_lvl0_${inter_i}/S${intf_i}_AXIS]
+	connect_bd_intf_net $outStream_intf [get_bd_intf_pins Hardware_Runtime/outStream_Inter_lvl0_${inter_i}/M${intf_i}_AXIS]
 }
 
 # Set and get the actual PS frequency
@@ -909,7 +976,6 @@ foreach acc $accels {
 
 # If enabled, add and connect hwcounter IP
 if {$hwcounter || $hwinst} {
-
 	create_bd_cell -type module -reference hwcounter HW_Counter
 
 	if {$arch_type == "soc"} {
@@ -920,6 +986,8 @@ if {$hwcounter || $hwinst} {
 
 	connectClock [get_bd_pins HW_Counter/s_axi_aclk]
 	save_bd_design
+
+	set bitmap_bitInfo [format 0x%08x [expr $bitmap_bitInfo | 0x1<<0]]
 }
 
 close $dataInterfaces_file
@@ -1004,61 +1072,33 @@ set ompss_at_fpga_DeviceTree_file [open $path_Project/$name_Project/pl_ompss_at_
 set ompss_at_fpga_node "&amba_pl {\n"
 append ompss_at_fpga_node "\tompss_at_fpga: ompss_at_fpga@0 {\n\t\tcompatible = \"ompss-at-fpga\";\n"
 append ompss_at_fpga_node "\t\tbitstreaminfo = <&bitInfo_BRAM_Ctrl>;\n"
-
-# Connect Hardware Runtime to accelerators and map queues to address space
-if {[expr {$hwruntime == "som"} || {$hwruntime == "pom"}]} {
-
-	set bitmap_bitInfo [format 0x%08x [expr $bitmap_bitInfo | 0x1<<6]]
-
-	# Map cmdInQueue to address space
-	assign_bd_address [get_bd_addr_segs Hardware_Runtime/cmdInQueue_BRAM_Ctrl/S_AXI/Mem0] -range 8K -offset $addr_hwruntime_cmdInQueue
-
-	# Map cmdOutQueue to address space
-	assign_bd_address [get_bd_addr_segs Hardware_Runtime/cmdOutQueue_BRAM_Ctrl/S_AXI/Mem0] -range 8K -offset $addr_hwruntime_cmdOutQueue
-
-	# Map hwruntime_rst to address space
-	assign_bd_address [get_bd_addr_segs Hardware_Runtime/hwruntime_rst/S_AXI/Reg] -range 4K -offset $addr_hwruntime_rst
-
-	# If exist, map SpawnIn and SpawnOut queues to address space
-	if {$extended_hwruntime} {
-		assign_bd_address [get_bd_addr_segs Hardware_Runtime/spawnOutQueue_BRAM_Ctrl/S_AXI/Mem0] -range 8K -offset $addr_hwruntime_spawnOutQueue
-		assign_bd_address [get_bd_addr_segs Hardware_Runtime/spawnInQueue_BRAM_Ctrl/S_AXI/Mem0] -range 8K -offset $addr_hwruntime_spawnInQueue
-	}
-
-	# Generate device-tree node
-	append ompss_at_fpga_node "\t\thwruntime-rst = <&Hardware_Runtime_hwruntime_rst>;\n"
-	append ompss_at_fpga_node "\t\thwruntime-cmdinqueue = <&Hardware_Runtime_cmdInQueue_BRAM_Ctrl>;\n"
-	append ompss_at_fpga_node "\t\thwruntime-cmdoutqueue = <&Hardware_Runtime_cmdOutQueue_BRAM_Ctrl>;\n"
-	if {$extended_hwruntime} {
-		append ompss_at_fpga_node "\t\thwruntime-spawnoutqueue = <&Hardware_Runtime_spawnOutQueue_BRAM_Ctrl>;\n"
-		append ompss_at_fpga_node "\t\thwruntime-spawninqueue = <&Hardware_Runtime_spawnInQueue_BRAM_Ctrl>;\n"
-		set bitmap_bitInfo [format 0x%08x [expr $bitmap_bitInfo | 0x1<<7]]
-	}
-
-	if {$hwruntime == "som"} {
-		set bitmap_bitInfo [format 0x%08x [expr $bitmap_bitInfo | 0x1<<8]]
-	}
-}
-
-# Map hwcounter to address space
-if {[get_bd_cells -quiet HW_Counter] != ""} {
-	assign_bd_address [get_bd_addr_segs HW_Counter/s_axi/reg0]
-	set_property range 4K [get_bd_addr_segs *SEG_HW_Counter_reg0]
-	set_property offset $addr_hwcounter [get_bd_addr_segs *SEG_HW_Counter_reg0]
-
-	# Add hwcounter to pl_ompss_at_fpga.dtsi file
-	append ompss_at_fpga_node "\t\thwcounter = <&HW_Counter>;\n"
-
-	set bitmap_bitInfo [format 0x%08x [expr $bitmap_bitInfo | 0x1<<0]]
-}
-
-assign_bd_address [get_bd_addr_segs *bitInfo_BRAM_Ctrl*] -range 4K -offset $addr_bitInfo
-
-configureAddressMap $addr_list $size_DDR
-
 append ompss_at_fpga_node "\t};\n};"
 puts $ompss_at_fpga_DeviceTree_file $ompss_at_fpga_node
 close $ompss_at_fpga_DeviceTree_file
+
+# Connect Hardware Runtime to accelerators and map queues to address space
+
+set bitmap_bitInfo [format 0x%08x [expr $bitmap_bitInfo | 0x1<<6]]
+
+foreach bd_addr_seg $bd_addr_segments {
+	set name [dict get $bd_addr_seg name]
+	set addr [dict get $bd_addr_seg addr]
+	set range [dict get $bd_addr_seg size]
+	set bd_seg_name [dict get $bd_addr_seg bd_seg_name]
+	aitInfo "Assign $name BD address, range $range address $addr"
+	assign_bd_address [get_bd_addr_segs $bd_seg_name] -range $range -offset $addr
+}
+
+if {$extended_hwruntime} {
+	set bitmap_bitInfo [format 0x%08x [expr $bitmap_bitInfo | 0x1<<7]]
+}
+
+if {$hwruntime == "som"} {
+	set bitmap_bitInfo [format 0x%08x [expr $bitmap_bitInfo | 0x1<<8]]
+}
+assign_bd_address [get_bd_addr_segs *bitInfo_BRAM_Ctrl*] -range 4K -offset $addr_bitInfo
+
+configureAddressMap $addr_list $size_DDR
 
 # Store real PS frequency in xtasks config file
 set config_file [open $path_Project/../${name_Project}.xtasks.config "r"]
@@ -1090,16 +1130,29 @@ append bitInfo_coe "\nFFFFFFFF\n"
 append bitInfo_coe [format %08x [expr $version_major_ait<<16 | $version_minor_ait]]
 append bitInfo_coe "\nFFFFFFFF\n"
 append bitInfo_coe [format %08x $version_wrapper]
-if {$hwruntime != "None"} {
-	set hwruntime_vlnv [get_property VLNV [get_bd_cells /Hardware_Runtime/$name_hwruntime]]
-} else {
-	set hwruntime_vlnv "none"
-}
+set hwruntime_vlnv [get_property VLNV [get_bd_cells /Hardware_Runtime/$name_hwruntime]]
 append bitInfo_coe "\nFFFFFFFF\n"
 append bitInfo_coe [exec echo $hwruntime_vlnv | od -A n -t x4 -w4 --endian=little]
 append bitInfo_coe "\nFFFFFFFF\n"
 append bitInfo_coe [format %08x [getBaseFreq]]
-append bitInfo_coe "\nFFFFFFFF\nFFFFFFFF"
+append bitInfo_coe "\nFFFFFFFF\n"
+append bitInfo_coe "[string range $addr_hwruntime_cmdInQueue 2 9]\n"
+append bitInfo_coe "00000000\n"
+append bitInfo_coe "[format %08x $cmdInSubqueue_len]\n"
+append bitInfo_coe "[string range $addr_hwruntime_cmdOutQueue 2 9]\n"
+append bitInfo_coe "00000000\n"
+append bitInfo_coe "[format %08x $cmdOutSubqueue_len]\n"
+append bitInfo_coe "[string range $addr_hwruntime_spawnInQueue 2 9]\n"
+append bitInfo_coe "00000000\n"
+append bitInfo_coe "[format %08x $spawnInQueue_len]\n"
+append bitInfo_coe "[string range $addr_hwruntime_spawnOutQueue 2 9]\n"
+append bitInfo_coe "00000000\n"
+append bitInfo_coe "[format %08x $spawnOutQueue_len]\n"
+append bitInfo_coe "[string range $addr_hwruntime_rst 2 9]\n"
+append bitInfo_coe "00000000\n"
+append bitInfo_coe "[string range $addr_hwcounter 2 9]\n"
+append bitInfo_coe "00000000\n"
+append bitInfo_coe "FFFFFFFF\nFFFFFFFF"
 set data_length [exec echo $bitInfo_coe | wc -l]
 puts $bitInfo_file $bitInfo_coe
 close $bitInfo_file
@@ -1147,11 +1200,14 @@ if {$interconRegSlice_all} {
 	}
 }
 
-if {[expr ($interconRegSlice_hwruntime || $interconRegSlice_all) && ( {$hwruntime == "pom"} || {$hwruntime == "som"} )]} {
+if {[expr $interconRegSlice_hwruntime || $interconRegSlice_all]} {
 	set inStream_interconnects [get_bd_cells Hardware_Runtime/inStream_Inter_lvl0_*]
 	set outStream_interconnects [get_bd_cells Hardware_Runtime/outStream_Inter_lvl0_*]
 
 	foreach inter $inStream_interconnects {
+		for {set i 0} {$i < [get_property CONFIG.NUM_MI [get_bd_cells $inter]]} {incr i} {
+			set_property -dict [list CONFIG.M[format %02u $i]_HAS_REGSLICE {4}] [get_bd_cells $inter]
+		}
 		for {set i 0} {$i < [get_property CONFIG.NUM_SI $inter]} {incr i} {
 			set_property -dict [list CONFIG.S[format %02u $i]_HAS_REGSLICE {1}] $inter
 		}
@@ -1159,6 +1215,9 @@ if {[expr ($interconRegSlice_hwruntime || $interconRegSlice_all) && ( {$hwruntim
 	foreach inter $outStream_interconnects {
 		for {set i 0} {$i < [get_property CONFIG.NUM_MI $inter]} {incr i} {
 			set_property -dict [list CONFIG.M[format %02u $i]_HAS_REGSLICE {1}] $inter
+		}
+		for {set i 0} {$i < [get_property CONFIG.NUM_SI $inter]} {incr i} {
+			set_property -dict [list CONFIG.S[format %02u $i]_HAS_REGSLICE {1}] $inter
 		}
 	}
 }
