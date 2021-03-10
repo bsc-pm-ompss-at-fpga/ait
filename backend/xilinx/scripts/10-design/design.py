@@ -166,17 +166,17 @@ def generate_Vivado_variables_tcl():
     vivado_project_variables += ']\n'
 
     if args.hwruntime == 'pom':
-        picos_args_hash = '"{}-{}-{}-{}-{}-{}-{}-{}-{}-{}"'.format( \
-                            args.picos_max_args_per_task, \
-                            args.picos_max_deps_per_task, \
-                            args.picos_max_copies_per_task, \
-                            args.picos_num_dcts, \
-                            args.picos_tm_size, \
-                            args.picos_dm_size, \
-                            args.picos_vm_size, \
-                            args.picos_dm_ds, \
-                            args.picos_dm_hash, \
-                            args.picos_hash_t_size)
+        picos_args_hash = '{}-{}-{}-{}-{}-{}-{}-{}-{}-{}'.format(
+                          args.picos_max_args_per_task,
+                          args.picos_max_deps_per_task,
+                          args.picos_max_copies_per_task,
+                          args.picos_num_dcts,
+                          args.picos_tm_size,
+                          args.picos_dm_size,
+                          args.picos_vm_size,
+                          args.picos_dm_ds,
+                          args.picos_dm_hash,
+                          args.picos_hash_t_size)
         vivado_project_variables += '\n' \
                                     + '# Picos parameter hash\n' \
                                     + 'variable picos_args_hash {}'.format(picos_args_hash)
