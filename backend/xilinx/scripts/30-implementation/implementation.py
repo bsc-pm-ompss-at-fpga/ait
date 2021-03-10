@@ -26,7 +26,7 @@ import shutil
 import subprocess
 import distutils.spawn
 
-from config import msg, ait_path, MIN_VIVADO_VERSION
+from frontend.config import msg, ait_path, MIN_VIVADO_VERSION
 
 script_folder = os.path.basename(os.path.dirname(os.path.realpath(__file__)))
 
@@ -40,16 +40,16 @@ def check_requirements():
         msg.error('Installed Vivado version ({}) not supported (>= {})'.format(vivado_version, MIN_VIVADO_VERSION))
 
 
-def run_implementation_step(project_vars):
+def run_implementation_step(project_args):
     global args
     global board
     global chip_part
     global ait_backend_path
     global project_backend_path
 
-    args = project_vars['args']
-    board = project_vars['board']
-    project_path = project_vars['path']
+    args = project_args['args']
+    board = project_args['board']
+    project_path = project_args['path']
 
     chip_part = board.chip_part + ('-' + board.es if (board.es and not args.ignore_eng_sample) else '')
     ait_backend_path = ait_path + '/backend/' + args.backend

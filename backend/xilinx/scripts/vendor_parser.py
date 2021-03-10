@@ -25,7 +25,7 @@ import json
 import argparse
 import subprocess
 
-from config import msg
+from frontend.config import msg
 
 
 class StoreChoiceValue(argparse.Action):
@@ -83,5 +83,6 @@ class ArgParser():
             for opt in args.interconnect_regslice:
                 if opt == 'all' and len(args.interconnect_regslice) != 1:
                     msg.error("Invalid combination of values for --interconnect_regslice")
+
 
 parser = ArgParser()

@@ -27,7 +27,7 @@ import shutil
 import subprocess
 import distutils.spawn
 
-from config import msg, ait_path
+from frontend.config import msg, ait_path
 
 script_folder = os.path.basename(os.path.dirname(os.path.realpath(__file__)))
 
@@ -67,14 +67,14 @@ def restore_init_scripts():
         shutil.move(project_backend_path + '/scripts/_Vivado_init.tcl', project_backend_path + '/scripts/Vivado_init.tcl')
 
 
-def run_boot_step(project_vars):
+def run_boot_step(project_args):
     global project_backend_path
     global petalinux_build_path
     global petalinux_install_path
 
-    project_path = project_vars['path']
-    board = project_vars['board']
-    args = project_vars['args']
+    project_path = project_args['path']
+    board = project_args['board']
+    args = project_args['args']
 
     project_backend_path = project_path + '/' + args.backend
     project_step_path = project_backend_path + '/scripts/' + script_folder

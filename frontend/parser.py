@@ -29,7 +29,7 @@ import importlib
 from math import log2
 from math import ceil
 
-from config import msg, ait_path, supported_boards, generation_steps, \
+from frontend.config import msg, ait_path, supported_boards, generation_steps, \
     available_hwruntimes, BITINFO_VERSION, MIN_WRAPPER_VERSION, VERSION_MAJOR, \
     VERSION_MINOR, VERSION_COMMIT
 

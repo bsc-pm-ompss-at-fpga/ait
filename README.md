@@ -54,5 +54,12 @@ git lfs install
 
 # Tests
 
+#### Style testing
+
+The python code follows pycodestyle (formerly pep8) which is verified using the `pycode style` tool (can be installed with `pip install pycodestyle`).
+To check the current source code just execute `pycodestyle`.
+
+#### Unit testing
+
 The `test` folder contains some unitary tests for python sources.
 To run all tests the command `python3 -m unittest` can be executed in the root directory of the repository.

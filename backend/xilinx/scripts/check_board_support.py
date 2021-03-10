@@ -24,7 +24,7 @@ import os
 import subprocess
 import distutils.spawn
 
-from config import msg
+from frontend.config import msg
 
 
 def check_requirements():

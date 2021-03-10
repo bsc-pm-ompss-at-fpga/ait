@@ -28,7 +28,7 @@ import shutil
 import subprocess
 import distutils.spawn
 
-from config import msg, ait_path, MIN_VIVADO_VERSION
+from frontend.config import msg, ait_path, MIN_VIVADO_VERSION
 
 script_folder = os.path.basename(os.path.dirname(os.path.realpath(__file__)))
 
@@ -64,9 +64,9 @@ def gen_utilization_report(out_path):
         # Search LUT/FF section
         # NOTE: Possible section names: Slice Logic, CLB Logic
         ids = [idx for idx in range(len(rpt_data) - 1) if ((re.match(r'^[0-9]\. ' + 'Slice Logic\n', rpt_data[idx])
-                                                            and rpt_data[idx + 1] == '--------------\n') or
-                                                           (re.match(r'^[0-9]\. ' + 'CLB Logic\n', rpt_data[idx])
-                                                            and rpt_data[idx + 1] == '------------\n'))]
+                                                           and rpt_data[idx + 1] == '--------------\n')
+                                                           or (re.match(r'^[0-9]\. ' + 'CLB Logic\n', rpt_data[idx])
+                                                           and rpt_data[idx + 1] == '------------\n'))]
         if len(ids) != 1:
             msg.warning('Cannot find LUT/FF info in rpt file. Skipping bitstream utilization report')
             return
@@ -86,9 +86,9 @@ def gen_utilization_report(out_path):
         # Get DSP
         # NOTE: Possible section names: DSP, ARITHMETIC
         ids = [idx for idx in range(len(rpt_data) - 1) if ((re.match(r'^[0-9]\. ' + 'DSP\n', rpt_data[idx])
-                                                            and rpt_data[idx + 1] == '------\n') or
-                                                           (re.match(r'^[0-9]\. ' + 'ARITHMETIC\n', rpt_data[idx])
-                                                            and rpt_data[idx + 1] == '-------------\n'))]
+                                                           and rpt_data[idx + 1] == '------\n')
+                                                           or (re.match(r'^[0-9]\. ' + 'ARITHMETIC\n', rpt_data[idx])
+                                                           and rpt_data[idx + 1] == '-------------\n'))]
         if len(ids) != 1:
             msg.warning('Cannot find DSP info in rpt file. Skipping bitstream utilization report')
             return
@@ -100,8 +100,8 @@ def gen_utilization_report(out_path):
         # Search BRAM/URAM
         # NOTE: Possible section names: Memory, BLOCKRAM
         ids = [idx for idx in range(len(rpt_data) - 1) if ((re.match(r'^[0-9]\. ' + 'Memory\n', rpt_data[idx])
-                                                           and rpt_data[idx + 1] == '---------\n') or
-                                                           (re.match(r'^[0-9]\. ' + 'BLOCKRAM\n', rpt_data[idx])
+                                                           and rpt_data[idx + 1] == '---------\n')
+                                                           or (re.match(r'^[0-9]\. ' + 'BLOCKRAM\n', rpt_data[idx])
                                                            and rpt_data[idx + 1] == '-----------\n'))]
         if len(ids) != 1:
             msg.warning('Cannot find BRAM info in rpt file. Skipping bitstream utilization report')
@@ -175,11 +175,11 @@ def gen_wns_report(out_path):
 
     msg.log('Worst Negative Slack (WNS) summary')
     if wns >= 0.0:
-        msg.success(str(num_fail) + ' endpoints of ' + str(num_total) + ' have negative slack (WNS: ' +
-                    str(wns) + ')')
+        msg.success(str(num_fail) + ' endpoints of ' + str(num_total) + ' have negative slack (WNS: '
+                    + str(wns) + ')')
     else:
-        msg.warning(str(num_fail) + ' endpoints of ' + str(num_total) + ' have negative slack (WNS: ' +
-                    str(wns) + ', TNS: ' + str(tns) + ')')
+        msg.warning(str(num_fail) + ' endpoints of ' + str(num_total) + ' have negative slack (WNS: '
+                    + str(wns) + ', TNS: ' + str(tns) + ')')
 
     with open(out_path, 'w') as timing_file:
         timing_file.write('WNS ' + str(wns) + '\n')
@@ -188,16 +188,16 @@ def gen_wns_report(out_path):
         timing_file.write('NUM_FAIL_ENDPOINTS ' + str(num_fail))
 
 
-def run_bitstream_step(project_vars):
+def run_bitstream_step(project_args):
     global args
     global board
     global chip_part
     global ait_backend_path
     global project_backend_path
 
-    args = project_vars['args']
-    board = project_vars['board']
-    project_path = project_vars['path']
+    args = project_args['args']
+    board = project_args['board']
+    project_path = project_args['path']
 
     chip_part = board.chip_part + ('-' + board.es if (board.es and not args.ignore_eng_sample) else '')
     ait_backend_path = ait_path + '/backend/' + args.backend

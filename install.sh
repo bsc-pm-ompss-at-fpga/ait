@@ -40,23 +40,24 @@ fi
 #NOTE: The VERSION_COMMIT will be '' if the installation is being done outside a git repo
 if [ "$VERSION_COMMIT" != "" ]; then
   git diff --quiet HEAD || VERSION_COMMIT="$VERSION_COMMIT-dirty"
-  sed -i "s~VERSION_COMMIT = .*~VERSION_COMMIT = '$VERSION_COMMIT'~" $BASE_DIR/scripts/config.py
+  sed -i "s~VERSION_COMMIT = .*~VERSION_COMMIT = '$VERSION_COMMIT'~" $BASE_DIR/frontend/config.py
 fi
 popd >/dev/null
 
-# Compile the scripts folder and copy the binary files
+# Compile the frontend folder and copy the binary files
 find $BASE_DIR -iname *.pyc -delete
-python3 -OO -m compileall -d $PREFIX/scripts -l $BASE_DIR/scripts
-mkdir -p $PREFIX/scripts
-pushd $BASE_DIR/scripts/__pycache__/ >/dev/null
+python3 -OO -m compileall -d $PREFIX/frontend -l $BASE_DIR/frontend
+mkdir -p $PREFIX/frontend
+pushd $BASE_DIR/frontend/__pycache__/ >/dev/null
 for f in *.pyc; do
   ls $f | sed -e 'p;s/\([^.]*\)\(\.[^.]*\)\+\.pyc/\1\.pyc/' | xargs -n2 mv
 done
 popd >/dev/null
-rsync -am $BASE_DIR/scripts/__pycache__/ $PREFIX/scripts/ --filter='-! *.pyc'
+rsync -am $BASE_DIR/frontend/__pycache__/ $PREFIX/frontend/ --filter='-! *.pyc'
+cp -f $BASE_DIR/main.py $PREFIX/main.py
 echo '#!/bin/bash' >$PREFIX/ait
-echo 'SCRIPTS_DIR=$(pushd `dirname ${BASH_SOURCE[0]}`/scripts/ >/dev/null && pwd -P && popd >/dev/null)' >>$PREFIX/ait
-echo 'python3 -OO $SCRIPTS_DIR/ait.pyc "$@"' >>$PREFIX/ait
+echo 'MAIN_DIR=$(pushd `dirname ${BASH_SOURCE[0]}`/ >/dev/null && pwd -P && popd >/dev/null)' >>$PREFIX/ait
+echo 'python3 $MAIN_DIR/main.py "$@"' >>$PREFIX/ait
 chmod +x $PREFIX/ait
 
 old_IFS=$IFS

@@ -28,7 +28,7 @@ import shutil
 import subprocess
 import distutils.spawn
 
-from config import msg, ait_path, MIN_OD_VERSION, BITINFO_VERSION, VERSION_MAJOR, \
+from frontend.config import msg, ait_path, MIN_OD_VERSION, BITINFO_VERSION, VERSION_MAJOR, \
     VERSION_MINOR, MIN_VIVADO_VERSION
 
 script_folder = os.path.basename(os.path.dirname(os.path.realpath(__file__)))
@@ -82,12 +82,12 @@ def generate_Vivado_variables_tcl():
     regslice_hwruntime = '0'
     if args.interconnect_regslice is not None:
         for opt in args.interconnect_regslice:
-           if opt == 'all':
-               regslice_all = '1'
-           elif opt == 'DDR':
-               regslice_ddr = '1'
-           elif opt == 'hwruntime':
-               regslice_hwruntime = '1'
+            if opt == 'all':
+                regslice_all = '1'
+            elif opt == 'DDR':
+                regslice_ddr = '1'
+            elif opt == 'hwruntime':
+                regslice_hwruntime = '1'
 
     vivado_project_variables += '\n' \
                                 + '# ' + board.name + ' board variables\n' \
@@ -191,7 +191,7 @@ def generate_Vivado_variables_tcl():
     vivado_project_variables_file.close()
 
 
-def run_design_step(project_vars):
+def run_design_step(project_args):
     global args
     global board
     global accels
@@ -201,13 +201,13 @@ def run_design_step(project_vars):
     global ait_backend_path
     global project_backend_path
 
-    args = project_vars['args']
-    board = project_vars['board']
-    accels = project_vars['accels']
+    args = project_args['args']
+    board = project_args['board']
+    accels = project_args['accels']
     chip_part = board.chip_part + ('-' + board.es if (board.es and not args.ignore_eng_sample) else '')
-    num_accels = project_vars['num_accels']
-    num_instances = project_vars['num_instances']
-    project_path = project_vars['path']
+    num_accels = project_args['num_accels']
+    num_instances = project_args['num_instances']
+    project_path = project_args['path']
 
     ait_backend_path = ait_path + '/backend/' + args.backend
     project_backend_path = project_path + '/' + args.backend

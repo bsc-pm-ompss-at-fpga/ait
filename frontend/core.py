@@ -29,17 +29,17 @@ import time
 import importlib
 import subprocess
 
-from parser import ArgParser
-from config import msg, ait_path, generation_steps, Accelerator, MIN_PYTHON_VERSION
+from frontend.parser import ArgParser
+from frontend.config import msg, ait_path, generation_steps, Accelerator, MIN_PYTHON_VERSION
 
 if sys.version_info < MIN_PYTHON_VERSION:
     sys.exit('Python %s.%s or later is required.\n' % MIN_PYTHON_VERSION)
 
 
 class Logger(object):
-    def __init__(self):
+    def __init__(self, project_path):
         self.terminal = sys.stdout
-        self.log = open(project_vars['path'] + '/' + args.name + '.ait.log', 'w+')
+        self.log = open(project_path + '/' + args.name + '.ait.log', 'w+')
         self.subprocess = subprocess.PIPE if args.verbose else self.log
         self.re_color = re.compile(r'\033\[[0,1][0-9,;]*m')
 
@@ -70,7 +70,7 @@ def check_board_support(board):
     step_func(chip_part)
 
 
-def get_accelerators():
+def get_accelerators(project_path):
     global accels
     global num_accels
     global num_instances
@@ -131,7 +131,7 @@ def get_accelerators():
         msg.error('Some accelerator requires Lock support but there is no Hardware Runtime enabled. Enable one using the --hwruntime option', True)
 
     # Generate the .xtasks.config file
-    xtasks_config_file = open(project_vars['path'] + '/' + args.name + '.xtasks.config', 'w')
+    xtasks_config_file = open(project_path + '/' + args.name + '.xtasks.config', 'w')
     xtasks_config = 'type\t#ins\tname\t    \n'
     for accel in accels:
         xtasks_config += accel.id.zfill(19) + '\t' + str(accel.num_instances).zfill(3) + '\t' + accel.short_name.ljust(31)[:31] + '\t000\n'
@@ -139,7 +139,9 @@ def get_accelerators():
     xtasks_config_file.close()
 
 
-if __name__ == '__main__':
+def ait_main():
+    global args
+
     start_time = time.time()
 
     args = None
@@ -151,10 +153,6 @@ if __name__ == '__main__':
     if args.verbose_info:
         msg.setPrintTime(True)
 
-    project_vars = dict()
-
-    project_vars['path'] = os.path.normpath(os.path.realpath(args.dir + '/' + args.name + '_ait'))
-
     msg.info('Using ' + args.backend + ' backend')
 
     board = json.load(open(ait_path + '/backend/' + args.backend + '/board/' + args.board + '/basic_info.json'), object_hook=JSONObject)
@@ -162,7 +160,8 @@ if __name__ == '__main__':
     if not int(board.frequency.min) <= args.clock <= int(board.frequency.max):
         msg.error('Clock frequency requested (' + str(args.clock) + 'MHz) is not within the board range (' + str(board.frequency.min) + '-' + str(board.frequency.max) + 'MHz)', True)
 
-    project_backend_path = os.path.normpath(project_vars['path'] + '/' + args.backend)
+    project_path = os.path.normpath(os.path.realpath(args.dir + '/' + args.name + '_ait'))
+    project_backend_path = os.path.normpath(project_path + '/' + args.backend)
 
     # Add backend to python import path
     sys.path.insert(0, ait_path + '/backend/' + args.backend + '/scripts')
@@ -171,10 +170,10 @@ if __name__ == '__main__':
     if not args.disable_board_support_check:
         check_board_support(board)
 
-    sys.stdout = Logger()
+    sys.stdout = Logger(project_path)
     sys.stdout.log.write(os.path.basename(sys.argv[0]) + ' ' + ' '.join(sys.argv[1:]) + '\n\n')
 
-    get_accelerators()
+    get_accelerators(project_path)
 
     parser.check_hwruntime_args(args, max(2, num_instances))
 
@@ -201,3 +200,7 @@ if __name__ == '__main__':
             msg.warning('Step \'' + step + '\' is disabled')
 
     msg.success('Hardware automatic generation finished. ' + str(int(time.time() - start_time)) + 's elapsed')
+
+
+if __name__ == '__main__':
+    ait()

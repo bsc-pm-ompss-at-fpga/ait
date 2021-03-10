@@ -28,7 +28,7 @@ import subprocess
 import distutils.spawn
 import xml.etree.cElementTree as cET
 
-from config import Accelerator, msg, ait_path, hwruntime_resources, MIN_VIVADO_HLS_VERSION
+from frontend.config import Accelerator, msg, ait_path, hwruntime_resources, MIN_VIVADO_HLS_VERSION
 
 script_folder = os.path.basename(os.path.dirname(os.path.realpath(__file__)))
 
@@ -113,7 +113,7 @@ def synthesize_accelerator(acc):
     update_resource_utilization(acc)
 
 
-def run_HLS_step(project_vars):
+def run_HLS_step(project_args):
     global args
     global board
     global chip_part
@@ -123,11 +123,11 @@ def run_HLS_step(project_vars):
     global used_resources
     global available_resources
 
-    args = project_vars['args']
-    board = project_vars['board']
-    num_accels = project_vars['num_accels']
-    project_path = project_vars['path']
-    accels = project_vars['accels']
+    args = project_args['args']
+    board = project_args['board']
+    num_accels = project_args['num_accels']
+    project_path = project_args['path']
+    accels = project_args['accels']
 
     ait_backend_path = ait_path + '/backend/' + args.backend
     project_backend_path = project_path + '/' + args.backend

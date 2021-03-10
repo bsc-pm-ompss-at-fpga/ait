@@ -20,13 +20,12 @@
 #     License along with this code. If not, see <www.gnu.org/licenses/>.   #
 # ------------------------------------------------------------------------ #
 
-import unittest
-import sys
 import os
+import sys
+import unittest
 from unittest.mock import ANY, patch, MagicMock
 
-sys.path.append('scripts')
-from scripts.parser import ArgParser
+from frontend.parser import ArgParser
 
 
 class Test_IP_caching(unittest.TestCase):
@@ -72,7 +71,7 @@ class Test_IP_caching(unittest.TestCase):
 
         self.assertTrue(True)  # Just check no errors are thrown
 
-    @patch('config.msg.error')
+    @patch('frontend.config.msg.error')
     def test_enabled_not_exists(self, msg_error):
         # Create the args object which could contain any attribute
         args = type('', (), {})()
