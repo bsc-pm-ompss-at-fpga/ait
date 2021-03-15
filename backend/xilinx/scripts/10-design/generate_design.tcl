@@ -1205,8 +1205,8 @@ if {[expr $interconRegSlice_hwruntime || $interconRegSlice_all]} {
 	set outStream_interconnects [get_bd_cells Hardware_Runtime/outStream_Inter_lvl0_*]
 
 	foreach inter $inStream_interconnects {
-		for {set i 0} {$i < [get_property CONFIG.NUM_MI [get_bd_cells $inter]]} {incr i} {
-			set_property -dict [list CONFIG.M[format %02u $i]_HAS_REGSLICE {4}] [get_bd_cells $inter]
+		for {set i 0} {$i < [get_property CONFIG.NUM_MI $inter]} {incr i} {
+			set_property -dict [list CONFIG.M[format %02u $i]_HAS_REGSLICE {1}] $inter
 		}
 		for {set i 0} {$i < [get_property CONFIG.NUM_SI $inter]} {incr i} {
 			set_property -dict [list CONFIG.S[format %02u $i]_HAS_REGSLICE {1}] $inter
