@@ -507,9 +507,9 @@ if {$hwcounter || $hwinst} {
 # Sort the segments in decreasing size to minimize fragmentation when assigning addresses
 set bd_addr_segments [lsort -decreasing -command comp_bd_addr_seg $bd_addr_segments]
 
-set addr_hwruntime_spawnInQueue 0x00000000
-set addr_hwruntime_spawnOutQueue 0x00000000
-set addr_hwcounter 0x00000000
+set addr_hwruntime_spawnInQueue 0x0000000000000000
+set addr_hwruntime_spawnOutQueue 0x0000000000000000
+set addr_hwcounter 0x0000000000000000
 if {!$extended_hwruntime} {
 	set spawnInQueue_len 0
 	set spawnOutQueue_len 0
@@ -529,7 +529,7 @@ for {set i 0} {$i < [llength $bd_addr_segments]} {incr i} {
 	if {[expr ($addr % $size) != 0]} {
 		set addr [expr $addr + $size - ($addr % $size)]
 	}
-	set format_addr [format 0x%08x [expr $addr_base + $addr]]
+	set format_addr [format 0x%016x [expr $addr_base + $addr]]
 	lset bd_addr_segments $i [dict replace $cur_dict addr $format_addr size $size]
 
 	set name [dict get $cur_dict name]
@@ -550,9 +550,9 @@ for {set i 0} {$i < [llength $bd_addr_segments]} {incr i} {
 }
 
 if {$arch_type == "soc"} {
-	variable addr_bitInfo "0x80020000"
+	variable addr_bitInfo "0x0000000080020000"
 } elseif {$arch_type == "fpga"} {
-	variable addr_bitInfo [format 0x%08x [expr $addr_base + $bitInfo_offset]]
+	variable addr_bitInfo [format 0x%016x [expr $addr_base + $bitInfo_offset]]
 }
 
 # Create project and set board files
@@ -1136,22 +1136,22 @@ append bitInfo_coe [exec echo $hwruntime_vlnv | od -A n -t x4 -w4 --endian=littl
 append bitInfo_coe "\nFFFFFFFF\n"
 append bitInfo_coe [format %08x [getBaseFreq]]
 append bitInfo_coe "\nFFFFFFFF\n"
+append bitInfo_coe "[string range $addr_hwruntime_cmdInQueue 10 17]\n"
 append bitInfo_coe "[string range $addr_hwruntime_cmdInQueue 2 9]\n"
-append bitInfo_coe "00000000\n"
 append bitInfo_coe "[format %08x $cmdInSubqueue_len]\n"
+append bitInfo_coe "[string range $addr_hwruntime_cmdOutQueue 10 17]\n"
 append bitInfo_coe "[string range $addr_hwruntime_cmdOutQueue 2 9]\n"
-append bitInfo_coe "00000000\n"
 append bitInfo_coe "[format %08x $cmdOutSubqueue_len]\n"
+append bitInfo_coe "[string range $addr_hwruntime_spawnInQueue 10 17]\n"
 append bitInfo_coe "[string range $addr_hwruntime_spawnInQueue 2 9]\n"
-append bitInfo_coe "00000000\n"
 append bitInfo_coe "[format %08x $spawnInQueue_len]\n"
+append bitInfo_coe "[string range $addr_hwruntime_spawnOutQueue 10 17]\n"
 append bitInfo_coe "[string range $addr_hwruntime_spawnOutQueue 2 9]\n"
-append bitInfo_coe "00000000\n"
 append bitInfo_coe "[format %08x $spawnOutQueue_len]\n"
+append bitInfo_coe "[string range $addr_hwruntime_rst 10 17]\n"
 append bitInfo_coe "[string range $addr_hwruntime_rst 2 9]\n"
-append bitInfo_coe "00000000\n"
+append bitInfo_coe "[string range $addr_hwcounter 10 17]\n"
 append bitInfo_coe "[string range $addr_hwcounter 2 9]\n"
-append bitInfo_coe "00000000\n"
 append bitInfo_coe "FFFFFFFF\nFFFFFFFF"
 set data_length [exec echo $bitInfo_coe | wc -l]
 puts $bitInfo_file $bitInfo_coe
