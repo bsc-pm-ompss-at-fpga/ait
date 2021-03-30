@@ -29,12 +29,12 @@ module hsToStreamAdapter #(
     input       aresetn,
     input [ACCID_WIDTH-1:0] accID,
 
-    input [71:0] in_hs,
+    input [67:0] in_hs,
     input        in_hs_ap_vld,
     output       in_hs_ap_ack,
 
     output [63:0] outStream_tdata,
-    output [4:0]  outStream_tdest,
+    output [2:0]  outStream_tdest,
     output [ACCID_WIDTH-1:0]  outStream_tid,
     output        outStream_tlast,
     output        outStream_tvalid,
@@ -48,7 +48,7 @@ module hsToStreamAdapter #(
 
     reg [0:0] state;
     reg [63:0] buf_data;
-    reg [4:0] buf_dest;
+    reg [2:0] buf_dest;
     reg buf_last;
     reg ack;
 
@@ -68,8 +68,8 @@ module hsToStreamAdapter #(
 
             IDLE: begin
                 buf_last <= in_hs[0];
-                buf_dest <= in_hs[6:2];
-                buf_data <= in_hs[71:8];
+                buf_dest <= in_hs[3:1];
+                buf_data <= in_hs[67:4];
 
                 if (in_hs_ap_vld) begin
                     ack <= 1;
@@ -93,9 +93,9 @@ module hsToStreamAdapter #(
     end else begin
 
     assign outStream_tid = accID;
-    assign outStream_tdata = in_hs[71:8];
+    assign outStream_tdata = in_hs[67:4];
     assign outStream_tlast = in_hs[0];
-    assign outStream_tdest = in_hs[6:2];
+    assign outStream_tdest = in_hs[3:1];
     assign outStream_tvalid = in_hs_ap_vld;
 
     assign in_hs_ap_ack = in_hs_ap_vld && outStream_tready;

@@ -712,14 +712,14 @@ set max_level [create_outStream_Inter_tree Hardware_Runtime/outStream_Inter $num
 set ninter [expr int(ceil($num_accs/16.))]
 for {set i 0} {$i < $ninter} {incr i} {
 	set_property -dict [ list \
-		CONFIG.M00_AXIS_BASETDEST {0x00000011} \
-		CONFIG.M00_AXIS_HIGHTDEST {0x00000011} \
-		CONFIG.M01_AXIS_BASETDEST {0x00000012} \
-		CONFIG.M01_AXIS_HIGHTDEST {0x00000013} \
-		CONFIG.M02_AXIS_BASETDEST {0x00000014} \
-		CONFIG.M02_AXIS_HIGHTDEST {0x00000014} \
-		CONFIG.M03_AXIS_BASETDEST {0x00000015} \
-		CONFIG.M03_AXIS_HIGHTDEST {0x00000015} \
+		CONFIG.M00_AXIS_BASETDEST {0x00} \
+		CONFIG.M00_AXIS_HIGHTDEST {0x00} \
+		CONFIG.M01_AXIS_BASETDEST {0x02} \
+		CONFIG.M01_AXIS_HIGHTDEST {0x03} \
+		CONFIG.M02_AXIS_BASETDEST {0x04} \
+		CONFIG.M02_AXIS_HIGHTDEST {0x04} \
+		CONFIG.M03_AXIS_BASETDEST {0x01} \
+		CONFIG.M03_AXIS_HIGHTDEST {0x01} \
 	] [ get_bd_cell Hardware_Runtime/inStream_Inter_lvl0_$i ]
 }
 set hwruntime_path Hardware_Runtime/$name_hwruntime
