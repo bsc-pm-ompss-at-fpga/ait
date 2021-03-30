@@ -38,7 +38,6 @@ if {[catch {source -notrace $script_path/../projectVariables.tcl}]} {
 
 variable bitmap_bitInfo "0x00000000"
 set bitmap_bitInfo [format 0x%08x [expr $bitmap_bitInfo | ([expr $interconOpt - 1]<<2)]]
-set bitmap_bitInfo [format 0x%08x [expr $bitmap_bitInfo | ($interconLevel<<3)]]
 
 variable name_ManagedRst processor_system_reset/peripheral_aresetn
 
@@ -868,100 +867,10 @@ foreach acc $accels {
 			connect_bd_net [get_bd_pins ${accName}_$j/accFreq/dout] [get_bd_pins ${accName}_$j/$accName/mcxx_freqPort*]
 		}
 
-		# Compute number of interfaces needed for the outStream interconnect
-		set accNumInterfaces [expr {$hwruntime == "som"} || {$hwruntime == "pom"}]
-		if {[expr $interconLevel == 2]} {
-			incr accNumInterfaces [expr $num_accs - 1]
-		} elseif {[expr $interconLevel == 1]} {
-			incr accNumInterfaces [expr $accNumInstances - 1]
-		}
-
-		if {$accNumInterfaces > 1} {
-			createAXISInterconnect ${accName}_${j}_outStream 1 $accNumInterfaces
-			connect_bd_intf_net -boundary_type upper [get_bd_intf_pins ${accName}_$j/outStream] [get_bd_intf_pins ${accName}_${j}_outStream/S00_AXIS]
-
-			createAXISInterconnect ${accName}_${j}_inStream $accNumInterfaces 1
-			set_property -quiet -dict [list CONFIG.M00_AXIS_BASETDEST 0x[format %X $accID] CONFIG.M00_AXIS_HIGHTDEST 0x[format %X $accID]] [get_bd_cells ${accName}_${j}_inStream]
-			connect_bd_intf_net -boundary_type upper [get_bd_intf_pins ${accName}_$j/inStream] [get_bd_intf_pins ${accName}_${j}_inStream/M00_AXIS]
-
-			set interfaceNum 0
-			set list_TDEST ""
-		}
+		connect_bd_intf_net -boundary_type upper [get_bd_intf_pins ${accName}_${j}/outStream] [get_bd_intf_pins Hardware_Runtime/inStream_$accID]
+		connect_bd_intf_net -boundary_type upper [get_bd_intf_pins ${accName}_${j}/inStream] [get_bd_intf_pins Hardware_Runtime/outStream_$accID]
 
 		set_property -dict [list CONFIG.CONST_VAL $accID CONFIG.CONST_WIDTH [expr max(int(ceil(log($num_accs)/log(2))), 1)]] [get_bd_cells ${accName}_$j/accID]
-
-		if {[expr $interconLevel == 2]} {
-			# Full interconnection. Connect accelerator with all the others
-			foreach acc $accels {
-				lassign [split $acc ":"] aux_accHash aux_accNumInstances aux_accName
-				if {$aux_accName != $accName} {
-					for {set ii 0} {$ii < $aux_accNumInstances} {incr ii} {
-						if {$accNumInterfaces > 1} {
-							connect_bd_intf_net -boundary_type upper [get_bd_intf_pins ${accName}_${j}_outStream/M[format %02u $interfaceNum]_AXIS] [get_bd_intf_pins ${aux_accName}_${ii}_inStream/S[format %02u [expr $accID - 1]]_AXIS]
-							connect_bd_intf_net -boundary_type upper [get_bd_intf_pins ${aux_accName}_${ii}_outStream/M[format %02u [expr $accID - 1]]_AXIS] [get_bd_intf_pins ${accName}_${j}_inStream/S[format %02u $interfaceNum]_AXIS]
-							incr interfaceNum
-						} else {
-							connect_bd_intf_net -boundary_type upper [get_bd_intf_pins ${accName}_$j/outStream] [get_bd_intf_pins ${aux_accName}_$ii/inStream]
-							connect_bd_intf_net -boundary_type upper [get_bd_intf_pins ${accName}_$j/inStream] [get_bd_intf_pins ${aux_accName}_$ii/outStream]
-						}
-					}
-				} else {
-					break
-				}
-			}
-		}
-
-		if {[expr $interconLevel >= 1]} {
-			# Type interconnection. Connect accelerator with other accelerators of the same type
-			if {[expr $interconLevel == 2]} {
-				set aux_interfaceNum [expr $accID - 1]
-			} elseif {[expr $interconLevel == 1]} {
-				set aux_interfaceNum [expr $j - 1]
-			}
-
-			for {set ii 0} {$ii < $j} {incr ii} {
-				if {$accNumInterfaces > 1} {
-					connect_bd_intf_net -boundary_type upper [get_bd_intf_pins ${accName}_${j}_outStream/M[format %02u $interfaceNum]_AXIS] [get_bd_intf_pins ${accName}_${ii}_inStream/S[format %02u $aux_interfaceNum]_AXIS]
-					connect_bd_intf_net -boundary_type upper [get_bd_intf_pins ${accName}_${ii}_outStream/M[format %02u $aux_interfaceNum]_AXIS] [get_bd_intf_pins ${accName}_${j}_inStream/S[format %02u $interfaceNum]_AXIS]
-					incr interfaceNum
-				} else {
-					connect_bd_intf_net -boundary_type upper [get_bd_intf_pins ${accName}_$j/outStream] [get_bd_intf_pins ${accName}_$ii/inStream]
-					connect_bd_intf_net -boundary_type upper [get_bd_intf_pins ${accName}_$j/inStream] [get_bd_intf_pins ${accName}_$ii/outStream]
-				}
-			}
-		}
-
-		# Basic interconnection. Connect accelerator to hwruntime
-		if {[expr {$hwruntime == "som"} || {$hwruntime == "pom"}]} {
-			if {$accNumInterfaces > 1} {
-				set TM_interfaceNum [expr [get_property CONFIG.NUM_MI [get_bd_cells ${accName}_${j}_outStream]] - 1]
-				lappend list_TDEST CONFIG.M[format %02u $TM_interfaceNum]_AXIS_BASETDEST 0x[format %X 0x11] CONFIG.M[format %02u $TM_interfaceNum]_AXIS_HIGHTDEST 0x[format %X 0x14]
-				connect_bd_intf_net -boundary_type upper [get_bd_intf_pins ${accName}_${j}_outStream/M[format %02u $TM_interfaceNum]_AXIS] [get_bd_intf_pins Hardware_Runtime/inStream_$accID]
-				connect_bd_intf_net -boundary_type upper [get_bd_intf_pins ${accName}_${j}_inStream/S[format %02u $TM_interfaceNum]_AXIS] [get_bd_intf_pins Hardware_Runtime/outStream_$accID]
-			} else {
-				connect_bd_intf_net -boundary_type upper [get_bd_intf_pins ${accName}_${j}/outStream] [get_bd_intf_pins Hardware_Runtime/inStream_$accID]
-				connect_bd_intf_net -boundary_type upper [get_bd_intf_pins ${accName}_${j}/inStream] [get_bd_intf_pins Hardware_Runtime/outStream_$accID]
-			}
-
-		}
-
-		if {$accNumInterfaces > 1} {
-			if {$interconLevel == 2} {
-				for {set ii $accID} {$ii < [expr $num_accs - 1]} {incr ii} {
-					lappend list_TDEST CONFIG.M[format %02u $ii]_AXIS_BASETDEST 0x[format %X [expr $ii + 1]] CONFIG.M[format %02u $ii]_AXIS_HIGHTDEST 0x[format %X [expr $ii + 1]]
-				}
-			} elseif {$interconLevel == 1} {
-				for {set ii 0} {$ii < [expr $accNumInstances - 1]} {incr ii} {
-					for {set ii 0} {$ii < $j} {incr ii} {
-						lappend list_TDEST CONFIG.M[format %02u $ii]_AXIS_BASETDEST 0x[format %X [expr $accID - $j + $ii]] CONFIG.M[format %02u $ii]_AXIS_HIGHTDEST 0x[format %X [expr $accID - $j + $ii]]
-					}
-					for {set ii $j} {$ii < [expr $accNumInstances - 1]} {incr ii} {
-						lappend list_TDEST CONFIG.M[format %02u $ii]_AXIS_BASETDEST 0x[format %X [expr $accID - $j + $ii + 1]] CONFIG.M[format %02u $ii]_AXIS_HIGHTDEST 0x[format %X [expr $accID - $j + $ii + 1]]
-					}
-				}
-			}
-			set_property -dict $list_TDEST [get_bd_cells ${accName}_${j}_outStream]
-		}
 
 		regenerate_bd_layout -hierarchy [get_bd_cell ${accName}_$j]
 

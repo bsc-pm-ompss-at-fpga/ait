@@ -98,7 +98,6 @@ def generate_Vivado_variables_tcl():
                                 + 'variable arch_type ' + board.arch.type + '\n' \
                                 + 'variable arch_bits ' + str(board.arch.bits) + '\n' \
                                 + 'variable interconOpt ' + str(args.interconnect_opt + 1) + '\n' \
-                                + 'variable interconLevel ' + str(args.interconnection_level) + '\n' \
                                 + 'variable debugInterfaces ' + str(args.debug_intfs) + '\n' \
                                 + 'variable interconRegSlice_all ' + regslice_all + '\n' \
                                 + 'variable interconRegSlice_ddr ' + regslice_ddr + '\n' \

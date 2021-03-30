@@ -134,7 +134,6 @@ class ArgParser:
         bitstream_args.add_argument('-c', '--clock', help='FPGA clock frequency in MHz\n(def: \'100\')', type=int, default='100')
         bitstream_args.add_argument('--hwruntime', help='add a hardware runtime. Available hardware runtimes by vendor:\n' + '\n'.join([key + ': ' + ', '.join([value for value in values]) for key, values in available_hwruntimes.items()]) + '\n(def: som)', choices=[value for key, values in available_hwruntimes.items() for value in values], metavar='HWRUNTIME', default='som')
         bitstream_args.add_argument('--hwcounter', help='add a hardware counter to the bitstream', action='store_true', default=False)
-        bitstream_args.add_argument('--interconnection_level', help='specify the desired level of interconnection between accelerators. Affects resource utilization\nbasic: accelerators are only connected to themselves and hwruntime\ntype: adds interconnection between accelerators of the same type\nfull: all accelerators are interconnected\n(def: \'basic\')', choices=['basic', 'type', 'full'], metavar='LEVEL', action=StoreChoiceValue, default=0)
         bitstream_args.add_argument('--wrapper_version', help='version of accelerator wrapper shell. This information will be placed in the bitstream information', type=int)
         bitstream_args.add_argument('--datainterfaces_map', help='path of mappings file for the data interfaces', action=StorePath)
 
