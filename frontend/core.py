@@ -74,6 +74,7 @@ def get_accelerators(project_path):
     global accels
     global num_accels
     global num_instances
+    global num_accel_creators
 
     if args.verbose_info:
         msg.log('Searching accelerators in folder: ' + os.getcwd())
@@ -82,6 +83,7 @@ def get_accelerators(project_path):
     accel_ids = []
     num_accels = 0
     num_instances = 0
+    num_accel_creators = 0
     args.extended_hwruntime = False  # Can't be enabled if no accelerator requires it
     args.lock_hwruntime = False  # Will not be enabled if no accelerator requires it
 
@@ -108,6 +110,7 @@ def get_accelerators(project_path):
         # Check if the accel uses extended hwruntime features
         if 'nanos_fpga_current_wd' in open(file_).read():
             args.extended_hwruntime = True
+            num_accel_creators += accel.num_instances
             accels.insert(0, accel)
         else:
             accels.append(accel)
@@ -181,6 +184,7 @@ def ait_main():
         'path': os.path.normpath(os.path.realpath(args.dir) + '/' + args.name + '_ait'),
         'num_accels': num_accels,
         'num_instances': num_instances,
+        'num_accel_creators': num_accel_creators,
         'accels': accels,
         'board': board,
         'args': args

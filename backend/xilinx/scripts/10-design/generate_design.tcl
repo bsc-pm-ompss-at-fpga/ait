@@ -130,13 +130,16 @@ proc create_inStream_Inter_tree { stream_name nmasters nslaves } {
 			set num_si 16
 		}
 
+		# In case there is only one slave do not set arbitration parameters to avoid Vivado warnings
+		if {$num_si > 1} {
+			set inter_conf [list CONFIG.ARB_ON_MAX_XFERS {0} CONFIG.ARB_ON_TLAST {1}]
+		} else {
+			set inter_conf {}
+		}
+
 		set inter [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_interconnect $inter_name ]
-		set_property -dict [ list \
-			CONFIG.ARB_ON_MAX_XFERS {0} \
-			CONFIG.ARB_ON_TLAST {1} \
-			CONFIG.NUM_MI $nmasters \
-			CONFIG.NUM_SI $num_si \
-		] $inter
+		lappend inter_conf CONFIG.NUM_MI $nmasters CONFIG.NUM_SI $num_si
+		set_property -dict $inter_conf $inter
 
 		connectClock [get_bd_pins $inter_name/ACLK]
 		connectRst [get_bd_pins $inter_name/ARESETN] "interconnect"
@@ -169,15 +172,19 @@ proc create_inStream_Inter_tree { stream_name nmasters nslaves } {
 					set num_si 16
 				}
 
+				if {$num_si > 1} {
+					set inter_conf [list CONFIG.ARB_ON_MAX_XFERS {0} CONFIG.ARB_ON_TLAST {1}]
+				} else {
+					set inter_conf {}
+				}
+
 				set inter [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_interconnect $inter_name ]
-				set_property -dict [ list \
-					CONFIG.ARB_ON_MAX_XFERS {0} \
-					CONFIG.ARB_ON_TLAST {1} \
+				lappend inter_conf \
 					CONFIG.M00_AXIS_BASETDEST {0x00000000} \
 					CONFIG.M00_AXIS_HIGHTDEST {0xFFFFFFFF} \
 					CONFIG.NUM_MI {1} \
-					CONFIG.NUM_SI $num_si \
-				] $inter
+					CONFIG.NUM_SI $num_si
+				set_property -dict $inter_conf $inter
 
 				connectClock [get_bd_pins $inter_name/ACLK]
 				connectRst [get_bd_pins $inter_name/ARESETN] "interconnect"
@@ -218,6 +225,13 @@ proc create_outStream_Inter_tree { stream_name nslaves nmasters } {
 	set inter_level 0
 	set stride 1
 
+	# In case there is only one slave do not set arbitration parameters to avoid Vivado warnings
+	if {$nslaves > 1} {
+		set arb_config [list CONFIG.ARB_ON_MAX_XFERS {0} CONFIG.ARB_ON_TLAST {1}]
+	} else {
+		set arb_config {}
+	}
+
 	# First level uses interconnects with more than one slave if required
 	for {set i 0} {$i < $ninter} {incr i} {
 		set inter_name ${stream_name}_lvl${inter_level}_$i
@@ -230,12 +244,8 @@ proc create_outStream_Inter_tree { stream_name nslaves nmasters } {
 		}
 
 		set inter [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_interconnect $inter_name ]
-		set inter_conf [ list \
-			CONFIG.ARB_ON_MAX_XFERS {0} \
-			CONFIG.ARB_ON_TLAST {1} \
-			CONFIG.NUM_MI $num_mi \
-			CONFIG.NUM_SI $nslaves \
-		]
+		set inter_conf $arb_config
+		lappend inter_conf CONFIG.NUM_MI $num_mi CONFIG.NUM_SI $nslaves
 
 		for {set j 0} {$j < $num_mi} {incr j} {
 			set master_num [ format %02u $j ]
@@ -438,7 +448,9 @@ proc connectToCoherentInterface {src {num ""}} {
 proc createAXISInterconnect {name numSlaves numMasters} {
 	create_bd_cell -type ip -vlnv xilinx.com:ip:axis_interconnect $name
 	set_property -dict [list CONFIG.NUM_SI $numSlaves CONFIG.NUM_MI $numMasters] [get_bd_cells $name]
-	set_property -dict [list CONFIG.ARB_ON_TLAST {1} CONFIG.ARB_ON_MAX_XFERS {0}] [get_bd_cells $name]
+	if {$numSlaves > 1} {
+		set_property -dict [list CONFIG.ARB_ON_TLAST {1} CONFIG.ARB_ON_MAX_XFERS {0}] [get_bd_cells $name]
+	}
 
 	connectClock [get_bd_pins $name/ACLK]
 	connectRst [get_bd_pins $name/ARESETN] "interconnect"
@@ -647,9 +659,11 @@ if {$hwruntime == "som"} {
 	set hwruntime_max_accs [expr max($num_accs, 2)]
 	set_property -dict [list CONFIG.Write_Depth_A [expr $cmdInSubqueue_len*$hwruntime_max_accs] CONFIG.Write_Width_B {32} CONFIG.Read_Width_B {32}] [get_bd_cells Hardware_Runtime/cmdInQueue]
 	set_property -dict [list CONFIG.Write_Depth_A [expr $cmdOutSubqueue_len*$hwruntime_max_accs] CONFIG.Write_Width_B {32} CONFIG.Read_Width_B {32}] [get_bd_cells Hardware_Runtime/cmdOutQueue]
-	set_property -dict [list CONFIG.MAX_ACCS $hwruntime_max_accs CONFIG.MAX_ACC_CREATORS $hwruntime_max_accs] [get_bd_cells Hardware_Runtime/$name_hwruntime]
+	set_property -dict [list CONFIG.MAX_ACCS $hwruntime_max_accs] [get_bd_cells Hardware_Runtime/$name_hwruntime]
 
 	if {$extended_hwruntime} {
+		set hwruntime_max_acc_creators [expr max($num_acc_creators, 2)]
+		set_property -dict [list CONFIG.MAX_ACC_CREATORS $hwruntime_max_acc_creators] [get_bd_cells Hardware_Runtime/$name_hwruntime]
 		set_property -dict [list CONFIG.Write_Depth_A $spawnInQueue_len CONFIG.Write_Width_B {32} CONFIG.Read_Width_B {32}] [get_bd_cells Hardware_Runtime/spawnInQueue]
 		set_property -dict [list CONFIG.Write_Depth_A $spawnOutQueue_len CONFIG.Write_Width_B {32} CONFIG.Read_Width_B {32}] [get_bd_cells Hardware_Runtime/spawnOutQueue]
 		# Add the second port to bitInfo and connect it to SOM
@@ -680,9 +694,11 @@ if {$hwruntime == "som"} {
 	set hwruntime_max_accs [expr max($num_accs, 2)]
 	set_property -dict [list CONFIG.Write_Depth_A [expr $cmdInSubqueue_len*$hwruntime_max_accs] CONFIG.Write_Width_B {32} CONFIG.Read_Width_B {32}] [get_bd_cells Hardware_Runtime/cmdInQueue]
 	set_property -dict [list CONFIG.Write_Depth_A [expr $cmdOutSubqueue_len*$hwruntime_max_accs] CONFIG.Write_Width_B {32} CONFIG.Read_Width_B {32}] [get_bd_cells Hardware_Runtime/cmdOutQueue]
-	set_property -dict [list CONFIG.MAX_ACCS $hwruntime_max_accs CONFIG.MAX_ACC_CREATORS $hwruntime_max_accs] [get_bd_cells Hardware_Runtime/$name_hwruntime]
+	set_property -dict [list CONFIG.MAX_ACCS $hwruntime_max_accs] [get_bd_cells Hardware_Runtime/$name_hwruntime]
 
 	if {$extended_hwruntime} {
+		set hwruntime_max_acc_creators [expr max($num_acc_creators, 2)]
+		set_property -dict [list CONFIG.MAX_ACC_CREATORS $hwruntime_max_acc_creators] [get_bd_cells Hardware_Runtime/$name_hwruntime]
 		set_property -dict [list CONFIG.Write_Depth_A $spawnInQueue_len CONFIG.Write_Width_B {32} CONFIG.Read_Width_B {32}] [get_bd_cells Hardware_Runtime/spawnInQueue]
 		set_property -dict [list CONFIG.Write_Depth_A $spawnOutQueue_len CONFIG.Write_Width_B {32} CONFIG.Read_Width_B {32}] [get_bd_cells Hardware_Runtime/spawnOutQueue]
 		# Add the second port to bitInfo and connect it to POM
@@ -697,67 +713,64 @@ if {$hwruntime == "som"} {
 set_property -dict [list CONFIG.MAX_ACC_TYPES [expr max([llength $accels], 2)]] [get_bd_cells Hardware_Runtime/$name_hwruntime]
 set_property -dict [list CONFIG.CMDIN_SUBQUEUE_LEN $cmdInSubqueue_len CONFIG.CMDOUT_SUBQUEUE_LEN $cmdOutSubqueue_len] [get_bd_cells Hardware_Runtime/$name_hwruntime]
 set num_hwruntime_intf 1
+set num_common_hwruntime_intf 1
+set num_acc_no_creators [expr $num_accs-$num_acc_creators]
 if {$lock_hwruntime} {
-	incr num_hwruntime_intf 1
+	incr num_common_hwruntime_intf
+	incr num_hwruntime_intf
 	# Enable lock support if needed
 	set_property -dict [list CONFIG.LOCK_SUPPORT {1}] [get_bd_cells Hardware_Runtime/$name_hwruntime]
 }
 if {$extended_hwruntime} {
-   set_property -dict [list CONFIG.SPAWNIN_QUEUE_LEN $spawnInQueue_len CONFIG.SPAWNOUT_QUEUE_LEN $spawnOutQueue_len] [get_bd_cells Hardware_Runtime/$name_hwruntime]
+	set_property -dict [list CONFIG.SPAWNIN_QUEUE_LEN $spawnInQueue_len CONFIG.SPAWNOUT_QUEUE_LEN $spawnOutQueue_len] [get_bd_cells Hardware_Runtime/$name_hwruntime]
 	incr num_hwruntime_intf 2
 }
-# Create interconnect hierarchy to connect with accelerators
-create_inStream_Inter_tree Hardware_Runtime/inStream_Inter $num_hwruntime_intf $num_accs
-set max_level [create_outStream_Inter_tree Hardware_Runtime/outStream_Inter $num_hwruntime_intf $num_accs]
-set ninter [expr int(ceil($num_accs/16.))]
-for {set i 0} {$i < $ninter} {incr i} {
-	set_property -dict [ list \
-		CONFIG.M00_AXIS_BASETDEST {0x00} \
-		CONFIG.M00_AXIS_HIGHTDEST {0x00} \
-		CONFIG.M01_AXIS_BASETDEST {0x02} \
-		CONFIG.M01_AXIS_HIGHTDEST {0x03} \
-		CONFIG.M02_AXIS_BASETDEST {0x04} \
-		CONFIG.M02_AXIS_HIGHTDEST {0x04} \
-		CONFIG.M03_AXIS_BASETDEST {0x01} \
-		CONFIG.M03_AXIS_HIGHTDEST {0x01} \
-	] [ get_bd_cell Hardware_Runtime/inStream_Inter_lvl0_$i ]
-}
-set hwruntime_path Hardware_Runtime/$name_hwruntime
-set lock_intf_num [format %02u [expr $num_hwruntime_intf-1]]
-if {$max_level == 0} {
-	connect_bd_intf_net [get_bd_intf_pins $hwruntime_path/cmdout_in] [get_bd_intf_pins Hardware_Runtime/inStream_Inter_lvl0_0/M00_AXIS]
-	connect_bd_intf_net [get_bd_intf_pins $hwruntime_path/cmdin_out] [get_bd_intf_pins Hardware_Runtime/outStream_Inter_lvl0_0/S00_AXIS]
-	if {$extended_hwruntime} {
-		connect_bd_intf_net [get_bd_intf_pins $hwruntime_path/spawn_in] [get_bd_intf_pins Hardware_Runtime/inStream_Inter_lvl0_0/M01_AXIS]
-		connect_bd_intf_net [get_bd_intf_pins $hwruntime_path/taskwait_in] [get_bd_intf_pins Hardware_Runtime/inStream_Inter_lvl0_0/M02_AXIS]
-		connect_bd_intf_net [get_bd_intf_pins $hwruntime_path/spawn_out] [get_bd_intf_pins Hardware_Runtime/outStream_Inter_lvl0_0/S01_AXIS]
-		connect_bd_intf_net [get_bd_intf_pins $hwruntime_path/taskwait_out] [get_bd_intf_pins Hardware_Runtime/outStream_Inter_lvl0_0/S02_AXIS]
-	}
-	if {$lock_hwruntime} {
-		connect_bd_intf_net [get_bd_intf_pins $hwruntime_path/lock_in] [get_bd_intf_pins Hardware_Runtime/inStream_Inter_lvl0_0/M${lock_intf_num}_AXIS]
-		connect_bd_intf_net [get_bd_intf_pins $hwruntime_path/lock_out] [get_bd_intf_pins Hardware_Runtime/outStream_Inter_lvl0_0/S${lock_intf_num}_AXIS]
-	}
-} else {
-	connect_bd_intf_net [get_bd_intf_pins $hwruntime_path/cmdout_in] [get_bd_intf_pins Hardware_Runtime/inStream_Inter_lvl${max_level}_m0_0/M00_AXIS]
-	connect_bd_intf_net [get_bd_intf_pins $hwruntime_path/cmdin_out] [get_bd_intf_pins Hardware_Runtime/outStream_Inter_lvl${max_level}_s0_0/S00_AXIS]
-	if {$extended_hwruntime} {
-		connect_bd_intf_net [get_bd_intf_pins $hwruntime_path/spawn_in] [get_bd_intf_pins Hardware_Runtime/inStream_Inter_lvl${max_level}_m1_0/M00_AXIS]
-		connect_bd_intf_net [get_bd_intf_pins $hwruntime_path/taskwait_in] [get_bd_intf_pins Hardware_Runtime/inStream_Inter_lvl${max_level}_m2_0/M00_AXIS]
-		connect_bd_intf_net [get_bd_intf_pins $hwruntime_path/spawn_out] [get_bd_intf_pins Hardware_Runtime/outStream_Inter_lvl${max_level}_s1_0/S00_AXIS]
-		connect_bd_intf_net [get_bd_intf_pins $hwruntime_path/taskwait_out] [get_bd_intf_pins Hardware_Runtime/outStream_Inter_lvl${max_level}_s2_0/S00_AXIS]
-	}
-	if {$lock_hwruntime} {
-		connect_bd_intf_net [get_bd_intf_pins $hwruntime_path/lock_in] [get_bd_intf_pins Hardware_Runtime/inStream_Inter_lvl${max_level}_m${lock_intf_num}_0/M00_AXIS]
-		connect_bd_intf_net [get_bd_intf_pins $hwruntime_path/lock_out] [get_bd_intf_pins Hardware_Runtime/outStream_Inter_lvl${max_level}_s${lock_intf_num}_0/S00_AXIS]
-	}
-}
+
+#prefix_inStream
+set pi hwr_inStream
+#prefix_outStream
+set po hwr_outStream
+create_bd_cell -type hier $pi
+create_bd_cell -type hier $po
+
 for {set i 0} {$i < $num_accs} {incr i} {
-	set inStream_intf [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 Hardware_Runtime/inStream_$i]
-	set outStream_intf [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 Hardware_Runtime/outStream_$i]
-	set inter_i [expr int($i/16)]
-	set intf_i [format %02u [expr $i%16]]
-	connect_bd_intf_net $inStream_intf [get_bd_intf_pins Hardware_Runtime/inStream_Inter_lvl0_${inter_i}/S${intf_i}_AXIS]
-	connect_bd_intf_net $outStream_intf [get_bd_intf_pins Hardware_Runtime/outStream_Inter_lvl0_${inter_i}/M${intf_i}_AXIS]
+	# Don't format i because there can potentially be more than 100 accelerators
+	create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 $pi/S${i}_AXIS
+	create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 $po/M${i}_AXIS
+}
+
+create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 $pi/cmdout_in
+create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 $po/cmdin_out
+if {$extended_hwruntime} {
+	create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 $pi/spawn_in
+	create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 $pi/taskwait_in
+	create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 $po/spawn_out
+	create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 $po/taskwait_out
+}
+if {$lock_hwruntime} {
+	create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 $pi/lock_in
+	create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 $po/lock_out
+}
+
+if {[catch {source -notrace $hwruntime_interconnect_script}]} {
+	aitError "Failed sourcing hwr_central_interconnect"
+}
+
+# Move the interconnects to the Hardware_Runtime hierarchy
+move_bd_cells [get_bd_cells Hardware_Runtime] [get_bd_cells $pi]
+move_bd_cells [get_bd_cells Hardware_Runtime] [get_bd_cells $po]
+
+connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/$name_hwruntime/cmdout_in] [get_bd_intf_pins Hardware_Runtime/$pi/cmdout_in]
+connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/$name_hwruntime/cmdin_out] [get_bd_intf_pins Hardware_Runtime/$po/cmdin_out]
+if {$extended_hwruntime} {
+	connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/$name_hwruntime/spawn_in] [get_bd_intf_pins Hardware_Runtime/$pi/spawn_in]
+	connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/$name_hwruntime/spawn_out] [get_bd_intf_pins Hardware_Runtime/$po/spawn_out]
+	connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/$name_hwruntime/taskwait_in] [get_bd_intf_pins Hardware_Runtime/$pi/taskwait_in]
+	connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/$name_hwruntime/taskwait_out] [get_bd_intf_pins Hardware_Runtime/$po/taskwait_out]
+}
+if {$lock_hwruntime} {
+	connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/$name_hwruntime/lock_in] [get_bd_intf_pins Hardware_Runtime/$pi/lock_in]
+	connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/$name_hwruntime/lock_out] [get_bd_intf_pins Hardware_Runtime/$po/lock_out]
 }
 
 # Set and get the actual PS frequency
@@ -867,8 +880,8 @@ foreach acc $accels {
 			connect_bd_net [get_bd_pins ${accName}_$j/accFreq/dout] [get_bd_pins ${accName}_$j/$accName/mcxx_freqPort*]
 		}
 
-		connect_bd_intf_net -boundary_type upper [get_bd_intf_pins ${accName}_${j}/outStream] [get_bd_intf_pins Hardware_Runtime/inStream_$accID]
-		connect_bd_intf_net -boundary_type upper [get_bd_intf_pins ${accName}_${j}/inStream] [get_bd_intf_pins Hardware_Runtime/outStream_$accID]
+		connect_bd_intf_net -boundary_type upper [get_bd_intf_pins ${accName}_${j}/outStream] [get_bd_intf_pins Hardware_Runtime/$pi/S${accID}_AXIS]
+		connect_bd_intf_net -boundary_type upper [get_bd_intf_pins ${accName}_${j}/inStream] [get_bd_intf_pins Hardware_Runtime/$po/M${accID}_AXIS]
 
 		set_property -dict [list CONFIG.CONST_VAL $accID CONFIG.CONST_WIDTH [expr max(int(ceil(log($num_accs)/log(2))), 1)]] [get_bd_cells ${accName}_$j/accID]
 
@@ -1105,28 +1118,6 @@ if {$interconRegSlice_all} {
 		}
 		for {set i 0} {$i < [get_property CONFIG.NUM_SI [get_bd_cells $inter]]} {incr i} {
 			set_property -dict [list CONFIG.S[format %02u $i]_HAS_REGSLICE {4}] [get_bd_cells $inter]
-		}
-	}
-}
-
-if {[expr $interconRegSlice_hwruntime || $interconRegSlice_all]} {
-	set inStream_interconnects [get_bd_cells Hardware_Runtime/inStream_Inter_lvl0_*]
-	set outStream_interconnects [get_bd_cells Hardware_Runtime/outStream_Inter_lvl0_*]
-
-	foreach inter $inStream_interconnects {
-		for {set i 0} {$i < [get_property CONFIG.NUM_MI $inter]} {incr i} {
-			set_property -dict [list CONFIG.M[format %02u $i]_HAS_REGSLICE {1}] $inter
-		}
-		for {set i 0} {$i < [get_property CONFIG.NUM_SI $inter]} {incr i} {
-			set_property -dict [list CONFIG.S[format %02u $i]_HAS_REGSLICE {1}] $inter
-		}
-	}
-	foreach inter $outStream_interconnects {
-		for {set i 0} {$i < [get_property CONFIG.NUM_MI $inter]} {incr i} {
-			set_property -dict [list CONFIG.M[format %02u $i]_HAS_REGSLICE {1}] $inter
-		}
-		for {set i 0} {$i < [get_property CONFIG.NUM_SI $inter]} {incr i} {
-			set_property -dict [list CONFIG.S[format %02u $i]_HAS_REGSLICE {1}] $inter
 		}
 	}
 }

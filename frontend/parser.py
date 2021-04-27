@@ -151,6 +151,7 @@ class ArgParser:
         hwruntime_args.add_argument('--cmdout_subqueue_len', help='Length (64-bit words) of each accelerator subqueue for the hwruntime command out. This argument is mutually exclusive with --cmdout_queue_len\nMust be power of 2\nDef. max(64, 1024/num_accs)', type=IntRange(2))
         hwruntime_args.add_argument('--spawnin_queue_len', help='Length (64-bit words) of the hwruntime spawn in queue\nMust be power of 2', type=IntRange(4), default=1024)
         hwruntime_args.add_argument('--spawnout_queue_len', help='Length (64-bit words) of the hwruntime spawn out queue\nMust be power of 2', type=IntRange(4), default=1024)
+        hwruntime_args.add_argument('--hwruntime_interconnect', help='Type of the hardware runtime interconnection with the accelerators', choices=['centralized', 'distributed'], default='centralized')
 
         # Miscellaneous arguments
         misc_args = self.parser.add_argument_group('Miscellaneous')
@@ -244,9 +245,9 @@ class ArgParser:
             return num
 
         if args.cmdin_subqueue_len is not None and args.cmdin_queue_len is not None:
-            msg.error('--cmdin_subqueue_len and --cmdin_queue_len are mutually exclusive')
+            msg.error('--cmdin_subqueue_len and --cmdin_queue_len are mutually exclusive', True)
         if args.cmdout_subqueue_len is not None and args.cmdout_queue_len is not None:
-            msg.error('--cmdout_subqueue_len and --cmdout_queue_len are mutually exclusive')
+            msg.error('--cmdout_subqueue_len and --cmdout_queue_len are mutually exclusive', True)
 
         if args.cmdin_queue_len is not None:
             args.cmdin_subqueue_len = prev_power_of_2(int(args.cmdin_queue_len / num_accs))
@@ -260,21 +261,21 @@ class ArgParser:
             args.cmdout_subqueue_len = max(64, prev_power_of_2(int(1024 / num_accs)))
 
         if args.cmdin_subqueue_len & (args.cmdin_subqueue_len - 1) != 0:
-            msg.error('--cmdin_subqueue_len must be power of 2')
+            msg.error('--cmdin_subqueue_len must be power of 2', True)
         # The subqueue length has to be checked here in the case the user provides the cmdin queue length
         if args.cmdin_subqueue_len < 4:
-            msg.error('--cmdin_subqueue_len min value is 4')
+            msg.error('--cmdin_subqueue_len min value is 4', True)
         if args.cmdin_subqueue_len < 34:
             msg.warning('WARNING: Value of --cmdin_subqueue_len={} is less than 34, which is the length of the longest command possible. This design might not work with tasks with enough arguments.'.format(args.cmdin_subqueue_len))
         if args.cmdout_subqueue_len & (args.cmdout_subqueue_len - 1) != 0:
-            msg.error('--cmdout_subqueue_len must be power of 2')
+            msg.error('--cmdout_subqueue_len must be power of 2', True)
         # Same for the cmdout subqueue length
         if args.cmdout_subqueue_len < 2:
-            msg.error('--cmdout_subqueue_len min value is 2')
+            msg.error('--cmdout_subqueue_len min value is 2', True)
         if args.spawnin_queue_len & (args.spawnin_queue_len - 1) != 0:
-            msg.error('--spawnin_queue_len must be power of 2')
+            msg.error('--spawnin_queue_len must be power of 2', True)
         if args.spawnout_queue_len & (args.spawnout_queue_len - 1) != 0:
-            msg.error('--spawnout_queue_len must be power of 2')
+            msg.error('--spawnout_queue_len must be power of 2', True)
         if args.spawnout_queue_len < 79:
             msg.warning('WARNING: Value of --spawnout_queue_len={} is less than 79, which is the length of the longest task possible. This design might not work if an accelerator creates SMP tasks with enough copies, dependencies and/or arguments.'.format(args.spawnout_queue_len))
 
