@@ -20,14 +20,16 @@
 
 # Configuration variables
 set script_path [file dirname [file normalize [info script]]]
-source -notrace $script_path/../projectVariables.tcl
+if {[catch {source -notrace $script_path/../projectVariables.tcl}]} {
+	puts "\[AIT\] ERROR: Failed sourcing project variables"
+}
 
 # Open Vivado project
 open_project $path_Project/$name_Project/$name_Project.xpr
 
 # Check if previous step finished correctly
 if {[string match "*ERROR*" [get_property STATUS [get_runs *impl_1]]]} {
-	error "\[AIT\] ERROR: Implementation step did not finished correctly. Cannot generate bitstream."
+	aitError "Implementation step did not finished correctly. Cannot generate bitstream."
 }
 
 # Open and validate Block Design
@@ -42,7 +44,7 @@ wait_on_run impl_1
 
 # Check if bitstream generation finished correctly
 if {[string match "*ERROR*" [get_property STATUS [get_runs *impl_1]]]} {
-	error "\[AIT\] ERROR: Bitstream generation failed."
+	aitError "Bitstream generation failed."
 }
 
 file mkdir $path_Project/$name_Project/$name_Project.sdk

@@ -143,15 +143,15 @@ class ArgParser:
         user_args.add_argument('--user_pre_design', help='path of user TCL script to be executed before the design step (not after the board base design)', action=StorePath)
         user_args.add_argument('--user_post_design', help='path of user TCL script to be executed after the design step', action=StorePath)
 
-        # Hwruntime arguments
-        hwruntime_args = self.parser.add_argument_group('Hwruntime')
-        hwruntime_args.add_argument('--cmdin_queue_len', help='Maximum length (64-bit words) of the queue for the hwruntime command in\nThis argument is mutually exclusive with --cmdin_subqueue_len', type=IntRange(4))
-        hwruntime_args.add_argument('--cmdin_subqueue_len', help='Length (64-bit words) of each accelerator subqueue for the hwruntime command in.\nThis argument is mutually exclusive with --cmdin_queue_len\nMust be power of 2\nDef. max(64, 1024/num_accs)', type=IntRange(4))
-        hwruntime_args.add_argument('--cmdout_queue_len', help='Maximum length (64-bit words) of the queue for the hwruntime command out\nThis argument is mutually exclusive with --cmdout_subqueue_len', type=IntRange(2))
-        hwruntime_args.add_argument('--cmdout_subqueue_len', help='Length (64-bit words) of each accelerator subqueue for the hwruntime command out. This argument is mutually exclusive with --cmdout_queue_len\nMust be power of 2\nDef. max(64, 1024/num_accs)', type=IntRange(2))
-        hwruntime_args.add_argument('--spawnin_queue_len', help='Length (64-bit words) of the hwruntime spawn in queue\nMust be power of 2', type=IntRange(4), default=1024)
-        hwruntime_args.add_argument('--spawnout_queue_len', help='Length (64-bit words) of the hwruntime spawn out queue\nMust be power of 2', type=IntRange(4), default=1024)
-        hwruntime_args.add_argument('--hwruntime_interconnect', help='Type of the hardware runtime interconnection with the accelerators', choices=['centralized', 'distributed'], default='centralized')
+        # Hardware Runtime arguments
+        hwruntime_args = self.parser.add_argument_group('Hardware Runtime')
+        hwruntime_args.add_argument('--cmdin_queue_len', help='maximum length (64-bit words) of the queue for the hwruntime command in\nThis argument is mutually exclusive with --cmdin_subqueue_len', type=IntRange(4))
+        hwruntime_args.add_argument('--cmdin_subqueue_len', help='length (64-bit words) of each accelerator subqueue for the hwruntime command in.\nThis argument is mutually exclusive with --cmdin_queue_len\nMust be power of 2\nDef. max(64, 1024/num_accs)', type=IntRange(4))
+        hwruntime_args.add_argument('--cmdout_queue_len', help='maximum length (64-bit words) of the queue for the hwruntime command out\nThis argument is mutually exclusive with --cmdout_subqueue_len', type=IntRange(2))
+        hwruntime_args.add_argument('--cmdout_subqueue_len', help='length (64-bit words) of each accelerator subqueue for the hwruntime command out. This argument is mutually exclusive with --cmdout_queue_len\nMust be power of 2\nDef. max(64, 1024/num_accs)', type=IntRange(2))
+        hwruntime_args.add_argument('--spawnin_queue_len', help='length (64-bit words) of the hwruntime spawn in queue\nMust be power of 2', type=IntRange(4), default=1024)
+        hwruntime_args.add_argument('--spawnout_queue_len', help='length (64-bit words) of the hwruntime spawn out queue\nMust be power of 2', type=IntRange(4), default=1024)
+        hwruntime_args.add_argument('--hwruntime_interconnect', help='type of hardware runtime interconnection with accelerators', choices=['centralized', 'distributed'], default='centralized')
 
         # Miscellaneous arguments
         misc_args = self.parser.add_argument_group('Miscellaneous')
@@ -206,26 +206,26 @@ class ArgParser:
     def check_required_args(self, args):
         # Validate required args
         if not re.match('^[A-Za-z][A-Za-z0-9_]*$', args.name):
-            msg.error('Invalid project name. Must start with a letter and contain only letters, numbers or underscores', True)
+            msg.error('Invalid project name. Must start with a letter and contain only letters, numbers or underscores')
 
         if args.wrapper_version and args.wrapper_version < MIN_WRAPPER_VERSION:
             msg.error('Unsupported wrapper version (' + str(args.wrapper_version) + '). Minimum version is ' + str(MIN_WRAPPER_VERSION))
 
         if not os.path.isdir(args.dir):
-            msg.error('Project directory (' + args.dir + ') does not exist or is not a folder', True)
+            msg.error('Project directory (' + args.dir + ') does not exist or is not a folder')
         elif not os.path.exists(args.dir + '/' + args.name + '_ait'):
             os.mkdir(args.dir + '/' + args.name + '_ait')
 
     def check_flow_args(self, args):
         # Validate flow args
         if args.from_step not in generation_steps[args.backend]:
-            msg.error('Initial step \'' + args.from_step + '\' is not a valid generation step for \'' + args.backend + '\' backend. Set it correctly', True)
+            msg.error('Initial step \'' + args.from_step + '\' is not a valid generation step for \'' + args.backend + '\' backend. Set it correctly')
 
         if args.to_step not in generation_steps[args.backend]:
-            msg.error('Final step \'' + args.to_step + '\' is not a valid generation step for \'' + args.backend + '\' backend. Set it correctly', True)
+            msg.error('Final step \'' + args.to_step + '\' is not a valid generation step for \'' + args.backend + '\' backend. Set it correctly')
 
         if generation_steps[args.backend].index(args.from_step) > generation_steps[args.backend].index(args.to_step):
-            msg.error('Initial step \'' + args.from_step + '\' is posterior to the final step \'' + args.to_step + '\'. Set them correctly', True)
+            msg.error('Initial step \'' + args.from_step + '\' is posterior to the final step \'' + args.to_step + '\'. Set them correctly')
 
         if not args.disable_IP_caching and not os.path.isdir(args.IP_cache_location):
             if self.is_default('IP_cache_location', args.backend):
@@ -233,10 +233,10 @@ class ArgParser:
                 os.makedirs(args.IP_cache_location)
                 os.chmod(args.IP_cache_location, 0o777)
             else:
-                msg.error('Cache location (' + args.IP_cache_location + ') does not exist or is not a folder', True)
+                msg.error('Cache location (' + args.IP_cache_location + ') does not exist or is not a folder')
 
     # This check has to be delayed because arguments are parsed before the number of accelerators is calculated
-    def check_hwruntime_args(self, args, num_accs):
+    def check_hardware_runtime_args(self, args, num_accs):
 
         def prev_power_of_2(num):
             if num & (num - 1) != 0:
@@ -245,9 +245,9 @@ class ArgParser:
             return num
 
         if args.cmdin_subqueue_len is not None and args.cmdin_queue_len is not None:
-            msg.error('--cmdin_subqueue_len and --cmdin_queue_len are mutually exclusive', True)
+            msg.error('--cmdin_subqueue_len and --cmdin_queue_len are mutually exclusive')
         if args.cmdout_subqueue_len is not None and args.cmdout_queue_len is not None:
-            msg.error('--cmdout_subqueue_len and --cmdout_queue_len are mutually exclusive', True)
+            msg.error('--cmdout_subqueue_len and --cmdout_queue_len are mutually exclusive')
 
         if args.cmdin_queue_len is not None:
             args.cmdin_subqueue_len = prev_power_of_2(int(args.cmdin_queue_len / num_accs))
@@ -261,23 +261,19 @@ class ArgParser:
             args.cmdout_subqueue_len = max(64, prev_power_of_2(int(1024 / num_accs)))
 
         if args.cmdin_subqueue_len & (args.cmdin_subqueue_len - 1) != 0:
-            msg.error('--cmdin_subqueue_len must be power of 2', True)
+            msg.error('--cmdin_subqueue_len must be power of 2')
         # The subqueue length has to be checked here in the case the user provides the cmdin queue length
-        if args.cmdin_subqueue_len < 4:
-            msg.error('--cmdin_subqueue_len min value is 4', True)
         if args.cmdin_subqueue_len < 34:
-            msg.warning('WARNING: Value of --cmdin_subqueue_len={} is less than 34, which is the length of the longest command possible. This design might not work with tasks with enough arguments.'.format(args.cmdin_subqueue_len))
+            msg.warning('Value of --cmdin_subqueue_len={} is less than 34, which is the length of the longest command possible. This design might not work with tasks with enough arguments.'.format(args.cmdin_subqueue_len))
         if args.cmdout_subqueue_len & (args.cmdout_subqueue_len - 1) != 0:
-            msg.error('--cmdout_subqueue_len must be power of 2', True)
+            msg.error('--cmdout_subqueue_len must be power of 2')
         # Same for the cmdout subqueue length
-        if args.cmdout_subqueue_len < 2:
-            msg.error('--cmdout_subqueue_len min value is 2', True)
         if args.spawnin_queue_len & (args.spawnin_queue_len - 1) != 0:
-            msg.error('--spawnin_queue_len must be power of 2', True)
+            msg.error('--spawnin_queue_len must be power of 2')
         if args.spawnout_queue_len & (args.spawnout_queue_len - 1) != 0:
-            msg.error('--spawnout_queue_len must be power of 2', True)
+            msg.error('--spawnout_queue_len must be power of 2')
         if args.spawnout_queue_len < 79:
-            msg.warning('WARNING: Value of --spawnout_queue_len={} is less than 79, which is the length of the longest task possible. This design might not work if an accelerator creates SMP tasks with enough copies, dependencies and/or arguments.'.format(args.spawnout_queue_len))
+            msg.warning('Value of --spawnout_queue_len={} is less than 79, which is the length of the longest task possible. This design might not work if an accelerator creates SMP tasks with enough copies, dependencies and/or arguments.'.format(args.spawnout_queue_len))
 
     def is_default(self, dest, backend):
         value = False

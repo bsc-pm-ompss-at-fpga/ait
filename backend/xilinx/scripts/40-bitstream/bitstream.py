@@ -240,7 +240,7 @@ def run_bitstream_step(project_args):
         retval = p.wait()
         del os.environ['MYVIVADO']
         if retval:
-            msg.error('Bitstream generation failed')
+            msg.error('Bitstream generation failed', False)
         else:
             shutil.copy2(glob.glob(project_backend_path + '/' + args.name + '/' + args.name
                          + '.runs/impl_1/' + args.name + '*.bit')[0],
@@ -252,8 +252,7 @@ def run_bitstream_step(project_args):
             gen_utilization_report(project_path + '/' + args.name + '.resources-impl.txt')
             gen_wns_report(project_path + '/' + args.name + '.timing-impl.txt')
     else:
-        sys.stdout.log.write('[AIT]: no Vivado .xpr file exists for the current project\n')
-        msg.error('Bitstream generation failed')
+        msg.error('No Vivado .xpr file exists for the current project. Bitstream generation failed')
 
 
 STEP_FUNC = run_bitstream_step

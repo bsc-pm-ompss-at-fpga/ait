@@ -20,14 +20,16 @@
 
 # Configuration variables
 set script_path [file dirname [file normalize [info script]]]
-source -notrace $script_path/../projectVariables.tcl
+if {[catch {source -notrace $script_path/../projectVariables.tcl}]} {
+	puts "\[AIT\] ERROR: Failed sourcing project variables"
+}
 
 # Open Vivado project
 open_project $path_Project/$name_Project/${name_Project}.xpr
 
 # Check if previous step finished correctly
 if {[string match "*ERROR*" [get_property STATUS [get_runs *synth_1]]]} {
-	error "\[AIT\] ERROR: Synthesis step did not finished correctly. Cannot start implementation step."
+	aitError "Synthesis step did not finished correctly. Cannot start implementation step."
 }
 
 # Open Block Design
@@ -44,6 +46,7 @@ wait_on_run impl_1
 
 # Check if implementation finished correctly
 if {[string match "*ERROR*" [get_property STATUS [get_runs *impl_1]]]} {
-	error "\[AIT\] ERROR: Hardware implementation failed."
+	aitInfo "Failed impl_1 implementation: [exec grep ERROR $path_Project/$name_Project/$name_Project.runs/impl_1/runme.log]"
+	aitError "Hardware implementation failed."
 }
 

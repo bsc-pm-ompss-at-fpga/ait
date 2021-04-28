@@ -42,9 +42,12 @@ class Logger(object):
         self.log = open(project_path + '/' + args.name + '.ait.log', 'w+')
         self.subprocess = subprocess.PIPE if args.verbose else self.log
         self.re_color = re.compile(r'\033\[[0,1][0-9,;]*m')
+        self.tag = '[AIT] ' if not args.verbose else ''
 
     def write(self, message):
         self.terminal.write(message)
+        if message != '\n':
+            self.log.write(self.tag)
         self.log.write(self.re_color.sub('', message))
         self.log.flush()
 
@@ -96,7 +99,7 @@ def get_accelerators(project_path):
         accel = Accelerator(acc_id, acc_name, acc_num_instances, acc_file, file_)
 
         if not re.match('^[A-Za-z][A-Za-z0-9_]*$', accel.short_name):
-            msg.error('\'' + accel.short_name + '\' is an invalid accelerator name. Must start with a letter and contain only letters, numbers or underscores', True)
+            msg.error('\'' + accel.short_name + '\' is an invalid accelerator name. Must start with a letter and contain only letters, numbers or underscores')
 
         msg.info('Found accelerator \'' + accel.short_name + '\'')
 
@@ -128,10 +131,10 @@ def get_accelerators(project_path):
         msg.error('No accelerators found in this folder')
 
     if args.extended_hwruntime and args.hwruntime is None:
-        msg.error('Some accelerator use Extended Hardware Runtime features but there is no Hardware Runtime enabled. Enable one using the --hwruntime option', True)
+        msg.error('Some accelerator use Extended Hardware Runtime features but there is no Hardware Runtime enabled. Enable one using the --hwruntime option')
 
     if args.lock_hwruntime and args.hwruntime is None:
-        msg.error('Some accelerator requires Lock support but there is no Hardware Runtime enabled. Enable one using the --hwruntime option', True)
+        msg.error('Some accelerator requires Lock support but there is no Hardware Runtime enabled. Enable one using the --hwruntime option')
 
     # Generate the .xtasks.config file
     xtasks_config_file = open(project_path + '/' + args.name + '.xtasks.config', 'w')
@@ -153,15 +156,15 @@ def ait_main():
 
     args = parser.parse_args()
     msg.setProjectName(args.name)
-    if args.verbose_info:
-        msg.setPrintTime(True)
+    msg.setPrintTime(args.verbose_info)
+    msg.setVerbose(args.verbose)
 
     msg.info('Using ' + args.backend + ' backend')
 
     board = json.load(open(ait_path + '/backend/' + args.backend + '/board/' + args.board + '/basic_info.json'), object_hook=JSONObject)
 
     if not int(board.frequency.min) <= args.clock <= int(board.frequency.max):
-        msg.error('Clock frequency requested (' + str(args.clock) + 'MHz) is not within the board range (' + str(board.frequency.min) + '-' + str(board.frequency.max) + 'MHz)', True)
+        msg.error('Clock frequency requested (' + str(args.clock) + 'MHz) is not within the board range (' + str(board.frequency.min) + '-' + str(board.frequency.max) + 'MHz)')
 
     project_path = os.path.normpath(os.path.realpath(args.dir + '/' + args.name + '_ait'))
     project_backend_path = os.path.normpath(project_path + '/' + args.backend)
@@ -178,7 +181,7 @@ def ait_main():
 
     get_accelerators(project_path)
 
-    parser.check_hwruntime_args(args, max(2, num_instances))
+    parser.check_hardware_runtime_args(args, max(2, num_instances))
 
     project_args = {
         'path': os.path.normpath(os.path.realpath(args.dir) + '/' + args.name + '_ait'),
@@ -203,7 +206,7 @@ def ait_main():
         else:
             msg.warning('Step \'' + step + '\' is disabled')
 
-    msg.success('Hardware automatic generation finished. ' + str(int(time.time() - start_time)) + 's elapsed')
+    msg.success('Accelerator automatic integration finished. ' + str(int(time.time() - start_time)) + 's elapsed')
 
 
 if __name__ == '__main__':

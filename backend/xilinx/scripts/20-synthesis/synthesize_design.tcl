@@ -20,7 +20,9 @@
 
 # Configuration variables
 set script_path [file dirname [file normalize [info script]]]
-source -notrace $script_path/../projectVariables.tcl
+if {[catch {source -notrace $script_path/../projectVariables.tcl}]} {
+	puts "\[AIT\] ERROR: Failed sourcing project variables"
+}
 
 # Open Vivado project
 open_project $path_Project/$name_Project/${name_Project}.xpr
@@ -42,5 +44,8 @@ wait_on_run synth_1
 
 # Check if synthesis finished correctly
 if {[string match "*ERROR*" [get_property STATUS [get_runs *synth_1]]]} {
-	error "\[AIT\] ERROR: Hardware synthesis failed."
+	foreach {i} [exec ls {*}[glob $path_Project/$name_Project/$name_Project.runs/*_synth_1/runme.log]] {
+		aitInfo "Failed OOC synthesis [exec dirname $i | xargs basename]: [exec grep ERROR $i]"
+	}
+	aitError "Hardware synthesis failed."
 }

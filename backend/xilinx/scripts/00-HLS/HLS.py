@@ -59,10 +59,19 @@ def update_resource_utilization(acc):
         res_msg += ', '.join(sorted(map(lambda r: r.tag + ' ' + r.text, list(root.find('AreaEstimates').find('Resources')))))
         msg.log(res_msg)
 
+    depleted_resources = False
+    error_message = 'Resource utilization over 100%\nResources estimation summary\n'
     for resource in root.find('AreaEstimates').find('Resources'):
         used_resources[resource.tag] = int(resource.text) * acc.num_instances + (int(used_resources[resource.tag]) if resource.tag in used_resources else 0)
-        if used_resources[resource.tag] > available_resources[resource.tag] and not args.disable_utilization_check:
-            msg.error(resource.tag + ' utilization over 100% (' + str(used_resources[resource.tag]) + '/' + str(available_resources[resource.tag]) + ')')
+        if used_resources[resource.tag] > available_resources[resource.tag]:
+            utilization_percentage = str(round(float(used_resources[resource.tag]) / float(available_resources[resource.tag]) * 100, 2))
+            report_string = '{0:<9} {1:>7} used | {2:>7} available - {3:>7}% utilization\n'
+            report_string_formatted = report_string.format(resource.tag, used_resources[resource.tag], available_resources[resource.tag], utilization_percentage)
+            error_message += report_string_formatted
+            depleted_resources = True
+
+    if not args.disable_utilization_check and depleted_resources:
+        msg.error(error_message.rstrip())
 
 
 def synthesize_accelerator(acc):
@@ -104,7 +113,7 @@ def synthesize_accelerator(acc):
 
     retval = p.wait()
     if retval:
-        msg.error('Synthesis of \'' + acc.short_name + '\' failed')
+        msg.error('Synthesis of \'' + acc.short_name + '\' failed', False)
         if not args.keep_files:
             shutil.rmtree(project_backend_path + '/HLS/' + acc.short_name, ignore_errors=True)
     else:

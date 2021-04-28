@@ -56,7 +56,7 @@ git lfs install
 
 #### Style testing
 
-The python code follows pycodestyle (formerly pep8) which is verified using the `pycode style` tool (can be installed with `pip install pycodestyle`).
+The python code follows pycodestyle (formerly pep8) which is verified using the `pycodestyle` tool (can be installed with `pip install pycodestyle`).
 To check the current source code just execute `pycodestyle`.
 
 #### Unit testing

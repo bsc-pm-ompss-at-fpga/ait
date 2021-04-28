@@ -92,12 +92,11 @@ def run_implementation_step(project_args):
         retval = p.wait()
         del os.environ['MYVIVADO']
         if retval:
-            msg.error('Hardware implementation failed')
+            msg.error('Hardware implementation failed', False)
         else:
             msg.success('Hardware implemented')
     else:
-        sys.stdout.log.write('[AIT]: no Vivado .xpr file exists for the current project\n')
-        msg.error('Hardware implementation failed')
+        msg.error('No Vivado .xpr file exists for the current project. Hardware implementation failed')
 
 
 STEP_FUNC = run_implementation_step

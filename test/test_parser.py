@@ -86,7 +86,7 @@ class Test_IP_caching(unittest.TestCase):
         parser.check_flow_args(args)
 
         parser.is_default.assert_called_with('IP_cache_location', args.backend)
-        msg_error.assert_called_with(ANY, True)
+        msg_error.assert_called_with(ANY)
 
     def test_enabled_default(self):
         # Create the args object which could contain any attribute

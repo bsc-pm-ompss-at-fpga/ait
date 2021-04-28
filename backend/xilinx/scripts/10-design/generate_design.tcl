@@ -18,22 +18,10 @@
 #    License along with this code. If not, see <www.gnu.org/licenses/>.  #
 #------------------------------------------------------------------------#
 
-## AIT messages procedures
-# Error
-proc aitError {msg} {
-	puts "\[AIT\] ERROR: $msg"
-	exit 1
-}
-
-# Info
-proc aitInfo {msg} {
-	puts "\[AIT\] INFO: $msg"
-}
-
 # Configuration variables
 set script_path [file dirname [file normalize [info script]]]
 if {[catch {source -notrace $script_path/../projectVariables.tcl}]} {
-	aitError "Failed sourcing project variables"
+	puts "\[AIT\] ERROR: Failed sourcing project variables"
 }
 
 variable bitmap_bitInfo "0x00000000"

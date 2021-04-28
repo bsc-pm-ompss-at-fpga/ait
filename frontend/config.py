@@ -39,19 +39,23 @@ class Accelerator:
 
 
 class Color:
-    GREEN = '\033[0;32m'
-    YELLOW = '\033[1;33m'
-    RED = '\033[0;31m'
+    GREEN = '\033[0;32m'   # Success
+    CYAN = '\033[0;36m'    # Info
+    YELLOW = '\033[0;33m'  # Warning
+    RED = '\033[1;31m'     # Error
     END = '\033[0m'
 
 
 class Messages:
     def __getHeader(self):
-        return strftime('[%Y-%m-%d %H:%M] ', localtime()) if self.__printtime else ''
+        header = '[AIT] ' if self.verbose else ''
+        header += strftime('[%Y-%m-%d %H:%M] ', localtime()) if self.__printtime else ''
+        return header
 
     def __init__(self):
         self.name = False
         self.__printtime = False
+        self.verbose = False
 
     def setProjectName(self, name):
         self.name = name
@@ -59,21 +63,24 @@ class Messages:
     def setPrintTime(self, mode):
         self.__printtime = mode
 
-    def error(self, msg, simple=False):
-        if self.name and not simple:
-            print(self.__getHeader() + Color.RED + msg + '. Check ' + self.name + '.ait.log for more information' + Color.END)
-        else:
-            print(self.__getHeader() + Color.RED + msg + Color.END)
-        sys.exit(1)
-
-    def info(self, msg):
-        print(self.__getHeader() + Color.YELLOW + msg + Color.END)
-
-    def warning(self, msg):
-        print(self.__getHeader() + Color.YELLOW + msg + Color.END)
+    def setVerbose(self, verbose):
+        self.verbose = verbose
 
     def success(self, msg):
         print(self.__getHeader() + Color.GREEN + msg + Color.END)
+
+    def info(self, msg):
+        print(self.__getHeader() + Color.CYAN + 'INFO: ' + msg + Color.END)
+
+    def warning(self, msg):
+        print(self.__getHeader() + Color.YELLOW + 'WARNING: ' + msg + Color.END)
+
+    def error(self, msg, simple=True):
+        if self.name and not simple:
+            print(self.__getHeader() + Color.RED + 'ERROR: ' + msg + '. Check ' + self.name + '.ait.log for more information' + Color.END)
+        else:
+            print(self.__getHeader() + Color.RED + 'ERROR: ' + msg + Color.END)
+        sys.exit(1)
 
     def log(self, msg):
         print(self.__getHeader() + msg)
@@ -111,5 +118,5 @@ MIN_VIVADO_HLS_VERSION = "2018.3"
 MIN_VIVADO_VERSION = "2018.3"
 BITINFO_VERSION = 7
 VERSION_MAJOR = 4
-VERSION_MINOR = 7
+VERSION_MINOR = 8
 VERSION_COMMIT = 'unknown'

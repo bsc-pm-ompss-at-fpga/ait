@@ -92,12 +92,11 @@ def run_synthesis_step(project_args):
         retval = p.wait()
         del os.environ['MYVIVADO']
         if retval:
-            msg.error('Hardware synthesis failed')
+            msg.error('Hardware synthesis failed', False)
         else:
             msg.success('Hardware synthesized')
     else:
-        sys.stdout.log.write('[AIT]: no Vivado .xpr file exists for the current project\n')
-        msg.error('Hardware synthesis failed')
+        msg.error('No Vivado .xpr file exists for the current project. Hardware synthesis failed')
 
 
 STEP_FUNC = run_synthesis_step
