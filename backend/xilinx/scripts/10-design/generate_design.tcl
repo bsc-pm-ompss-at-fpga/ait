@@ -412,17 +412,17 @@ proc connectToDataInterface {src {num ""}} {
 		set index [lsearch -regexp $dataInterfaces_map $src]
 		if {$index ne -1} {
 			set port [lindex [lindex $dataInterfaces_map $index] 1]
-			# port must be 'data_X' where X is the value we need for $num
-			regsub {data_} $port "" num
+			# port must be 'S_AXI_data_X' where X is the value we need for $num
+			regsub {S_AXI_data_} $port "" num
 		}
 	}
 
-	set portIndex [connectToInterface $src data S $num]
+	set interface [connectToInterface $src data S $num]
 
 	# Add a line to datainterfaces.txt
-	puts $dataInterfaces_file "$src\t$portIndex"
+	puts $dataInterfaces_file "$src\t$interface"
 
-	return "$portIndex"
+	return "$interface"
 }
 
 proc connectToControlInterface {src {num ""}} {
