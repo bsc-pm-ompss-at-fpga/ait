@@ -125,7 +125,6 @@ def get_accelerators(project_path):
         # Check if the accel needs lock support
         if not args.lock_hwruntime and 'nanos_set_lock' in open(file_).read():
             args.lock_hwruntime = True
-            args.extended_hwruntime = True  # Lock support is only available in extended mode
 
     if num_accels == 0:
         msg.error('No accelerators found in this folder')
