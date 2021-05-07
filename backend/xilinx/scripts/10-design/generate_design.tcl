@@ -89,6 +89,23 @@ proc generateWrapper {} {
 
 ## Misc procedures
 
+# Converts an ascii string to a hex string of 32-bit values separated by \n
+proc ascii2hex {str} {
+	set len [string length $str]
+	# Force the string length to be multiple of 4
+	if {[expr $len%4 != 0]} {
+		append str [string repeat "\0" [expr 4 - $len%4]]
+	}
+	set str_out ""
+	for {set i 0} {$i < $len} {incr i 4} {
+		foreach char [split [string reverse [string range $str $i [expr $i+3]]] ""] {
+			append str_out [format %02X [scan $char %c]]
+		}
+		append str_out "\n"
+	}
+	return $str_out
+}
+
 # Compares a bd address segment dictinary with the segment size
 proc comp_bd_addr_seg {a b} {
 	if {[expr [dict get $a size] < [dict get $b size]]} {
@@ -897,7 +914,10 @@ if {$hwcounter || $hwinst} {
 	connectClock [get_bd_pins HW_Counter/s_axi_aclk]
 	save_bd_design
 
-	set bitmap_bitInfo [format 0x%08x [expr $bitmap_bitInfo | 0x1<<0]]
+	if {$hwinst} {
+		set bitmap_bitInfo [format 0x%08x [expr $bitmap_bitInfo | 0x1<<0]]
+	}
+	set bitmap_bitInfo [format 0x%08x [expr $bitmap_bitInfo | 0x1<<1]]
 }
 
 close $dataInterfaces_file
@@ -987,9 +1007,6 @@ puts $ompss_at_fpga_DeviceTree_file $ompss_at_fpga_node
 close $ompss_at_fpga_DeviceTree_file
 
 # Connect Hardware Runtime to accelerators and map queues to address space
-
-set bitmap_bitInfo [format 0x%08x [expr $bitmap_bitInfo | 0x1<<6]]
-
 foreach bd_addr_seg $bd_addr_segments {
 	set name [dict get $bd_addr_seg name]
 	set addr [dict get $bd_addr_seg addr]
@@ -1005,6 +1022,8 @@ if {$extended_hwruntime} {
 
 if {$hwruntime == "som"} {
 	set bitmap_bitInfo [format 0x%08x [expr $bitmap_bitInfo | 0x1<<8]]
+} elseif {$hwruntime == "pom"} {
+	set bitmap_bitInfo [format 0x%08x [expr $bitmap_bitInfo | 0x1<<9]]
 }
 assign_bd_address [get_bd_addr_segs *bitInfo_BRAM_Ctrl*] -range 4K -offset $addr_bitInfo
 
@@ -1023,47 +1042,61 @@ close $config_file
 close $newConfig_file
 exec mv $path_Project/../${name_Project}.xtasks.config.new $path_Project/../${name_Project}.xtasks.config
 
+# Generate xtasks.config binary string
+set xtasks_bin_str ""
+foreach acc $accels {
+	lassign [split $acc ":"] accHash accNumInstances accName
+	set bin_word [expr $accNumInstances | (($accHash & 0xFFFF) << 16)]
+	append xtasks_bin_str [format "%08X\n" $bin_word]
+	set bin_word [expr ($accHash >> 16) | ((($actFreq*1000) & 0xFF) << 24)]
+	append xtasks_bin_str [format "%08X\n" $bin_word]
+	set bin_word [expr ($actFreq*1000) >> 8]
+	append xtasks_bin_str [format "%08X\n" $bin_word]
+	# Remove suffix _hls_automatic_mcxx
+	set accName [string range $accName 0 [expr [string length $accName]-[string length "_hls_automatic_mcxx"]-1]]
+	if {[string length $accName] > 31} {
+		set accName [string range $accName 0 30]
+	}
+	# Max length is 31 characters, but there are 8 padding bits at the end
+	append accName [string repeat " " [expr 32-[string length $accName]]]
+	# Convert ascii to hexadecimal string
+	append xtasks_bin_str [ascii2hex $accName]
+}
+
 # Create bitInfo.coe file
 set bitInfo_file [open $path_Project/$name_Project/bitInfo.coe "w"]
 set bitInfo_coe "memory_initialization_radix=16;\nmemory_initialization_vector=\n"
-
-append bitInfo_coe [format %08x $version_bitInfo]
-append bitInfo_coe "\nFFFFFFFF\n"
-append bitInfo_coe [format %08x $num_accs]
-append bitInfo_coe "\nFFFFFFFF\n"
-append bitInfo_coe [exec od -A n -t x4 -w4 -v --endian=little $path_Project/../${name_Project}.xtasks.config]
-append bitInfo_coe "\nFFFFFFFF\n"
-append bitInfo_coe [format %08x $bitmap_bitInfo]
-append bitInfo_coe "\nFFFFFFFF\n"
-append bitInfo_coe [exec echo $ait_call | od -A n -t x4 -w4 --endian=little]
-append bitInfo_coe "\nFFFFFFFF\n"
-append bitInfo_coe [format %08x [expr $version_major_ait<<16 | $version_minor_ait]]
-append bitInfo_coe "\nFFFFFFFF\n"
-append bitInfo_coe [format %08x $version_wrapper]
+append bitInfo_coe [format %08x $version_bitInfo]\n
+append bitInfo_coe [format %08x $num_accs]\n
+append bitInfo_coe [format %08x $bitmap_bitInfo]\n
+append bitInfo_coe [format %08x [expr $version_major_ait<<16 | $version_minor_ait]]\n
+append bitInfo_coe [format %08x $version_wrapper]\n
+append bitInfo_coe [format %08x [getBaseFreq]]\n
+append bitInfo_coe [string range $addr_hwruntime_cmdInQueue 10 17]\n
+append bitInfo_coe [string range $addr_hwruntime_cmdInQueue 2 9]\n
+append bitInfo_coe [format %08x $cmdInSubqueue_len]\n
+append bitInfo_coe [string range $addr_hwruntime_cmdOutQueue 10 17]\n
+append bitInfo_coe [string range $addr_hwruntime_cmdOutQueue 2 9]\n
+append bitInfo_coe [format %08x $cmdOutSubqueue_len]\n
+append bitInfo_coe [string range $addr_hwruntime_spawnInQueue 10 17]\n
+append bitInfo_coe [string range $addr_hwruntime_spawnInQueue 2 9]\n
+append bitInfo_coe [format %08x $spawnInQueue_len]\n
+append bitInfo_coe [string range $addr_hwruntime_spawnOutQueue 10 17]\n
+append bitInfo_coe [string range $addr_hwruntime_spawnOutQueue 2 9]\n
+append bitInfo_coe [format %08x $spawnOutQueue_len]\n
+append bitInfo_coe [string range $addr_hwruntime_rst 10 17]\n
+append bitInfo_coe [string range $addr_hwruntime_rst 2 9]\n
+append bitInfo_coe [string range $addr_hwcounter 10 17]\n
+append bitInfo_coe [string range $addr_hwcounter 2 9]\n
+append bitInfo_coe $xtasks_bin_str
+append bitInfo_coe "FFFFFFFF\n"
+append bitInfo_coe [ascii2hex $ait_call\n]
+append bitInfo_coe "FFFFFFFF\n"
 set hwruntime_vlnv [get_property VLNV [get_bd_cells /Hardware_Runtime/$name_hwruntime]]
-append bitInfo_coe "\nFFFFFFFF\n"
-append bitInfo_coe [exec echo $hwruntime_vlnv | od -A n -t x4 -w4 --endian=little]
-append bitInfo_coe "\nFFFFFFFF\n"
-append bitInfo_coe [format %08x [getBaseFreq]]
-append bitInfo_coe "\nFFFFFFFF\n"
-append bitInfo_coe "[string range $addr_hwruntime_cmdInQueue 10 17]\n"
-append bitInfo_coe "[string range $addr_hwruntime_cmdInQueue 2 9]\n"
-append bitInfo_coe "[format %08x $cmdInSubqueue_len]\n"
-append bitInfo_coe "[string range $addr_hwruntime_cmdOutQueue 10 17]\n"
-append bitInfo_coe "[string range $addr_hwruntime_cmdOutQueue 2 9]\n"
-append bitInfo_coe "[format %08x $cmdOutSubqueue_len]\n"
-append bitInfo_coe "[string range $addr_hwruntime_spawnInQueue 10 17]\n"
-append bitInfo_coe "[string range $addr_hwruntime_spawnInQueue 2 9]\n"
-append bitInfo_coe "[format %08x $spawnInQueue_len]\n"
-append bitInfo_coe "[string range $addr_hwruntime_spawnOutQueue 10 17]\n"
-append bitInfo_coe "[string range $addr_hwruntime_spawnOutQueue 2 9]\n"
-append bitInfo_coe "[format %08x $spawnOutQueue_len]\n"
-append bitInfo_coe "[string range $addr_hwruntime_rst 10 17]\n"
-append bitInfo_coe "[string range $addr_hwruntime_rst 2 9]\n"
-append bitInfo_coe "[string range $addr_hwcounter 10 17]\n"
-append bitInfo_coe "[string range $addr_hwcounter 2 9]\n"
-append bitInfo_coe "FFFFFFFF\nFFFFFFFF"
-set data_length [exec echo $bitInfo_coe | wc -l]
+append bitInfo_coe [ascii2hex $hwruntime_vlnv\n]
+append bitInfo_coe "FFFFFFFF;"
+# First two lines do not contain data
+set data_length [expr [exec echo $bitInfo_coe | wc -l]-2]
 puts $bitInfo_file $bitInfo_coe
 close $bitInfo_file
 

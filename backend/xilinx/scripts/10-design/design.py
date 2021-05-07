@@ -35,15 +35,7 @@ script_folder = os.path.basename(os.path.dirname(os.path.realpath(__file__)))
 
 
 def check_requirements():
-    if distutils.spawn.find_executable('vivado'):
-        # Check od version
-        if not distutils.spawn.find_executable('od'):
-            msg.error('od not found. Please set PATH correctly')
-        od_version = str(subprocess.check_output(['od', '--version']), 'utf-8').split('\n')[0].split(' ')[-1].split('.')
-        od_version = (int(od_version[0]), int(od_version[1]))
-        if od_version < MIN_OD_VERSION:
-            msg.error('Installed od version not supported (>= ' + str(MIN_OD_VERSION[0]) + '.' + str(MIN_OD_VERSION[1]) + ')')
-    else:
+    if not distutils.spawn.find_executable('vivado'):
         msg.error('vivado not found. Please set PATH correctly')
 
     vivado_version = str(subprocess.check_output(['vivado -version | head -n1 | sed "s/\(Vivado.\+v\)\(\([0-9]\|\.\)\+\).\+/\\2/"'], shell=True), 'utf-8').strip()
