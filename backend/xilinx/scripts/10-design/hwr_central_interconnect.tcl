@@ -22,7 +22,8 @@
 if {$extended_hwruntime} {
 	# The extra masters redirect all cmdout_in and lock_in transfers from acc creators
 	create_inStream_Inter_tree $pi/inS_common_Inter $num_common_hwruntime_intf [expr $num_acc_no_creators+1]
-	create_inStream_Inter_tree $pi/inS_ext_Inter $num_hwruntime_intf $num_acc_creators
+	# spawn_out + taskwait_out + cmdin_out and lock_out which are collapsed in the same master
+	create_inStream_Inter_tree $pi/inS_ext_Inter 3 $num_acc_creators
 	# spawn_out + taskwait_out + outS_common_Inter_M00 (cmdin_out + lock_out if available)
 	set max_level_ext [create_outStream_Inter_tree $po/outS_ext_Inter 3 $num_acc_creators]
 	# The extra master filters all transfers to acc creators

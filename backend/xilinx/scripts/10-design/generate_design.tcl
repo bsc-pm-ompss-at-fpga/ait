@@ -717,18 +717,15 @@ if {$hwruntime == "som"} {
 
 set_property -dict [list CONFIG.MAX_ACC_TYPES [expr max([llength $accels], 2)]] [get_bd_cells Hardware_Runtime/$name_hwruntime]
 set_property -dict [list CONFIG.CMDIN_SUBQUEUE_LEN $cmdInSubqueue_len CONFIG.CMDOUT_SUBQUEUE_LEN $cmdOutSubqueue_len] [get_bd_cells Hardware_Runtime/$name_hwruntime]
-set num_hwruntime_intf 1
 set num_common_hwruntime_intf 1
 set num_acc_no_creators [expr $num_accs-$num_acc_creators]
 if {$lock_hwruntime} {
 	incr num_common_hwruntime_intf
-	incr num_hwruntime_intf
 	# Enable lock support if needed
 	set_property -dict [list CONFIG.LOCK_SUPPORT {1}] [get_bd_cells Hardware_Runtime/$name_hwruntime]
 }
 if {$extended_hwruntime} {
 	set_property -dict [list CONFIG.SPAWNIN_QUEUE_LEN $spawnInQueue_len CONFIG.SPAWNOUT_QUEUE_LEN $spawnOutQueue_len] [get_bd_cells Hardware_Runtime/$name_hwruntime]
-	incr num_hwruntime_intf 2
 }
 
 #prefix_inStream
@@ -758,7 +755,7 @@ if {$lock_hwruntime} {
 }
 
 if {[catch {source -notrace $hwruntime_interconnect_script}]} {
-	aitError "Failed sourcing hwr_central_interconnect"
+	aitError "Failed sourcing $hwruntime_interconnect_script"
 }
 
 # Move the interconnects to the Hardware_Runtime hierarchy

@@ -103,7 +103,7 @@ for {set i 0} {$i < $num_accs} {incr i} {
 		connectClock [get_bd_pins $inter_name/M01_AXIS_ACLK]
 		connectRst [get_bd_pins $inter_name/M01_AXIS_ARESETN] "peripheral"
 		connectClock [get_bd_pins $inter_name/S00_AXIS_ACLK]
-		connectRst [get_bd_pins $inter_name/S00_AXIS_ARESETN] "peripheral!
+		connectRst [get_bd_pins $inter_name/S00_AXIS_ARESETN] "peripheral"
 
 		connect_bd_intf_net [get_bd_intf_pins $pi/inS_extacc_Inter_${i}/M00_AXIS] [get_bd_intf_pins $pi/inS_common_Inter_lvl0_${inter_i}/S${intf_i}_AXIS]
 		connect_bd_intf_net [get_bd_intf_pins $pi/inS_extacc_Inter_${i}/M01_AXIS] [get_bd_intf_pins $pi/inS_ext_Inter_lvl0_${inter_i}/S${intf_i}_AXIS]
