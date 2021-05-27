@@ -199,9 +199,9 @@ def generate_Vivado_variables_tcl():
         with open(args.debug_intfs_list) as map_file:
             map_data = map_file.readlines()
             for map_line in map_data:
-                elems = map_line.strip().replace('\n', '').split('\t')
-                if len(elems) >= 2 and len(elems[0]) > 0 and elems[0][0] != '#':
-                    vivado_project_variables += ' {' + elems[0] + ' ' + elems[1] + '}'
+                elems = map_line.strip().replace('\n', '')
+                if elems[0][0] != '#':
+                    vivado_project_variables += ' ' + str(elems)
 
         vivado_project_variables += ']\n'
     elif args.debug_intfs == 'custom':

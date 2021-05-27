@@ -934,7 +934,7 @@ if {[expr {$debugInterfaces == "AXI"} || {$debugInterfaces == "both"}]} {
 		apply_bd_automation -rule xilinx.com:bd_rule:debug -dict [list [get_bd_intf_nets [get_bd_intf_nets -of_objects [get_bd_intf_pins $axi_pin]]] {AXI_R_ADDRESS "Data and Trigger" AXI_R_DATA "Data and Trigger" AXI_W_ADDRESS "Data and Trigger" AXI_W_DATA "Data and Trigger" AXI_W_RESPONSE "Data and Trigger" CLK_SRC clock_generator/clk_out1 SYSTEM_ILA "Auto" APC_EN "0" }]
 
 		# Add a line to debuginterfaces.txt
-		puts $debugInterfaces_file "DEBUG_AXI\t$axi_pin"
+		puts $debugInterfaces_file "$axi_pin"
 	}
 	set_property -dict [list CONFIG.C_EN_STRG_QUAL {1} CONFIG.C_PROBE0_MU_CNT {2} CONFIG.ALL_PROBE_SAME_MU_CNT {2}] [get_bd_cells -hierarchical -filter {VLNV =~ xilinx.com:ip:system_ila*}]
 	close $debugInterfaces_file
@@ -945,13 +945,13 @@ if {[expr {$debugInterfaces == "stream"} || {$debugInterfaces == "both"}]} {
 	# Open .debuginterfaces.txt file
 	set debugInterfaces_file [open $path_Project/../${name_Project}.debuginterfaces.txt "a"]
 
-	set stream_pin_list [get_bd_intf_pins -hierarchical -filter {VLNV =~ xilinx.com:interface:axis_rtl:* && PATH =~ *hls_automatic_mcxx*mcxx_*} -of_objects [get_bd_cells -hierarchical -filter {NAME =~ *_hls_automatic_mcxx}]]
+	set stream_pin_list [get_bd_intf_pins -hierarchical -filter {VLNV =~ xilinx.com:interface:axis_rtl:* && PATH =~ *hls_automatic_mcxx*Adapter*Stream*} -of_objects [get_bd_cells -hierarchical -filter {VLNV =~ xilinx.com:module_ref:hsToStreamAdapter:* || VLNV =~ xilinx.com:module_ref:streamToHsAdapter:*}]]
 	foreach stream_pin $stream_pin_list {
 		set_property HDL_ATTRIBUTE.DEBUG true [get_bd_intf_nets [get_bd_intf_nets -of_objects [get_bd_intf_pins $stream_pin]]]
 		apply_bd_automation -rule xilinx.com:bd_rule:debug -dict [list [get_bd_intf_nets [get_bd_intf_nets -of_objects [get_bd_intf_pins $stream_pin]]] {AXIS_SIGNALS "Data and Trigger" CLK_SRC clock_generator/clk_out1 SYSTEM_ILA "Auto" APC_EN "0" }]
 
 		# Add a line to debuginterfaces.txt
-		puts $debugInterfaces_file "DEBUG_STREAM\t$stream_pin"
+		puts $debugInterfaces_file "$stream_pin"
 	}
 	set_property -dict [list CONFIG.C_EN_STRG_QUAL {1} CONFIG.C_PROBE0_MU_CNT {2} CONFIG.ALL_PROBE_SAME_MU_CNT {2}] [get_bd_cells -hierarchical -filter {VLNV =~ xilinx.com:ip:system_ila*}]
 	close $debugInterfaces_file
@@ -962,21 +962,19 @@ if {$debugInterfaces == "custom"} {
 	# Open .debuginterfaces.txt file
 	set debugInterfaces_file [open $path_Project/../${name_Project}.debuginterfaces.txt "w"]
 
-	foreach element $debugInterfaces_list {
-		foreach {type intf} $element {
-			set_property HDL_ATTRIBUTE.DEBUG true [get_bd_intf_nets [get_bd_intf_nets -of_objects [get_bd_intf_pins $intf]]]
+	foreach intf $debugInterfaces_list {
+		set_property HDL_ATTRIBUTE.DEBUG true [get_bd_intf_nets [get_bd_intf_nets -of_objects [get_bd_intf_pins $intf]]]
 
-			if {$type == "DEBUG_AXI"} {
-				apply_bd_automation -rule xilinx.com:bd_rule:debug -dict [list [get_bd_intf_nets [get_bd_intf_nets -of_objects [get_bd_intf_pins $intf]]] {AXI_R_ADDRESS "Data and Trigger" AXI_R_DATA "Data and Trigger" AXI_W_ADDRESS "Data and Trigger" AXI_W_DATA "Data and Trigger" AXI_W_RESPONSE "Data and Trigger" CLK_SRC clock_generator/clk_out1 SYSTEM_ILA "Auto" APC_EN "0" }]
-			} elseif {$type == "DEBUG_STREAM"} {
-				apply_bd_automation -rule xilinx.com:bd_rule:debug -dict [list [get_bd_intf_nets [get_bd_intf_nets -of_objects [get_bd_intf_pins $intf]]] {AXIS_SIGNALS "Data and Trigger" CLK_SRC clock_generator/clk_out1 SYSTEM_ILA "Auto" APC_EN "0" }]
-			} else {
-				aitError "Debug interface type $type not recognized"
-			}
-
-			# Add a line to debuginterfaces.txt
-			puts $debugInterfaces_file "$type\t$intf"
+		if {[string match xilinx.com:interface:aximm_rtl:* [get_property VLNV [get_bd_intf_pins $intf]]]} {
+			apply_bd_automation -rule xilinx.com:bd_rule:debug -dict [list [get_bd_intf_nets [get_bd_intf_nets -of_objects [get_bd_intf_pins $intf]]] {AXI_R_ADDRESS "Data and Trigger" AXI_R_DATA "Data and Trigger" AXI_W_ADDRESS "Data and Trigger" AXI_W_DATA "Data and Trigger" AXI_W_RESPONSE "Data and Trigger" CLK_SRC clock_generator/clk_out1 SYSTEM_ILA "Auto" APC_EN "0" }]
+		} elseif {[string match xilinx.com:interface:axis_rtl:* [get_property VLNV [get_bd_intf_pins $intf]]]} {
+			apply_bd_automation -rule xilinx.com:bd_rule:debug -dict [list [get_bd_intf_nets [get_bd_intf_nets -of_objects [get_bd_intf_pins $intf]]] {AXIS_SIGNALS "Data and Trigger" CLK_SRC clock_generator/clk_out1 SYSTEM_ILA "Auto" APC_EN "0" }]
+		} else {
+			aitError "Interface type not recognized ($intf)"
 		}
+
+		# Add a line to debuginterfaces.txt
+		puts $debugInterfaces_file "$intf"
 	}
 
 	set_property -dict [list CONFIG.C_EN_STRG_QUAL {1} CONFIG.C_PROBE0_MU_CNT {2} CONFIG.ALL_PROBE_SAME_MU_CNT {2}] [get_bd_cells -hierarchical -filter {VLNV =~ xilinx.com:ip:system_ila*}]
