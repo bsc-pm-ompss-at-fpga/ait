@@ -22,6 +22,7 @@
 set script_path [file dirname [file normalize [info script]]]
 if {[catch {source -notrace $script_path/../projectVariables.tcl}]} {
 	puts "\[AIT\] ERROR: Failed sourcing project variables"
+	exit 1
 }
 
 variable bitmap_bitInfo "0x00000000"

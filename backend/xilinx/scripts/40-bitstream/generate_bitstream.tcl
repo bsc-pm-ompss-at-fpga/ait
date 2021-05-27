@@ -22,6 +22,7 @@
 set script_path [file dirname [file normalize [info script]]]
 if {[catch {source -notrace $script_path/../projectVariables.tcl}]} {
 	puts "\[AIT\] ERROR: Failed sourcing project variables"
+	exit 1
 }
 
 # Open Vivado project
