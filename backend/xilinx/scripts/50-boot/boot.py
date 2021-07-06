@@ -90,12 +90,13 @@ def run_boot_step(project_args):
 
     path_hdf = project_backend_path + '/' + args.name + '/' + args.name + '.sdk/'
 
-    if os.path.exists(petalinux_build_path + '/subsystems/linux/configs/device-tree/'):
-        # Seems to be petalinux 2018.3 (may match other untested versions)
-        command = 'petalinux-config --oldconfig --get-hw-description=' + path_hdf
-    else:
+    if os.path.exists(petalinux_install_path + '/.version-history'):
         # Seems to be petalinux 2019.1 or later (may match other untested versions)
         command = 'petalinux-config --silentconfig --get-hw-description=' + path_hdf
+    else:
+        # Seems to be petalinux 2018.3 or previous (may match other untested versions)
+        command = 'petalinux-config --oldconfig --get-hw-description=' + path_hdf
+
     if args.verbose_info:
         msg.log('> ' + command)
     p = subprocess.Popen(command, stdout=sys.stdout.subprocess, stderr=sys.stdout.subprocess,
