@@ -74,19 +74,19 @@ def check_board_support(board):
 
 
 def get_accelerators(project_path):
-    global accels
-    global num_accels
+    global accs
+    global num_accs
     global num_instances
-    global num_accel_creators
+    global num_acc_creators
 
     if args.verbose_info:
         msg.log('Searching accelerators in folder: ' + os.getcwd())
 
-    accels = []
-    accel_ids = []
-    num_accels = 0
+    accs = []
+    acc_ids = []
+    num_accs = 0
     num_instances = 0
-    num_accel_creators = 0
+    num_acc_creators = 0
     args.extended_hwruntime = False  # Can't be enabled if no accelerator requires it
     args.lock_hwruntime = False  # Will not be enabled if no accelerator requires it
 
@@ -98,35 +98,35 @@ def get_accelerators(project_path):
         acc_name = os.path.splitext(acc_file)[0]
         accel = Accelerator(acc_id, acc_name, acc_num_instances, acc_file, file_)
 
-        if not re.match('^[A-Za-z][A-Za-z0-9_]*$', accel.short_name):
-            msg.error('\'' + accel.short_name + '\' is an invalid accelerator name. Must start with a letter and contain only letters, numbers or underscores')
+        if not re.match('^[A-Za-z][A-Za-z0-9_]*$', acc.short_name):
+            msg.error('\'' + acc.short_name + '\' is an invalid accelerator name. Must start with a letter and contain only letters, numbers or underscores')
 
-        msg.info('Found accelerator \'' + accel.short_name + '\'')
+        msg.info('Found accelerator \'' + acc.short_name + '\'')
 
-        num_accels += 1
-        num_instances += accel.num_instances
+        num_accs += 1
+        num_instances += acc.num_instances
 
-        if accel.id in accel_ids:
-            msg.error('Two accelerators use the same id: \'' + accel.id + '\' (maybe you should use the onto clause)')
-        accel_ids.append(accel.id)
+        if acc.id in acc_ids:
+            msg.error('Two accelerators use the same id: \'' + acc.id + '\' (maybe you should use the onto clause)')
+        acc_ids.append(acc.id)
 
-        # Check if the accel uses extended hwruntime features
+        # Check if the acc uses extended hwruntime features
         if 'nanos_fpga_current_wd' in open(file_).read():
             args.extended_hwruntime = True
-            num_accel_creators += accel.num_instances
-            accels.insert(0, accel)
+            num_acc_creators += acc.num_instances
+            accs.insert(0, acc)
         else:
-            accels.append(accel)
+            accs.append(acc)
 
-        # Check if the accel needs instrumentation support
+        # Check if the acc needs instrumentation support
         if not args.hwinst and 'ap_hs port=mcxx_instr' in open(file_).read():
             args.hwinst = True
 
-        # Check if the accel needs lock support
+        # Check if the acc needs lock support
         if not args.lock_hwruntime and 'nanos_set_lock' in open(file_).read():
             args.lock_hwruntime = True
 
-    if num_accels == 0:
+    if num_accs == 0:
         msg.error('No accelerators found in this folder')
 
     if args.extended_hwruntime and args.hwruntime is None:
@@ -138,8 +138,8 @@ def get_accelerators(project_path):
     # Generate the .xtasks.config file
     xtasks_config_file = open(project_path + '/' + args.name + '.xtasks.config', 'w')
     xtasks_config = 'type\t#ins\tname\t    \n'
-    for accel in accels:
-        xtasks_config += accel.id.zfill(19) + '\t' + str(accel.num_instances).zfill(3) + '\t' + accel.short_name.ljust(31)[:31] + '\t000\n'
+    for acc in accs:
+        xtasks_config += acc.id.zfill(19) + '\t' + str(acc.num_instances).zfill(3) + '\t' + acc.short_name.ljust(31)[:31] + '\t000\n'
     xtasks_config_file.write(xtasks_config)
     xtasks_config_file.close()
 
@@ -184,10 +184,10 @@ def ait_main():
 
     project_args = {
         'path': os.path.normpath(os.path.realpath(args.dir) + '/' + args.name + '_ait'),
-        'num_accels': num_accels,
+        'num_accs': num_accs,
         'num_instances': num_instances,
-        'num_accel_creators': num_accel_creators,
-        'accels': accels,
+        'num_acc_creators': num_acc_creators,
+        'accs': accs,
         'board': board,
         'args': args
     }

@@ -717,7 +717,7 @@ if {$hwruntime == "som"} {
 	variable name_ManagedRst Hardware_Runtime/managed_aresetn
 }
 
-set_property -dict [list CONFIG.MAX_ACC_TYPES [expr max([llength $accels], 2)]] [get_bd_cells Hardware_Runtime/$name_hwruntime]
+set_property -dict [list CONFIG.MAX_ACC_TYPES [expr max([llength $accs], 2)]] [get_bd_cells Hardware_Runtime/$name_hwruntime]
 set_property -dict [list CONFIG.CMDIN_SUBQUEUE_LEN $cmdInSubqueue_len CONFIG.CMDOUT_SUBQUEUE_LEN $cmdOutSubqueue_len] [get_bd_cells Hardware_Runtime/$name_hwruntime]
 set num_common_hwruntime_intf 1
 set num_acc_no_creators [expr $num_accs-$num_acc_creators]
@@ -786,7 +786,7 @@ save_bd_design
 #### User IPs
 set accID 0
 
-foreach acc $accels {
+foreach acc $accs {
 	lassign [split $acc ":"] accHash accNumInstances accName
 
 	for {set j 0} {$j < $accNumInstances} {incr j} {
@@ -1041,7 +1041,7 @@ exec mv $path_Project/../${name_Project}.xtasks.config.new $path_Project/../${na
 
 # Generate xtasks.config binary string
 set xtasks_bin_str ""
-foreach acc $accels {
+foreach acc $accs {
 	lassign [split $acc ":"] accHash accNumInstances accName
 	set bin_word [expr $accNumInstances | (($accHash & 0xFFFF) << 16)]
 	append xtasks_bin_str [format "%08X\n" $bin_word]
