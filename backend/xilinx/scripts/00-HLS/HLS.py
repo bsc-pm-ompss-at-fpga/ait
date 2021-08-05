@@ -158,18 +158,17 @@ def run_HLS_step(project_args):
         acc_adap_instr = Accelerator(0, 'Adapter_instr', 1, 'Adapter_instr.cpp', ait_path + '/backend/' + args.backend + '/HLS/src/Adapter_instr.cpp')
         accs.append(acc_adap_instr)
 
-    if args.hwruntime is not None:
-        for hls_file in glob.glob(ait_path + '/backend/' + args.backend + '/HLS/src/hwruntime/' + args.hwruntime + '/*.cpp'):
-            acc_file = os.path.basename(hls_file)
+    for hls_file in glob.glob(ait_path + '/backend/' + args.backend + '/HLS/src/hwruntime/' + args.hwruntime + '/*.cpp'):
+        acc_file = os.path.basename(hls_file)
+        acc_name = os.path.splitext(acc_file)[0]
+        acc_aux = Accelerator(0, acc_name, 1, acc_file, hls_file)
+        accs.append(acc_aux)
+    if args.extended_hwruntime:
+        for extended_hls_file in glob.glob(ait_path + '/backend/' + args.backend + '/HLS/src/hwruntime/' + args.hwruntime + '/extended/*.cpp'):
+            acc_file = os.path.basename(extended_hls_file)
             acc_name = os.path.splitext(acc_file)[0]
-            acc_aux = Accelerator(0, acc_name, 1, acc_file, hls_file)
+            acc_aux = Accelerator(0, acc_name, 1, acc_file, extended_hls_file)
             accs.append(acc_aux)
-        if args.extended_hwruntime:
-            for extended_hls_file in glob.glob(ait_path + '/backend/' + args.backend + '/HLS/src/hwruntime/' + args.hwruntime + '/extended/*.cpp'):
-                acc_file = os.path.basename(extended_hls_file)
-                acc_name = os.path.splitext(acc_file)[0]
-                acc_aux = Accelerator(0, acc_name, 1, acc_file, extended_hls_file)
-                accs.append(acc_aux)
 
     msg.info('Synthesizing ' + str(num_accs) + ' accelerator' + ('s' if num_accs > 1 else ''))
 

@@ -112,11 +112,10 @@ for i in next(os.walk(ait_path + '/backend'))[1]:
 msg = Messages()
 
 MIN_PYTHON_VERSION = (3, 5)
-MIN_OD_VERSION = (8, 23)
 MIN_WRAPPER_VERSION = 8
 MIN_VIVADO_HLS_VERSION = "2018.3"
 MIN_VIVADO_VERSION = "2018.3"
 BITINFO_VERSION = 8
 VERSION_MAJOR = 5
-VERSION_COMMIT = 'unknown'
 VERSION_MINOR = 1
+VERSION_COMMIT = 'unknown'

@@ -28,7 +28,7 @@ import shutil
 import subprocess
 import distutils.spawn
 
-from frontend.config import msg, ait_path, MIN_OD_VERSION, BITINFO_VERSION, VERSION_MAJOR, \
+from frontend.config import msg, ait_path, BITINFO_VERSION, VERSION_MAJOR, \
     VERSION_MINOR, MIN_VIVADO_VERSION
 
 script_folder = os.path.basename(os.path.dirname(os.path.realpath(__file__)))
@@ -273,14 +273,13 @@ def run_design_step(project_args):
     for ip in ip_list:
         shutil.copy2(ait_backend_path + '/IPs/' + ip, project_backend_path + '/IPs')
 
-    if args.hwruntime is not None:
-        for template in glob.glob(ait_backend_path + '/templates/hwruntime/' + args.hwruntime
-                                  + '/' + ('extended/' if args.extended_hwruntime else '')
-                                  + '*.tcl'):
-            shutil.copy2(template, project_backend_path + '/templates')
+    for template in glob.glob(ait_backend_path + '/templates/hwruntime/' + args.hwruntime
+                              + '/' + ('extended/' if args.extended_hwruntime else '')
+                              + '*.tcl'):
+        shutil.copy2(template, project_backend_path + '/templates')
 
-        for ipdef in glob.glob(ait_backend_path + '/IPs/hwruntime/' + args.hwruntime + '/*.zip'):
-            shutil.copy2(ipdef, project_backend_path + '/IPs')
+    for ipdef in glob.glob(ait_backend_path + '/IPs/hwruntime/' + args.hwruntime + '/*.zip'):
+        shutil.copy2(ipdef, project_backend_path + '/IPs')
 
     if args.user_constraints and os.path.exists(args.user_constraints):
         constraints_path = project_backend_path + '/board/' + board.name + '/constraints'
