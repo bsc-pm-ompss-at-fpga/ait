@@ -83,65 +83,62 @@ def get_accelerators(project_path):
         msg.log('Searching accelerators in folder: ' + os.getcwd())
 
     accs = []
-    acc_ids = []
+    acc_types = []
     num_accs = 0
     num_instances = 0
     num_acc_creators = 0
     args.extended_hwruntime = False  # Can't be enabled if no accelerator requires it
     args.lock_hwruntime = False  # Will not be enabled if no accelerator requires it
 
-    for file_ in sorted(glob.glob(os.getcwd() + '/*[0-9]:*[0-9]:*_hls_automatic_mcxx.cpp')):
-        acc_file = os.path.basename(file_)
-        acc_id = acc_file.split(':')[0]
-        acc_num_instances = acc_file.split(':')[1]
-        acc_file = acc_file.split(':')[2]
-        acc_name = os.path.splitext(acc_file)[0]
-        accel = Accelerator(acc_id, acc_name, acc_num_instances, acc_file, file_)
+    for file_ in sorted(glob.glob(os.getcwd() + '/ait_*.json')):
+        acc_config_json = json.load(open(file_), object_hook=JSONObject)
+        for acc_config in acc_config_json:
+            acc = Accelerator(acc_config)
 
-        if not re.match('^[A-Za-z][A-Za-z0-9_]*$', acc.short_name):
-            msg.error('\'' + acc.short_name + '\' is an invalid accelerator name. Must start with a letter and contain only letters, numbers or underscores')
+            if not re.match('^[A-Za-z][A-Za-z0-9_]*$', acc.name):
+                msg.error('\'' + acc.name + '\' is an invalid accelerator name. Must start with a letter and contain only letters, numbers or underscores')
 
-        msg.info('Found accelerator \'' + acc.short_name + '\'')
+            msg.info('Found accelerator \'' + acc.name + '\'')
 
-        num_accs += 1
-        num_instances += acc.num_instances
+            num_accs += 1
+            num_instances += acc.num_instances
 
-        if acc.id in acc_ids:
-            msg.error('Two accelerators use the same id: \'' + acc.id + '\' (maybe you should use the onto clause)')
-        acc_ids.append(acc.id)
+            if acc.type in acc_types:
+                msg.error('Two accelerators use the same type: \'' + str(acc.type) + '\' (maybe you should use the onto clause)')
+            acc_types.append(acc.type)
 
-        # Check if the acc uses extended hwruntime features
-        if 'nanos_fpga_current_wd' in open(file_).read():
-            args.extended_hwruntime = True
-            num_acc_creators += acc.num_instances
-            accs.insert(0, acc)
-        else:
-            accs.append(acc)
+            # Check if the acc is a task creator
+            if acc.task_creation:
+                args.extended_hwruntime = True
+                num_acc_creators += acc.num_instances
+                accs.insert(0, acc)
+            else:
+                accs.append(acc)
 
-        # Check if the acc needs instrumentation support
-        if not args.hwinst and 'ap_hs port=mcxx_instr' in open(file_).read():
-            args.hwinst = True
+            # Check if the acc needs instrumentation support
+            if acc.instrumentation:
+                args.hwinst = True
 
-        # Check if the acc needs lock support
-        if not args.lock_hwruntime and 'nanos_set_lock' in open(file_).read():
-            args.lock_hwruntime = True
+            # Check if the acc needs lock support
+            if acc.lock:
+                args.lock_hwruntime = True
 
     if num_accs == 0:
-        msg.error('No accelerators found in this folder')
-
-    if args.extended_hwruntime and args.hwruntime is None:
-        msg.error('Some accelerator use Extended Hardware Runtime features but there is no Hardware Runtime enabled. Enable one using the --hwruntime option')
-
-    if args.lock_hwruntime and args.hwruntime is None:
-        msg.error('Some accelerator requires Lock support but there is no Hardware Runtime enabled. Enable one using the --hwruntime option')
+        msg.error('No accelerators found')
 
     # Generate the .xtasks.config file
     xtasks_config_file = open(project_path + '/' + args.name + '.xtasks.config', 'w')
     xtasks_config = 'type\t#ins\tname\t    \n'
     for acc in accs:
-        xtasks_config += acc.id.zfill(19) + '\t' + str(acc.num_instances).zfill(3) + '\t' + acc.short_name.ljust(31)[:31] + '\t000\n'
+        xtasks_config += str(acc.type).zfill(19) + '\t' + str(acc.num_instances).zfill(3) + '\t' + acc.name.ljust(31)[:31] + '\t000\n'
     xtasks_config_file.write(xtasks_config)
     xtasks_config_file.close()
+
+    if args.hwinst:
+        hwinst_acc_json_string = json.dumps({'full_path': ait_path + '/backend/' + args.backend + '/HLS/src/Adapter_instr.cpp', 'short_name': 'Adapter_instr', 'type': 0, 'num_instances': 1, 'task_creation': 'false', 'instrumentation': 'false', 'periodic': 'false', 'lock': 'false'}, indent=4)
+        hwinst_acc_json = json.loads(hwinst_acc_json_string, object_hook=JSONObject)
+        hwinst_acc = Accelerator(hwinst_acc_json)
+        accs.append(hwinst_acc)
 
 
 def ait_main():

@@ -159,7 +159,7 @@ def generate_Vivado_variables_tcl():
                                 + 'set accs [list'
 
     for acc in accs[0:num_accs]:
-        acc_name = acc.id + ':' + str(acc.num_instances) + ':' + acc.name
+        acc_name = str(acc.type) + ':' + str(acc.num_instances) + ':' + acc.full_name
 
         vivado_project_variables += ' ' + acc_name
 
