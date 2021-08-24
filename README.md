@@ -3,16 +3,16 @@
 The Accelerator Integration Tool (AIT) automatically integrates OmpSs@FPGA accelerators into FPGA designs using different vendor backends.
 
 This README should help you install the AIT component of the OmpSs@FPGA toolchain from the repository.
-However, it is preferred using the pre-build Docker image with the latest stable toolchain.
-They are available at [ompssatfpga.bsc.es/downloads/](https://ompssatfpga.bsc.es/downloads/docker/).
-Moreover, there are pre-build SD images for the current supported board families: Zynq7000 and Ultrascale.
-They are also available at [ompssatfpga.bsc.es/downloads/](https://ompssatfpga.bsc.es/downloads/SD-images/).
+However, it is preferred using the pre-built Docker image with the latest stable toolchain.
+They are available at [OmpSs@FPGA pre-built Docker images](https://ompssatfpga.bsc.es/downloads/docker/).
+Moreover, there are pre-built SD images for the current supported board families: Zynq7000 and Ultrascale.
+They are also available at [OmpSs@FPGA pre-built SD images](https://ompssatfpga.bsc.es/downloads/sd-images/).
 
 # Prerequisites
  - [Git Large File Storage](https://git-lfs.github.com/)
  - [Python 3.5 or later](https://www.python.org/)
  - Vendor backends:
-   - [Xilinx Vivado 2018.3 or later](https://www.xilinx.com/products/design-tools/vivado.html)
+   - [Xilinx Vivado 2018.3 or later](https://www.xilinx.com/support/download/index.html/content/xilinx/en/downloadNav/vivado-design-tools.html)
 
 #### Git Large File Storage
 
@@ -32,25 +32,32 @@ Current version supports Vivado 2018.3 onwards.
 
 # Installation
 
-To install AIT just clone the repository, run the `<ait>/install.sh` script and add `PREFIX/ait/` to PATH.
-```bash
-git clone https://gitlab.bsc.es/ompss-at-fpga/ait
-cd ait
-./install.sh PREFIX/ait/ all
-export PATH=PREFIX/<ait>/:$PATH
-```
+* Clone AIT's repository
+
+    From GitHub:
+
+	  git clone https://github.com/bsc-pm-ompss-at-fpga/ait.git
+
+	From our internal GitLab repository (BSC users only):
+
+	  git clone https://pm.bsc.es/gitlab/ompss-at-fpga/ait.git
+
+* Enable Git LFS and install
+
+	  cd ait
+	  git lfs install
+	  export AIT=/path/to/install/ait
+	  ./install.sh $AIT all
+
+* Add the installed binaries to your PATH
+
+	  export PATH=$AIT:$PATH
 
 This will install AIT for all the vendor backends available and all the boards supported. If you want to make a lighter installation, with fewer vendors, you can change the arguments passed to `install.sh`:
-```bash
-USAGE:  ./install.sh <prefix> <backend>
-  <prefix> path where the AIT files will be installed
-  <backend> supported values: all, xilinx
-```
-Finally, if you plan to make any commit, you must enable Git LFS inside the repository:
-```bash
-cd ait
-git lfs install
-```
+
+	USAGE:  ./install.sh <prefix> <backend>
+  	<prefix> path where the AIT files will be installed
+  	<backend> supported values: all, xilinx
 
 # Tests
 
