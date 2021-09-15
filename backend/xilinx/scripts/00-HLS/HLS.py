@@ -64,6 +64,8 @@ def update_resource_utilization(acc):
     for resource in root.find('AreaEstimates').find('Resources'):
         used_resources[resource.tag] = int(resource.text) * acc.num_instances + (int(used_resources[resource.tag]) if resource.tag in used_resources else 0)
         if used_resources[resource.tag] > available_resources[resource.tag]:
+            if available_resources[resource.tag] is 0:
+                msg.error('The HLS code is using resources not available in the selected FPGA')
             utilization_percentage = str(round(float(used_resources[resource.tag]) / float(available_resources[resource.tag]) * 100, 2))
             report_string = '{0:<9} {1:>7} used | {2:>7} available - {3:>7}% utilization\n'
             report_string_formatted = report_string.format(resource.tag, used_resources[resource.tag], available_resources[resource.tag], utilization_percentage)
