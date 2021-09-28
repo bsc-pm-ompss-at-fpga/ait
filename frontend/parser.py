@@ -175,6 +175,7 @@ class ArgParser:
         bitstream_args.add_argument('--floorplanning_constr', help='built-in floorplanning constraints for accelerators and static logic\nacc: accelerator kernels are constrained to a SLR region\nstatic: each static logic IP is constrained to its relevant SLR\nall: enables both \'acc\' and \'static\' options\nBy default no floorplanning constraints are used', choices=['acc', 'static', 'all'], metavar='FLOORPLANNING_CONSTR')
         bitstream_args.add_argument('--slr_slices', help='enable SLR crossing register slices\nacc: create register slices for SLR crossing on accelerator-related interfaces\nstatic: create register slices for static logic IPs\nall: enable both \'acc\' and \'static\' options \nBy default they are disabled', choices=['acc', 'static', 'all'], metavar='SLR_SLICES')
         bitstream_args.add_argument('--memory_interleaving_stride', help='size in bytes of the stride of the memory interleaving. By default there is no interleaving', metavar='MEM_INTERLEAVING_STRIDE', action=StoreHumanReadable)
+        bitstream_args.add_argument('--bitinfo_note', help='custom note to add to the bitInfo', type=ascii, default='')
 
         # User-defined files arguments
         user_args = self.parser.add_argument_group('User-defined files')
@@ -296,6 +297,9 @@ class ArgParser:
             msg.error('--placement_file argument required when enabling SLR-crossing register slices on accelerators')
         elif (args.floorplanning_constr == 'acc' or args.floorplanning_constr == 'all') and args.placement_file is None:
             msg.error('--placement_file argument required when setting floorplanning constraints on accelerators')
+
+        if len(args.bitinfo_note) > 256:
+            msg.error('Length of bitInfo note must be less than 256 ASCII chars')
 
     # This check has to be delayed because arguments are parsed before the number of accelerators is calculated
     def check_hardware_runtime_args(self, args, num_accs):

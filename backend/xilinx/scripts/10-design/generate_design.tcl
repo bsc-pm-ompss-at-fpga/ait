@@ -1266,13 +1266,14 @@ append bitInfo_coe [ascii2hex $ait_call\n]
 append bitInfo_coe "FFFFFFFF\n"
 set hwruntime_vlnv [get_property VLNV [get_bd_cells /Hardware_Runtime/$name_hwruntime]]
 append bitInfo_coe [ascii2hex $hwruntime_vlnv\n]
+append bitInfo_coe "FFFFFFFF\n"
+append bitInfo_coe [ascii2hex $bitInfo_note\n]
 append bitInfo_coe "FFFFFFFF;"
-# First two lines do not contain data
-set data_length [expr [exec echo $bitInfo_coe | wc -l]-2]
 puts $bitInfo_file $bitInfo_coe
 close $bitInfo_file
 
-set_property -dict [list CONFIG.Write_Depth_A $data_length CONFIG.Load_Init_File {true} CONFIG.Coe_File [pwd]/$path_Project/$name_Project/bitInfo.coe] [get_bd_cells bitInfo]
+# Configure memory as a 1024-word deep 32b-word wide True-Dual Port RAM
+set_property -dict [list CONFIG.Write_Width_A {32} CONFIG.Write_Width_B {32} CONFIG.Read_Width_A {32} CONFIG.Read_Width_B {32} CONFIG.Write_Depth_A 1024 CONFIG.Load_Init_File {true} CONFIG.Coe_File [pwd]/$path_Project/$name_Project/bitInfo.coe] [get_bd_cells bitInfo]
 
 # Update outdated IPs
 update_ip_catalog -rebuild -scan_changes

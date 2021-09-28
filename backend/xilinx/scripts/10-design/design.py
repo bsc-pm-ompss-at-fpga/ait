@@ -83,6 +83,7 @@ def generate_Vivado_variables_tcl():
                                + 'variable num_acc_creators ' + str(num_acc_creators) + '\n' \
                                + 'variable num_jobs ' + str(args.jobs) + '\n' \
                                + 'variable ait_call "' + str(re.escape(os.path.basename(sys.argv[0]) + ' ' + ' '.join(sys.argv[1:]))) + '"\n' \
+                               + 'variable bitInfo_note ' + str(re.escape(args.bitinfo_note)) + '\n' \
                                + 'variable version_major_ait ' + str(VERSION_MAJOR) + '\n' \
                                + 'variable version_minor_ait ' + str(VERSION_MINOR) + '\n' \
                                + 'variable version_bitInfo ' + str(BITINFO_VERSION).lower() + '\n' \
