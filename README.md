@@ -46,6 +46,7 @@ Current version supports Vivado 2018.3 onwards.
 
 	  cd ait
 	  git lfs install
+	  git lfs pull
 	  export AIT=/path/to/install/ait
 	  ./install.sh $AIT all
 
