@@ -34,6 +34,36 @@ from frontend.config import msg, ait_path, supported_boards, generation_steps, \
     VERSION_MINOR, VERSION_COMMIT
 
 
+# Custom argparse type representing a power of 2 int
+class IntPower:
+    def __init__(self, imin=None, imax=None):
+        self.imin = imin
+        self.imax = imax
+
+    def __call__(self, arg):
+        try:
+            value = int(arg)
+        except ValueError:
+            raise self.exception()
+        if (self.imin is not None and value < self.imin) or (self.imax is not None and value > self.imax):
+            raise self.exception()
+        elif value & (value - 1):
+            raise self.exception(value)
+        return value
+
+    def exception(self, value=None):
+        if value is not None and (value & (value - 1)):
+            return argparse.ArgumentTypeError('must be power of 2')
+        elif self.imin is not None and self.imax is not None:
+            return argparse.ArgumentTypeError('must be an integer power of 2 in the range [{}, {}]'.format(self.imin, self.imax))
+        elif self.imin is not None:
+            return argparse.ArgumentTypeError('must be an integer power of 2 >= {}'.format(self.imin))
+        elif self.imax is not None:
+            return argparse.ArgumentTypeError('must be an integer power of 2 <= {}'.format(self.imax))
+        else:
+            return argparse.ArgumentTypeError('must be an integer power of 2')
+
+
 # Custom argparse type representing a bounded int
 class IntRange:
     def __init__(self, imin=None, imax=None):
@@ -146,24 +176,24 @@ class ArgParser:
         # Hardware Runtime arguments
         hwruntime_args = self.parser.add_argument_group('Hardware Runtime')
         hwruntime_args.add_argument('--cmdin_queue_len', help='maximum length (64-bit words) of the queue for the hwruntime command in\nThis argument is mutually exclusive with --cmdin_subqueue_len', type=IntRange(4))
-        hwruntime_args.add_argument('--cmdin_subqueue_len', help='length (64-bit words) of each accelerator subqueue for the hwruntime command in.\nThis argument is mutually exclusive with --cmdin_queue_len\nMust be power of 2\nDef. max(64, 1024/num_accs)', type=IntRange(4))
+        hwruntime_args.add_argument('--cmdin_subqueue_len', help='length (64-bit words) of each accelerator subqueue for the hwruntime command in.\nThis argument is mutually exclusive with --cmdin_queue_len\nMust be power of 2\nDef. max(64, 1024/num_accs)', type=IntPower(4))
         hwruntime_args.add_argument('--cmdout_queue_len', help='maximum length (64-bit words) of the queue for the hwruntime command out\nThis argument is mutually exclusive with --cmdout_subqueue_len', type=IntRange(2))
-        hwruntime_args.add_argument('--cmdout_subqueue_len', help='length (64-bit words) of each accelerator subqueue for the hwruntime command out. This argument is mutually exclusive with --cmdout_queue_len\nMust be power of 2\nDef. max(64, 1024/num_accs)', type=IntRange(2))
-        hwruntime_args.add_argument('--spawnin_queue_len', help='length (64-bit words) of the hwruntime spawn in queue\nMust be power of 2', type=IntRange(4), default=1024)
-        hwruntime_args.add_argument('--spawnout_queue_len', help='length (64-bit words) of the hwruntime spawn out queue\nMust be power of 2', type=IntRange(4), default=1024)
+        hwruntime_args.add_argument('--cmdout_subqueue_len', help='length (64-bit words) of each accelerator subqueue for the hwruntime command out. This argument is mutually exclusive with --cmdout_queue_len\nMust be power of 2\nDef. max(64, 1024/num_accs)', type=IntPower(2))
+        hwruntime_args.add_argument('--spawnin_queue_len', help='length (64-bit words) of the hwruntime spawn in queue. Must be power of 2\n(def: \'1024\')', type=IntPower(4), default=1024)
+        hwruntime_args.add_argument('--spawnout_queue_len', help='length (64-bit words) of the hwruntime spawn out queue. Must be power of 2\n(def: \'1024\')', type=IntPower(4), default=1024)
         hwruntime_args.add_argument('--hwruntime_interconnect', help='type of hardware runtime interconnection with accelerators\ncentralized\ndistributed\n(def: \'centralized\')', choices=['centralized', 'distributed'], metavar='HWR_INTERCONNECT', default='centralized')  # TODO: Explain what does each option do
 
         # Picos arguments
         picos_args = self.parser.add_argument_group('Picos')
-        picos_args.add_argument('--picos_max_args_per_task', help='Max number of arguments for any task in the bitstream\n(def: \'15\')', type=IntRange(1), default=15)
-        picos_args.add_argument('--picos_max_deps_per_task', help='Max number of dependencies for any task in the bitstream\n(def: \'8\')', type=IntRange(2), default=8)
-        picos_args.add_argument('--picos_max_copies_per_task', help='Max number of copies for any task in the bitstream\n(def: \'15\')', type=IntRange(1), default=15)
-        picos_args.add_argument('--picos_num_dcts', help='Number of DCTs instantiated\n(def: \'1\')', type=int, default=1)
-        picos_args.add_argument('--picos_tm_size', help='Size of the TM memory\n(def: \'128\')', type=IntRange(2), default=128)
-        picos_args.add_argument('--picos_dm_size', help='Size of the DM memory\n(def: \'512\')', type=IntRange(2), default=512)
-        picos_args.add_argument('--picos_vm_size', help='Size of the VM memory\n(def: \'512\')', type=IntRange(2), default=512)
-        picos_args.add_argument('--picos_dm_ds', help='Data structure of the DM memory\nBINTREE: Binary search tree (not autobalanced)\nLINKEDLIST: Linked list\n(def: \'BINTREE\')', choices=['BINTREE', 'LINKEDLIST'], metavar='DATA_STRUCT', default='BINTREE')
-        picos_args.add_argument('--picos_dm_hash', help='Hashing function applied to dependence addresses\nP_PEARSON: Parallel Pearson function\nXOR\n(def: \'P_PEARSON\')', choices=['P_PEARSON', 'XOR'], metavar='HASH_FUN', default='P_PEARSON')  # TODO: Explain what XOR does
+        picos_args.add_argument('--picos_max_args_per_task', help='maximum number of arguments for any task in the bitstream\n(def: \'15\')', type=IntRange(1), default=15)
+        picos_args.add_argument('--picos_max_deps_per_task', help='maximum number of dependencies for any task in the bitstream\n(def: \'8\')', type=IntRange(2), default=8)
+        picos_args.add_argument('--picos_max_copies_per_task', help='maximum number of copies for any task in the bitstream\n(def: \'15\')', type=IntRange(1), default=15)
+        picos_args.add_argument('--picos_num_dcts', help='number of DCTs instantiated\n(def: \'1\')', choices=['1', '2', '4'], default=1)
+        picos_args.add_argument('--picos_tm_size', help='size of the TM memory\n(def: \'128\')', type=IntRange(2), default=128)
+        picos_args.add_argument('--picos_dm_size', help='size of the DM memory\n(def: \'512\')', type=IntRange(2), default=512)
+        picos_args.add_argument('--picos_vm_size', help='size of the VM memory\n(def: \'512\')', type=IntRange(2), default=512)
+        picos_args.add_argument('--picos_dm_ds', help='data structure of the DM memory\nBINTREE: Binary search tree (not autobalanced)\nLINKEDLIST: Linked list\n(def: \'BINTREE\')', choices=['BINTREE', 'LINKEDLIST'], metavar='DATA_STRUCT', default='BINTREE')
+        picos_args.add_argument('--picos_dm_hash', help='hashing function applied to dependence addresses\nP_PEARSON: Parallel Pearson function\nXOR\n(def: \'P_PEARSON\')', choices=['P_PEARSON', 'XOR'], metavar='HASH_FUN', default='P_PEARSON')  # TODO: Explain what XOR does
         picos_args.add_argument('--picos_hash_t_size', help='DCT hash table size\n(def: \'64\')', type=IntRange(2), default=64)
 
         # Miscellaneous arguments
@@ -215,6 +245,8 @@ class ArgParser:
         # Validate arguments
         self.check_required_args(args)
         self.check_flow_args(args)
+        if args.hwruntime == "pom":
+            self.check_picos_args(args)
 
     def check_required_args(self, args):
         # Validate required args
@@ -273,25 +305,14 @@ class ArgParser:
         elif args.cmdout_subqueue_len is None:
             args.cmdout_subqueue_len = max(64, prev_power_of_2(int(1024 / num_accs)))
 
-        if args.cmdin_subqueue_len & (args.cmdin_subqueue_len - 1) != 0:
-            msg.error('--cmdin_subqueue_len must be power of 2')
         # The subqueue length has to be checked here in the case the user provides the cmdin queue length
         if args.cmdin_subqueue_len < 34:
             msg.warning('Value of --cmdin_subqueue_len={} is less than 34, which is the length of the longest command possible. This design might not work with tasks with enough arguments.'.format(args.cmdin_subqueue_len))
-        if args.cmdout_subqueue_len & (args.cmdout_subqueue_len - 1) != 0:
-            msg.error('--cmdout_subqueue_len must be power of 2')
-        # Same for the cmdout subqueue length
-        if args.spawnin_queue_len & (args.spawnin_queue_len - 1) != 0:
-            msg.error('--spawnin_queue_len must be power of 2')
-        if args.spawnout_queue_len & (args.spawnout_queue_len - 1) != 0:
-            msg.error('--spawnout_queue_len must be power of 2')
         if args.spawnout_queue_len < 79:
             msg.warning('Value of --spawnout_queue_len={} is less than 79, which is the length of the longest task possible. This design might not work if an accelerator creates SMP tasks with enough copies, dependencies and/or arguments.'.format(args.spawnout_queue_len))
 
     def check_picos_args(self, args):
         # Validate Picos args
-        if (args.picos_num_dcts != 1 and args.picos_num_dcts != 2 and args.picos_num_dcts != 4):
-            msg.error('Invalid --picos_num_dcts, only 1, 2 and 4 values are valid')
         if (args.picos_dm_hash == 'P_PEARSON' and args.picos_hash_t_size != 64):
             msg.error('With P_PEARSON hash function, --picos_hash_t_size must be 64')
         if (args.picos_hash_t_size > args.picos_dm_size):
