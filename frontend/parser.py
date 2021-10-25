@@ -151,7 +151,7 @@ class ArgParser:
         hwruntime_args.add_argument('--cmdout_subqueue_len', help='length (64-bit words) of each accelerator subqueue for the hwruntime command out. This argument is mutually exclusive with --cmdout_queue_len\nMust be power of 2\nDef. max(64, 1024/num_accs)', type=IntRange(2))
         hwruntime_args.add_argument('--spawnin_queue_len', help='length (64-bit words) of the hwruntime spawn in queue\nMust be power of 2', type=IntRange(4), default=1024)
         hwruntime_args.add_argument('--spawnout_queue_len', help='length (64-bit words) of the hwruntime spawn out queue\nMust be power of 2', type=IntRange(4), default=1024)
-        hwruntime_args.add_argument('--hwruntime_interconnect', help='type of hardware runtime interconnection with accelerators', choices=['centralized', 'distributed'], default='centralized')
+        hwruntime_args.add_argument('--hwruntime_interconnect', help='type of hardware runtime interconnection with accelerators\ncentralized\ndistributed\n(def: \'centralized\')', choices=['centralized', 'distributed'], metavar='HWR_INTERCONNECT', default='centralized')  # TODO: Explain what does each option do
 
         # Picos arguments
         picos_args = self.parser.add_argument_group('Picos')
@@ -163,7 +163,7 @@ class ArgParser:
         picos_args.add_argument('--picos_dm_size', help='Size of the DM memory\n(def: \'512\')', type=IntRange(2), default=512)
         picos_args.add_argument('--picos_vm_size', help='Size of the VM memory\n(def: \'512\')', type=IntRange(2), default=512)
         picos_args.add_argument('--picos_dm_ds', help='Data structure of the DM memory\nBINTREE: Binary search tree (not autobalanced)\nLINKEDLIST: Linked list\n(def: \'BINTREE\')', choices=['BINTREE', 'LINKEDLIST'], metavar='DATA_STRUCT', default='BINTREE')
-        picos_args.add_argument('--picos_dm_hash', help='Hashing function applied to dependence addresses\nP_PEARSON: Parallel Pearson function\nXOR\n(def: \'P_PEARSON\')', choices=['P_PEARSON', 'XOR'], metavar='HASH_FUN', default='P_PEARSON')
+        picos_args.add_argument('--picos_dm_hash', help='Hashing function applied to dependence addresses\nP_PEARSON: Parallel Pearson function\nXOR\n(def: \'P_PEARSON\')', choices=['P_PEARSON', 'XOR'], metavar='HASH_FUN', default='P_PEARSON')  # TODO: Explain what XOR does
         picos_args.add_argument('--picos_hash_t_size', help='DCT hash table size\n(def: \'64\')', type=IntRange(2), default=64)
 
         # Miscellaneous arguments
