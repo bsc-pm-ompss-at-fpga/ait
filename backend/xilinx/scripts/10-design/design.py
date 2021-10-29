@@ -315,7 +315,7 @@ def run_design_step(project_args):
     generate_Vivado_variables_tcl()
 
     # Enable beta device on Vivado init script
-    if board.board_part:
+    if os.path.exists(project_backend_path + '/board/' + board.name + '/board_files'):
         p = subprocess.Popen('echo "enable_beta_device ' + chip_part + '\nset_param board.repoPaths [list '
                              + project_backend_path + '/board/' + board.name + '/board_files]" > '
                              + project_backend_path + '/scripts/Vivado_init.tcl', shell=True)

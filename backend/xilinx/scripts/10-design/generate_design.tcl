@@ -589,6 +589,11 @@ set_property STEPS.WRITE_BITSTREAM.ARGS.BIN_FILE true [get_runs impl_1]
 # Set repository path
 set_property ip_repo_paths $path_Repo [current_project]
 
+# Suppress known messages wrongly marked as critical warnigns
+set_msg_config -regexp -string "Bus Interface property MASTER_TYPE does not match between \/\(Hardware_Runtime\|bitInfo\)\/.*BRAM_PORT\(A\|B\).* and .*" -suppress
+set_msg_config -id {[BD 41-1753]} -suppress
+set_msg_config -id {[BD_TCL-1002]} -suppress
+
 # Add BSC auxiliary IPs
 if {[file isdirectory $path_Project/IPs/]} {
 	set_property ip_repo_paths "[get_property ip_repo_paths [current_project]] $path_Project/IPs" [current_project]
