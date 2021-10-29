@@ -30,16 +30,8 @@ from time import localtime, strftime
 
 class Accelerator:
     def __init__(self, acc_config):
-        self.full_path = acc_config.full_path
-        self.filename = os.path.basename(acc_config.full_path)  # < Source file (basename with extension)
-        self.name = acc_config.short_name  # < Name
-        self.full_name = self.filename.rstrip('.cpp')  # < Full name (name with mcxx suffix)
-        self.type = acc_config.type  # < Type identifier
-        self.num_instances = int(acc_config.num_instances)  # < Number of instances
-        self.task_creation = acc_config.task_creation
-        self.instrumentation = acc_config.instrumentation
-        self.periodic = acc_config.periodic
-        self.lock = acc_config.lock
+        for attribute in acc_config:
+            setattr(self, attribute, acc_config[attribute])
 
 
 class Color:

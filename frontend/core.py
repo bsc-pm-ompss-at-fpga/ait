@@ -91,7 +91,7 @@ def get_accelerators(project_path):
     args.lock_hwruntime = False  # Will not be enabled if no accelerator requires it
 
     for file_ in sorted(glob.glob(os.getcwd() + '/ait_*.json')):
-        acc_config_json = json.load(open(file_), object_hook=JSONObject)
+        acc_config_json = json.load(open(file_))
         for acc_config in acc_config_json:
             acc = Accelerator(acc_config)
 
@@ -135,8 +135,8 @@ def get_accelerators(project_path):
     xtasks_config_file.close()
 
     if args.hwinst:
-        hwinst_acc_json_string = json.dumps({'full_path': ait_path + '/backend/' + args.backend + '/HLS/src/Adapter_instr.cpp', 'short_name': 'Adapter_instr', 'type': 0, 'num_instances': 1, 'task_creation': 'false', 'instrumentation': 'false', 'periodic': 'false', 'lock': 'false'}, indent=4)
-        hwinst_acc_json = json.loads(hwinst_acc_json_string, object_hook=JSONObject)
+        hwinst_acc_json_string = json.dumps({'full_path': ait_path + '/backend/' + args.backend + '/HLS/src/Adapter_instr.cpp', 'filename': 'Adapter_instr.cpp', 'name': 'Adapter_instr', 'type': 0, 'num_instances': 1, 'task_creation': 'false', 'instrumentation': 'false', 'periodic': 'false', 'lock': 'false'}, indent=4)
+        hwinst_acc_json = json.loads(hwinst_acc_json_string)
         hwinst_acc = Accelerator(hwinst_acc_json)
         accs.append(hwinst_acc)
 
