@@ -30,11 +30,6 @@ set bitmap_bitInfo [format 0x%08x [expr $bitmap_bitInfo | ([expr $interconOpt - 
 
 variable name_ManagedRst processor_system_reset/peripheral_aresetn
 
-# Counters
-if {$arch_type == "fpga"} {
-	variable PCIe_Inter 0
-}
-
 # Create .datainterfaces.txt file
 set dataInterfaces_file [open $path_Project/../${name_Project}.datainterfaces.txt "w"]
 

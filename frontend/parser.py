@@ -194,7 +194,7 @@ class ArgParser:
         picos_args.add_argument('--picos_max_args_per_task', help='maximum number of arguments for any task in the bitstream\n(def: \'15\')', type=IntRange(1), default=15)
         picos_args.add_argument('--picos_max_deps_per_task', help='maximum number of dependencies for any task in the bitstream\n(def: \'8\')', type=IntRange(2), default=8)
         picos_args.add_argument('--picos_max_copies_per_task', help='maximum number of copies for any task in the bitstream\n(def: \'15\')', type=IntRange(1), default=15)
-        picos_args.add_argument('--picos_num_dcts', help='number of DCTs instantiated\n(def: \'1\')', choices=['1', '2', '4'], default=1)
+        picos_args.add_argument('--picos_num_dcts', help='number of DCTs instantiated\n(def: \'1\')', choices=['1', '2', '4'], metavar='NUM_DCTS', default=1)
         picos_args.add_argument('--picos_tm_size', help='size of the TM memory\n(def: \'128\')', type=IntRange(2), default=128)
         picos_args.add_argument('--picos_dm_size', help='size of the DM memory\n(def: \'512\')', type=IntRange(2), default=512)
         picos_args.add_argument('--picos_vm_size', help='size of the VM memory\n(def: \'512\')', type=IntRange(2), default=512)

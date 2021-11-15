@@ -67,7 +67,7 @@ def update_resource_utilization(acc):
             if available_resources[resource.tag] == 0:
                 msg.error('The HLS code is using resources not available in the selected FPGA')
             utilization_percentage = str(round(float(used_resources[resource.tag]) / float(available_resources[resource.tag]) * 100, 2))
-            report_string = '{0:<9} {1:>7} used | {2:>7} available - {3:>7}% utilization\n'
+            report_string = '{0:<9} {1:>7} used | {2:>7} available - {3:>6}% utilization\n'
             report_string_formatted = report_string.format(resource.tag, used_resources[resource.tag], available_resources[resource.tag], utilization_percentage)
             error_message += report_string_formatted
             depleted_resources = True
@@ -194,7 +194,7 @@ def run_HLS_step(project_args):
             available = 0
         if available > 0:
             utilization_percentage = str(round(float(res_value) / float(available) * 100, 2))
-            report_string = '{0:<9} {1:>6} used | {2:>6} available - {3:>6}% utilization'
+            report_string = '{0:<9} {1:>7} used | {2:>7} available - {3:>6}% utilization'
             report_string_formatted = report_string.format(res_name, res_value, available, utilization_percentage)
             msg.log(report_string_formatted)
             resources_file.write(report_string_formatted + '\n')
