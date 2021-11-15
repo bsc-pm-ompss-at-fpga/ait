@@ -75,6 +75,7 @@ class ArgParser():
         self.parser.add_argument('--interconnect_regslice', help='enable register slices on AXI interconnects\nall: enables them on all interconnects\nDDR: enables them on interconnects in DDR datapath\nhwruntime: enables them on the AXI-stream interconnects betwen the hwruntime and the accelerators\n', nargs='+', choices=['DDR', 'hwruntime', 'all'], metavar='INTER_REGSLICE_LIST')
         self.parser.add_argument('-j', '--jobs', help='specify the number of Vivado jobs to run simultaneously. By default it uses the value returned by `nproc`', type=int, default=int(subprocess.check_output(['nproc'])))
         self.parser.add_argument('--target_language', help='choose target language to synthesize files to: VHDL or Verilog\n(def: \'VHDL\')', choices=['VHDL', 'Verilog'], metavar='TARGET_LANG', default='VHDL')
+        self.parser.add_argument('--simplify_interconnection', help='simplify interconnection between accelerators and DDR. Might negatively impact timing', action='store_true', default=False)
 
     def check_args(self, args):
         if args.debug_intfs == 'custom' and args.debug_intfs_list is None:

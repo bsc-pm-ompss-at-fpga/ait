@@ -112,6 +112,7 @@ def generate_Vivado_variables_tcl():
                                 + 'variable interconRegSlice_ddr ' + regslice_ddr + '\n' \
                                 + 'variable interconRegSlice_hwruntime ' + regslice_hwruntime + '\n' \
                                 + 'variable interleaving_stride ' + (hex(utils.decimalFromHumanReadable(args.memory_interleaving_stride)) if args.memory_interleaving_stride is not None else str(args.memory_interleaving_stride)) + '\n'\
+                                + 'variable simplify_interconnection ' + str(args.simplify_interconnection).lower() + '\n' \
                                 + '\n' \
                                 + '# ' + board.name + ' board variables\n' \
                                 + 'variable board ' + board.name + '\n' \

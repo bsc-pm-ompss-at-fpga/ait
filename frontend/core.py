@@ -169,6 +169,9 @@ def ait_main():
         elif math.log2(utils.decimalFromHumanReadable(board.ddr.bank_size)) - math.log2(utils.decimalFromHumanReadable(args.memory_interleaving_stride)) < math.ceil(math.log2(board.ddr.num_banks)):
             msg.error('Max allowed interleaving stride in current board: ' + utils.decimalToHumanReadable(2**(math.log2(utils.decimalFromHumanReadable(board.ddr.bank_size)) - math.ceil(math.log2(board.ddr.num_banks))), 2))
 
+    if args.simplify_interconnection and board.arch.type == 'soc':
+        msg.error('Simplify DDR interconnection is only available for non-SoC boards')
+
     project_path = os.path.normpath(os.path.realpath(args.dir + '/' + args.name + '_ait'))
     project_backend_path = os.path.normpath(project_path + '/' + args.backend)
 

@@ -666,6 +666,13 @@ if {$IP_caching} {
 	check_ip_cache -import_from_project -use_cache_location $path_CacheLocation
 }
 
+# If enabled, simplify interconnection to DDR
+if {$simplify_interconnection} {
+	move_bd_cells [get_bd_cells /] [get_bd_cells bridge_to_host/bridge_to_host_addrInterleaver] [get_bd_cells bridge_to_host/DDR_S_AXI_Inter]
+	delete_bd_objs [get_bd_cells S_AXI_data_control_coherent_Inter]
+	set_property name S_AXI_data_control_coherent_Inter [get_bd_cells DDR_S_AXI_Inter]
+}
+
 # If available, execute the user defined pre-design tcl script
 if {[file exists $script_path/userPreDesign.tcl]} {
 	if {[catch {source -notrace $script_path/userPreDesign.tcl}]} {
