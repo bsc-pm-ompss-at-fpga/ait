@@ -23,6 +23,7 @@
 
 import os
 import sys
+import math
 import json
 
 from time import localtime, strftime
@@ -80,6 +81,35 @@ class Messages:
 
     def log(self, msg):
         print(self.__getHeader() + msg)
+
+
+class utils:
+    def decimalToHumanReadable(number, precision=0):
+        log_number = math.log2(number)
+
+        # Remove decimal point when 0 decimals of precision
+        if precision == 0:
+            precision -= 1
+
+        # Using 15 decimals of precision to avoid rounding
+        if log_number > 30:
+            return "{:.15f}".format(number / 1024**3)[:-15 + precision] + 'G'
+        elif log_number > 20:
+            return "{:.15f}".format(number / 1024**2)[:-15 + precision] + 'M'
+        elif log_number > 10:
+            return "{:.15f}".format(number / 1024)[:-15 + precision] + 'K'
+        else:
+            return "{:.15f}".format(number)[:-15 + precision]
+
+    def decimalFromHumanReadable(number):
+        if str(number)[-1:] == "G":
+            return int(float(number[:-1]) * 1024**3)
+        elif str(number)[-1:] == "M":
+            return int(float(number[:-1]) * 1024**2)
+        elif str(number)[-1:] == "K":
+            return int(float(number[:-1]) * 1024)
+        else:
+            return int(number)
 
 
 ait_path = os.path.normpath(os.path.dirname(os.path.realpath(__file__)) + '/..')

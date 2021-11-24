@@ -28,8 +28,8 @@ import shutil
 import subprocess
 import distutils.spawn
 
-from frontend.config import msg, ait_path, BITINFO_VERSION, VERSION_MAJOR, \
-    VERSION_MINOR, MIN_VIVADO_VERSION
+from frontend.config import msg, ait_path, BITINFO_VERSION, utils, \
+    VERSION_MAJOR, VERSION_MINOR, MIN_VIVADO_VERSION
 
 script_folder = os.path.basename(os.path.dirname(os.path.realpath(__file__)))
 
@@ -111,25 +111,23 @@ def generate_Vivado_variables_tcl():
                                 + 'variable interconRegSlice_all ' + regslice_all + '\n' \
                                 + 'variable interconRegSlice_ddr ' + regslice_ddr + '\n' \
                                 + 'variable interconRegSlice_hwruntime ' + regslice_hwruntime + '\n' \
+                                + 'variable interleaving_stride ' + (hex(utils.decimalFromHumanReadable(args.memory_interleaving_stride)) if args.memory_interleaving_stride is not None else str(args.memory_interleaving_stride)) + '\n'\
                                 + '\n' \
                                 + '# ' + board.name + ' board variables\n' \
                                 + 'variable board ' + board.name + '\n' \
                                 + 'variable chipPart ' + chip_part + '\n' \
                                 + 'variable clockFreq ' + str(args.clock) + '\n' \
-                                + 'variable size_DDR ' + board.ddr.size + '\n' \
                                 + 'variable arch_type ' + board.arch.type + '\n' \
                                 + 'variable arch_bits ' + str(board.arch.bits) + '\n' \
+                                + 'variable address_map [dict create]\n' \
+                                + 'dict set address_map "ompss_base_addr" ' + board.address_map.ompss_base_addr + '\n' \
+                                + 'dict set address_map "ddr_base_addr" ' + board.address_map.ddr_base_addr + '\n'
 
     if board.arch.type == 'soc':
-        if board.arch.bits == 32:
-            vivado_project_variables += 'variable addr_base "0x80000000"\n'
-        else:
-            vivado_project_variables += 'variable addr_base "0x00B0000000"\n'
+        vivado_project_variables += 'dict set address_map "ddr_size" ' + hex(utils.decimalFromHumanReadable(board.ddr.size)) + '\n'
     elif board.arch.type == 'fpga':
-        if board.arch.bits == 32:
-            vivado_project_variables += 'variable addr_base "0x00000000"\n'
-        else:
-            vivado_project_variables += 'variable addr_base "0x003000000000"\n'
+        vivado_project_variables += 'dict set address_map "ddr_num_banks" ' + str(board.ddr.num_banks) + '\n' \
+                                    + 'dict set address_map "ddr_bank_size" ' + hex(utils.decimalFromHumanReadable(board.ddr.bank_size)) + '\n'
 
     if board.board_part:
         vivado_project_variables += '\n' \
@@ -280,6 +278,10 @@ def run_design_step(project_args):
 
     for ipdef in glob.glob(ait_backend_path + '/IPs/hwruntime/' + args.hwruntime + '/*.zip'):
         shutil.copy2(ipdef, project_backend_path + '/IPs')
+
+    if args.memory_interleaving_stride is not None:
+        subprocess.check_output(['sed -i "s/\`undef __ENABLE__/\`define __ENABLE__/" ' + project_backend_path + '/IPs/addrInterleaver.v'], shell=True)
+        subprocess.check_output(['sed -i "s/\`define __WIDTH__ 64/\`define __WIDTH__ ' + str(board.ddr.addr_width) + '/" ' + project_backend_path + '/IPs/addrInterleaver.v'], shell=True)
 
     if args.user_constraints and os.path.exists(args.user_constraints):
         constraints_path = project_backend_path + '/board/' + board.name + '/constraints'

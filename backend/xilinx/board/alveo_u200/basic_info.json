@@ -15,6 +15,13 @@
 	},
 
 	"ddr": {
-		"size": "64G"
+		"num_banks": 4,
+		"addr_width": 64,
+		"bank_size": "16G"
+	},
+
+	"address_map": {
+		"ddr_base_addr": "0x0",
+		"ompss_base_addr": "0x0"
 	}
 }

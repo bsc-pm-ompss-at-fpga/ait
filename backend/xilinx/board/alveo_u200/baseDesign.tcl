@@ -36,6 +36,13 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 # To test this script, run the following commands from Vivado Tcl console:
 # source alveo_u200_base_design_script.tcl
 
+
+# The design that will be created by this Tcl script contains the following 
+# module references:
+# addrInterleaver
+
+# Please add the sources of those modules before sourcing this Tcl script.
+
 # If there is no project opened, this script will create a
 # project, but make sure you do not have an existing project
 # <./myproj/project_1.xpr> in the current working folder.
@@ -151,6 +158,31 @@ xilinx.com:ip:util_ds_buf:*\
 
 }
 
+##################################################################
+# CHECK Modules
+##################################################################
+set bCheckModules 1
+if { $bCheckModules == 1 } {
+   set list_check_mods "\ 
+addrInterleaver\
+"
+
+   set list_mods_missing ""
+   common::send_msg_id "BD_TCL-006" "INFO" "Checking if the following modules exist in the project's sources: $list_check_mods ."
+
+   foreach mod_vlnv $list_check_mods {
+      if { [can_resolve_reference $mod_vlnv] == 0 } {
+         lappend list_mods_missing $mod_vlnv
+      }
+   }
+
+   if { $list_mods_missing ne "" } {
+      catch {common::send_msg_id "BD_TCL-115" "ERROR" "The following module(s) are not found in the project: $list_mods_missing" }
+      common::send_msg_id "BD_TCL-008" "INFO" "Please add source files for the missing module(s) above."
+      set bCheckIPsPassed 0
+   }
+}
+
 if { $bCheckIPsPassed != 1 } {
   common::send_msg_id "BD_TCL-1003" "WARNING" "Will not continue with creation of design due to the error(s) above."
   return 3
@@ -202,6 +234,8 @@ proc create_hier_cell_QDMA { parentCell nameHier } {
   create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 pcie_refclk
 
   # Create pins
+  create_bd_pin -dir O -from 63 -to 0 QDMA_m_axi_araddr
+  create_bd_pin -dir O -from 63 -to 0 QDMA_m_axi_awaddr
   create_bd_pin -dir O -type clk aclk
   create_bd_pin -dir O -type rst aresetn
   create_bd_pin -dir I -type rst pcie_perstn
@@ -275,6 +309,8 @@ proc create_hier_cell_QDMA { parentCell nameHier } {
   # Create port connections
   connect_bd_net -net QDMA_axi_aclk [get_bd_pins aclk] [get_bd_pins QDMA/axi_aclk]
   connect_bd_net -net QDMA_axi_aresetn [get_bd_pins aresetn] [get_bd_pins QDMA/axi_aresetn]
+  connect_bd_net -net QDMA_m_axi_araddr [get_bd_pins QDMA_m_axi_araddr] [get_bd_pins QDMA/m_axi_araddr]
+  connect_bd_net -net QDMA_m_axi_awaddr [get_bd_pins QDMA_m_axi_awaddr] [get_bd_pins QDMA/m_axi_awaddr]
   connect_bd_net -net const_1_dout [get_bd_pins QDMA/st_rx_msg_rdy] [get_bd_pins QDMA/tm_dsc_sts_rdy] [get_bd_pins const_1/dout]
   connect_bd_net -net pcie_perstn_1 [get_bd_pins pcie_perstn] [get_bd_pins QDMA/soft_reset_n] [get_bd_pins QDMA/sys_rst_n]
   connect_bd_net -net util_ds_buf_IBUF_DS_ODIV2 [get_bd_pins QDMA/sys_clk] [get_bd_pins util_ds_buf/IBUF_DS_ODIV2]
@@ -353,6 +389,7 @@ proc create_hier_cell_DDR { parentCell nameHier } {
    CONFIG.ADDN_UI_CLKOUT1_FREQ_HZ {100} \
    CONFIG.C0.DDR4_AUTO_AP_COL_A3 {true} \
    CONFIG.C0.DDR4_AxiAddressWidth {34} \
+   CONFIG.C0.DDR4_AxiDataWidth {512} \
    CONFIG.C0.DDR4_Mem_Add_Map {ROW_COLUMN_BANK_INTLV} \
    CONFIG.C0_CLOCK_BOARD_INTERFACE {default_300mhz_clk0} \
    CONFIG.C0_DDR4_BOARD_INTERFACE {ddr4_sdram_c0} \
@@ -368,6 +405,7 @@ proc create_hier_cell_DDR { parentCell nameHier } {
    CONFIG.ADDN_UI_CLKOUT1_FREQ_HZ {100} \
    CONFIG.C0.DDR4_AUTO_AP_COL_A3 {true} \
    CONFIG.C0.DDR4_AxiAddressWidth {34} \
+   CONFIG.C0.DDR4_AxiDataWidth {512} \
    CONFIG.C0.DDR4_Mem_Add_Map {ROW_COLUMN_BANK_INTLV} \
    CONFIG.C0_CLOCK_BOARD_INTERFACE {default_300mhz_clk1} \
    CONFIG.C0_DDR4_BOARD_INTERFACE {ddr4_sdram_c1} \
@@ -383,6 +421,7 @@ proc create_hier_cell_DDR { parentCell nameHier } {
    CONFIG.ADDN_UI_CLKOUT1_FREQ_HZ {100} \
    CONFIG.C0.DDR4_AUTO_AP_COL_A3 {true} \
    CONFIG.C0.DDR4_AxiAddressWidth {34} \
+   CONFIG.C0.DDR4_AxiDataWidth {512} \
    CONFIG.C0.DDR4_Mem_Add_Map {ROW_COLUMN_BANK_INTLV} \
    CONFIG.C0_CLOCK_BOARD_INTERFACE {default_300mhz_clk2} \
    CONFIG.C0_DDR4_BOARD_INTERFACE {ddr4_sdram_c2} \
@@ -398,6 +437,7 @@ proc create_hier_cell_DDR { parentCell nameHier } {
    CONFIG.ADDN_UI_CLKOUT1_FREQ_HZ {100} \
    CONFIG.C0.DDR4_AUTO_AP_COL_A3 {true} \
    CONFIG.C0.DDR4_AxiAddressWidth {34} \
+   CONFIG.C0.DDR4_AxiDataWidth {512} \
    CONFIG.C0.DDR4_Mem_Add_Map {ROW_COLUMN_BANK_INTLV} \
    CONFIG.C0_CLOCK_BOARD_INTERFACE {default_300mhz_clk3} \
    CONFIG.C0_DDR4_BOARD_INTERFACE {ddr4_sdram_c3} \
@@ -497,7 +537,7 @@ proc create_hier_cell_bridge_to_host { parentCell nameHier } {
   create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 pcie_refclk
 
   # Create pins
-  create_bd_pin -dir O -type clk DDR_ui_clk
+  create_bd_pin -dir O -type clk DDR_0_ui_clk
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type rst interconnect_aresetn
   create_bd_pin -dir I -type rst pcie_perstn
@@ -522,15 +562,26 @@ proc create_hier_cell_bridge_to_host { parentCell nameHier } {
    CONFIG.NUM_MI {5} \
  ] $QDMA_M_AXI_LITE_Inter
 
+  # Create instance: bridge_to_host_addrInterleaver, and set properties
+  set block_name addrInterleaver
+  set block_cell_name bridge_to_host_addrInterleaver
+  if { [catch {set bridge_to_host_addrInterleaver [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
+     catch {common::send_msg_id "BD_TCL-105" "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   } elseif { $bridge_to_host_addrInterleaver eq "" } {
+     catch {common::send_msg_id "BD_TCL-106" "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   }
+  
   # Create interface connections
+  connect_bd_intf_net -intf_net DDR_0_S_AXI_1 [get_bd_intf_pins DDR/DDR_0_S_AXI] [get_bd_intf_pins DDR_S_AXI_Inter/M00_AXI]
+  connect_bd_intf_net -intf_net DDR_1_S_AXI_1 [get_bd_intf_pins DDR/DDR_1_S_AXI] [get_bd_intf_pins DDR_S_AXI_Inter/M01_AXI]
+  connect_bd_intf_net -intf_net DDR_2_S_AXI_1 [get_bd_intf_pins DDR/DDR_2_S_AXI] [get_bd_intf_pins DDR_S_AXI_Inter/M02_AXI]
+  connect_bd_intf_net -intf_net DDR_3_S_AXI_1 [get_bd_intf_pins DDR/DDR_3_S_AXI] [get_bd_intf_pins DDR_S_AXI_Inter/M03_AXI]
   connect_bd_intf_net -intf_net DDR_DDR_SDRAM_C0 [get_bd_intf_pins DDR_SDRAM_C0] [get_bd_intf_pins DDR/DDR_SDRAM_C0]
   connect_bd_intf_net -intf_net DDR_DDR_SDRAM_C1 [get_bd_intf_pins DDR_SDRAM_C1] [get_bd_intf_pins DDR/DDR_SDRAM_C1]
   connect_bd_intf_net -intf_net DDR_DDR_SDRAM_C2 [get_bd_intf_pins DDR_SDRAM_C2] [get_bd_intf_pins DDR/DDR_SDRAM_C2]
   connect_bd_intf_net -intf_net DDR_DDR_SDRAM_C3 [get_bd_intf_pins DDR_SDRAM_C3] [get_bd_intf_pins DDR/DDR_SDRAM_C3]
-  connect_bd_intf_net -intf_net DDR_S_AXI_Inter_M00_AXI [get_bd_intf_pins DDR/DDR_0_S_AXI] [get_bd_intf_pins DDR_S_AXI_Inter/M00_AXI]
-  connect_bd_intf_net -intf_net DDR_S_AXI_Inter_M01_AXI [get_bd_intf_pins DDR/DDR_1_S_AXI] [get_bd_intf_pins DDR_S_AXI_Inter/M01_AXI]
-  connect_bd_intf_net -intf_net DDR_S_AXI_Inter_M02_AXI [get_bd_intf_pins DDR/DDR_2_S_AXI] [get_bd_intf_pins DDR_S_AXI_Inter/M02_AXI]
-  connect_bd_intf_net -intf_net DDR_S_AXI_Inter_M03_AXI [get_bd_intf_pins DDR/DDR_3_S_AXI] [get_bd_intf_pins DDR_S_AXI_Inter/M03_AXI]
   connect_bd_intf_net -intf_net QDMA_M_AXI [get_bd_intf_pins DDR_S_AXI_Inter/S00_AXI] [get_bd_intf_pins QDMA/M_AXI]
   connect_bd_intf_net -intf_net QDMA_M_AXI_LITE [get_bd_intf_pins QDMA/M_AXI_LITE] [get_bd_intf_pins QDMA_M_AXI_LITE_Inter/S00_AXI]
   connect_bd_intf_net -intf_net QDMA_M_AXI_LITE_Inter_M00_AXI [get_bd_intf_pins DDR/DDR_0_S_AXI_CTRL] [get_bd_intf_pins QDMA_M_AXI_LITE_Inter/M00_AXI]
@@ -548,15 +599,19 @@ proc create_hier_cell_bridge_to_host { parentCell nameHier } {
 
   # Create port connections
   connect_bd_net -net DDR_DDR_0_peripheral_aresetn [get_bd_pins DDR/DDR_0_peripheral_aresetn] [get_bd_pins DDR_S_AXI_Inter/M00_ARESETN] [get_bd_pins QDMA_M_AXI_LITE_Inter/M00_ARESETN]
-  connect_bd_net -net DDR_DDR_0_ui_clk [get_bd_pins DDR_ui_clk] [get_bd_pins DDR/DDR_0_ui_clk] [get_bd_pins DDR_S_AXI_Inter/M00_ACLK] [get_bd_pins QDMA_M_AXI_LITE_Inter/M00_ACLK]
+  connect_bd_net -net DDR_DDR_0_ui_clk [get_bd_pins DDR_0_ui_clk] [get_bd_pins DDR/DDR_0_ui_clk] [get_bd_pins DDR_S_AXI_Inter/M00_ACLK] [get_bd_pins QDMA_M_AXI_LITE_Inter/M00_ACLK]
   connect_bd_net -net DDR_DDR_1_peripheral_aresetn [get_bd_pins DDR/DDR_1_peripheral_aresetn] [get_bd_pins DDR_S_AXI_Inter/M01_ARESETN] [get_bd_pins QDMA_M_AXI_LITE_Inter/M01_ARESETN]
   connect_bd_net -net DDR_DDR_1_ui_clk [get_bd_pins DDR/DDR_1_ui_clk] [get_bd_pins DDR_S_AXI_Inter/M01_ACLK] [get_bd_pins QDMA_M_AXI_LITE_Inter/M01_ACLK]
   connect_bd_net -net DDR_DDR_2_peripheral_aresetn [get_bd_pins DDR/DDR_2_peripheral_aresetn] [get_bd_pins DDR_S_AXI_Inter/M02_ARESETN] [get_bd_pins QDMA_M_AXI_LITE_Inter/M02_ARESETN]
   connect_bd_net -net DDR_DDR_2_ui_clk [get_bd_pins DDR/DDR_2_ui_clk] [get_bd_pins DDR_S_AXI_Inter/M02_ACLK] [get_bd_pins QDMA_M_AXI_LITE_Inter/M02_ACLK]
   connect_bd_net -net DDR_DDR_3_peripheral_aresetn [get_bd_pins DDR/DDR_3_peripheral_aresetn] [get_bd_pins DDR_S_AXI_Inter/M03_ARESETN] [get_bd_pins QDMA_M_AXI_LITE_Inter/M03_ARESETN]
   connect_bd_net -net DDR_DDR_3_ui_clk [get_bd_pins DDR/DDR_3_ui_clk] [get_bd_pins DDR_S_AXI_Inter/M03_ACLK] [get_bd_pins QDMA_M_AXI_LITE_Inter/M03_ACLK]
+  connect_bd_net -net QDMA_QDMA_m_axi_araddr [get_bd_pins QDMA/QDMA_m_axi_araddr] [get_bd_pins bridge_to_host_addrInterleaver/in_araddr]
+  connect_bd_net -net QDMA_QDMA_m_axi_awaddr [get_bd_pins QDMA/QDMA_m_axi_awaddr] [get_bd_pins bridge_to_host_addrInterleaver/in_awaddr]
   connect_bd_net -net QDMA_aclk [get_bd_pins DDR_S_AXI_Inter/S00_ACLK] [get_bd_pins QDMA/aclk] [get_bd_pins QDMA_M_AXI_LITE_Inter/S00_ACLK]
   connect_bd_net -net QDMA_aresetn [get_bd_pins DDR_S_AXI_Inter/S00_ARESETN] [get_bd_pins QDMA/aresetn] [get_bd_pins QDMA_M_AXI_LITE_Inter/S00_ARESETN]
+  connect_bd_net -net S00_AXI_araddr_1 [get_bd_pins DDR_S_AXI_Inter/S00_AXI_araddr] [get_bd_pins bridge_to_host_addrInterleaver/out_araddr]
+  connect_bd_net -net S00_AXI_awaddr_1 [get_bd_pins DDR_S_AXI_Inter/S00_AXI_awaddr] [get_bd_pins bridge_to_host_addrInterleaver/out_awaddr]
   connect_bd_net -net aclk_1 [get_bd_pins aclk] [get_bd_pins DDR_S_AXI_Inter/ACLK] [get_bd_pins DDR_S_AXI_Inter/S01_ACLK] [get_bd_pins QDMA_M_AXI_LITE_Inter/ACLK] [get_bd_pins QDMA_M_AXI_LITE_Inter/M04_ACLK]
   connect_bd_net -net interconnect_aresetn_1 [get_bd_pins interconnect_aresetn] [get_bd_pins DDR_S_AXI_Inter/ARESETN] [get_bd_pins QDMA_M_AXI_LITE_Inter/ARESETN]
   connect_bd_net -net pcie_perstn_1 [get_bd_pins pcie_perstn] [get_bd_pins DDR/DDR_rst] [get_bd_pins QDMA/pcie_perstn]
@@ -661,7 +716,6 @@ proc create_root_design { parentCell } {
   # Create instance: bitInfo_BRAM_Ctrl, and set properties
   set bitInfo_BRAM_Ctrl [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl bitInfo_BRAM_Ctrl ]
   set_property -dict [ list \
-   CONFIG.ECC_TYPE {0} \
    CONFIG.PROTOCOL {AXI4} \
    CONFIG.SINGLE_PORT_BRAM {1} \
  ] $bitInfo_BRAM_Ctrl
@@ -697,7 +751,7 @@ proc create_root_design { parentCell } {
   connect_bd_intf_net -intf_net qdma_0_pcie_mgt [get_bd_intf_ports pci_express_x16] [get_bd_intf_pins bridge_to_host/pci_express_x16]
 
   # Create port connections
-  connect_bd_net -net bridge_to_host_DDR_ui_clk [get_bd_pins bridge_to_host/DDR_ui_clk] [get_bd_pins clock_generator/clk_in1]
+  connect_bd_net -net bridge_to_host_DDR_ui_clk [get_bd_pins bridge_to_host/DDR_0_ui_clk] [get_bd_pins clock_generator/clk_in1]
   connect_bd_net -net clock_generator_clk_out1 [get_bd_pins M_AXI_master_Inter/ACLK] [get_bd_pins M_AXI_master_Inter/M00_ACLK] [get_bd_pins M_AXI_master_Inter/M01_ACLK] [get_bd_pins M_AXI_master_Inter/S00_ACLK] [get_bd_pins S_AXI_data_control_coherent_Inter/ACLK] [get_bd_pins S_AXI_data_control_coherent_Inter/M00_ACLK] [get_bd_pins S_AXI_data_control_coherent_Inter/S00_ACLK] [get_bd_pins bitInfo_BRAM_Ctrl/s_axi_aclk] [get_bd_pins bridge_to_host/aclk] [get_bd_pins clock_generator/clk_out1] [get_bd_pins processor_system_reset/slowest_sync_clk]
   connect_bd_net -net clock_generator_locked [get_bd_pins clock_generator/locked] [get_bd_pins processor_system_reset/dcm_locked]
   connect_bd_net -net pcie_perstn_1 [get_bd_ports pcie_perstn] [get_bd_pins bridge_to_host/pcie_perstn] [get_bd_pins clock_generator/resetn] [get_bd_pins processor_system_reset/ext_reset_in]
@@ -705,7 +759,6 @@ proc create_root_design { parentCell } {
   connect_bd_net -net processor_system_reset_peripheral_aresetn [get_bd_pins M_AXI_master_Inter/M00_ARESETN] [get_bd_pins M_AXI_master_Inter/M01_ARESETN] [get_bd_pins M_AXI_master_Inter/S00_ARESETN] [get_bd_pins S_AXI_data_control_coherent_Inter/M00_ARESETN] [get_bd_pins S_AXI_data_control_coherent_Inter/S00_ARESETN] [get_bd_pins bitInfo_BRAM_Ctrl/s_axi_aresetn] [get_bd_pins bridge_to_host/peripheral_aresetn] [get_bd_pins processor_system_reset/peripheral_aresetn]
 
   # Create address segments
-  create_bd_addr_seg -range 0x000400000000 -offset 0x00000000 [get_bd_addr_spaces bridge_to_host/QDMA/QDMA/M_AXI] [get_bd_addr_segs bridge_to_host/DDR/DDR_0/C0_DDR4_MEMORY_MAP/C0_DDR4_ADDRESS_BLOCK] SEG_DDR_C0_DDR4_ADDRESS_BLOCK
   create_bd_addr_seg -range 0x00100000 -offset 0x80000000 [get_bd_addr_spaces bridge_to_host/QDMA/QDMA/M_AXI_LITE] [get_bd_addr_segs bridge_to_host/DDR/DDR_0/C0_DDR4_MEMORY_MAP_CTRL/C0_REG] SEG_DDR_0_C0_REG
   create_bd_addr_seg -range 0x000400000000 -offset 0x000400000000 [get_bd_addr_spaces bridge_to_host/QDMA/QDMA/M_AXI] [get_bd_addr_segs bridge_to_host/DDR/DDR_1/C0_DDR4_MEMORY_MAP/C0_DDR4_ADDRESS_BLOCK] SEG_DDR_1_C0_DDR4_ADDRESS_BLOCK
   create_bd_addr_seg -range 0x00100000 -offset 0x80100000 [get_bd_addr_spaces bridge_to_host/QDMA/QDMA/M_AXI_LITE] [get_bd_addr_segs bridge_to_host/DDR/DDR_1/C0_DDR4_MEMORY_MAP_CTRL/C0_REG] SEG_DDR_1_C0_REG
@@ -713,6 +766,7 @@ proc create_root_design { parentCell } {
   create_bd_addr_seg -range 0x00100000 -offset 0x80200000 [get_bd_addr_spaces bridge_to_host/QDMA/QDMA/M_AXI_LITE] [get_bd_addr_segs bridge_to_host/DDR/DDR_2/C0_DDR4_MEMORY_MAP_CTRL/C0_REG] SEG_DDR_2_C0_REG
   create_bd_addr_seg -range 0x000400000000 -offset 0x000C00000000 [get_bd_addr_spaces bridge_to_host/QDMA/QDMA/M_AXI] [get_bd_addr_segs bridge_to_host/DDR/DDR_3/C0_DDR4_MEMORY_MAP/C0_DDR4_ADDRESS_BLOCK] SEG_DDR_3_C0_DDR4_ADDRESS_BLOCK
   create_bd_addr_seg -range 0x00100000 -offset 0x80300000 [get_bd_addr_spaces bridge_to_host/QDMA/QDMA/M_AXI_LITE] [get_bd_addr_segs bridge_to_host/DDR/DDR_3/C0_DDR4_MEMORY_MAP_CTRL/C0_REG] SEG_DDR_3_C0_REG
+  create_bd_addr_seg -range 0x000400000000 -offset 0x00000000 [get_bd_addr_spaces bridge_to_host/QDMA/QDMA/M_AXI] [get_bd_addr_segs bridge_to_host/DDR/DDR_0/C0_DDR4_MEMORY_MAP/C0_DDR4_ADDRESS_BLOCK] SEG_DDR_C0_DDR4_ADDRESS_BLOCK
   create_bd_addr_seg -range 0x00002000 -offset 0xC0000000 [get_bd_addr_spaces bridge_to_host/QDMA/QDMA/M_AXI_LITE] [get_bd_addr_segs bitInfo_BRAM_Ctrl/S_AXI/Mem0] SEG_bitInfo_BRAM_Ctrl_Mem0
 
 

@@ -30,8 +30,8 @@ from math import log2
 from math import ceil
 
 from frontend.config import msg, ait_path, supported_boards, generation_steps, \
-    available_hwruntimes, BITINFO_VERSION, MIN_WRAPPER_VERSION, VERSION_MAJOR, \
-    VERSION_MINOR, VERSION_COMMIT
+    available_hwruntimes, utils, BITINFO_VERSION, MIN_WRAPPER_VERSION, \
+    VERSION_MAJOR, VERSION_MINOR, VERSION_COMMIT
 
 
 # Custom argparse type representing a power of 2 int
@@ -88,6 +88,11 @@ class IntRange:
             return argparse.ArgumentTypeError('must be an integer <= {}'.format(self.imax))
         else:
             return argparse.ArgumentTypeError('must be an integer')
+
+
+class StoreHumanReadable(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        setattr(namespace, self.dest, utils.decimalFromHumanReadable(values))
 
 
 class StorePath(argparse.Action):
@@ -166,6 +171,7 @@ class ArgParser:
         bitstream_args.add_argument('--hwcounter', help='add a hardware counter to the bitstream', action='store_true', default=False)
         bitstream_args.add_argument('--wrapper_version', help='version of accelerator wrapper shell. This information will be placed in the bitstream information', type=int)
         bitstream_args.add_argument('--datainterfaces_map', help='path of mappings file for the data interfaces', action=StorePath)
+        bitstream_args.add_argument('--memory_interleaving_stride', help='size in bytes of the stride of the memory interleaving. By default there is no interleaving', metavar='MEM_INTERLEAVING_STRIDE', action=StoreHumanReadable)
 
         # User-defined files arguments
         user_args = self.parser.add_argument_group('User-defined files')

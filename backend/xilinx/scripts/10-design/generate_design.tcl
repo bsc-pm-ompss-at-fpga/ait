@@ -67,14 +67,26 @@ proc getBaseFreq {} {
 }
 
 # Maps board DDR to the address map
-proc configureAddressMap {addr_list size_DDR} {
+proc configureAddressMap {addr_list address_map} {
 	aitInfo "Using generic configureAddressMap procedure"
 
-	# Assign DDR address space
-	assign_bd_address [get_bd_addr_segs -regexp ".*_DDR_LOW.*"]
-	assign_bd_address -quiet $addr_list
-	set_property range $size_DDR [get_bd_addr_segs -regexp ".*_DDR_LOW.*"]
-	set_property offset 0x0 [get_bd_addr_segs -regexp ".*_DDR_LOW.*"]
+	upvar #0 arch_type arch_type
+
+	if {$arch_type == "soc"} {
+		# Assign DDR address space
+		assign_bd_address [get_bd_addr_segs -regexp ".*_DDR_LOW.*"]
+		assign_bd_address -quiet $addr_list
+		set_property range [dict get $address_map "ddr_size"] [get_bd_addr_segs -regexp ".*_DDR_LOW.*"]
+		set_property offset [dict get $address_map "ddr_base_addr"] [get_bd_addr_segs -regexp ".*_DDR_LOW.*"]
+	} else {
+		for {set i 0} {$i < [dict get $address_map "ddr_num_banks"]} {incr i} {
+			assign_bd_address [get_bd_addr_segs -regexp ".*DDR_${i}.*_DDR4_ADDRESS_BLOCK"]
+			assign_bd_address -quiet $addr_list
+			set_property offset [expr [dict get $address_map "ddr_base_addr"] + [dict get $address_map "ddr_bank_size"]*$i] [get_bd_addr_segs -regexp ".*DDR_${i}.*_DDR4_ADDRESS_BLOCK"]
+			set_property range [dict get $address_map "ddr_bank_size"] [get_bd_addr_segs -regexp ".*DDR_${i}.*_DDR4_ADDRESS_BLOCK"]
+		}
+	}
+
 }
 
 # Generates HDL wrapper
@@ -130,7 +142,7 @@ proc create_inStream_Inter_tree { stream_name nmasters nslaves } {
 		set inter_name ${stream_name}_lvl${inter_level}_$i
 
 		# Last interconnect may need less slaves
-		if {$i == $ninter-1 && [ expr $prev_ninter%16 ] != 0} {
+		if {$i == $ninter-1 && [expr $prev_ninter%16] != 0} {
 			set num_si [expr $prev_ninter%16]
 		} else {
 			set num_si 16
@@ -172,7 +184,7 @@ proc create_inStream_Inter_tree { stream_name nmasters nslaves } {
 				set inter_name ${stream_name}_lvl${inter_level}_m${m}_$i
 
 				# Last interconnect may need less slaves
-				if {$i == $ninter-1 && [ expr $prev_ninter%16 ] != 0} {
+				if {$i == $ninter-1 && [expr $prev_ninter%16] != 0} {
 					set num_si [expr $prev_ninter%16]
 				} else {
 					set num_si 16
@@ -243,7 +255,7 @@ proc create_outStream_Inter_tree { stream_name nslaves nmasters } {
 		set inter_name ${stream_name}_lvl${inter_level}_$i
 
 		# Last interconnect may need less masters
-		if {$i == $ninter-1 && [ expr $prev_ninter%16 ] != 0} {
+		if {$i == $ninter-1 && [expr $prev_ninter%16] != 0} {
 			set num_mi [ expr $prev_ninter%16 ]
 		} else {
 			set num_mi 16
@@ -288,7 +300,7 @@ proc create_outStream_Inter_tree { stream_name nslaves nmasters } {
 				set inter_name ${stream_name}_lvl${inter_level}_s${s}_$i
 
 				# Last interconnect may need less masters
-				if {$i == $ninter-1 && [ expr $prev_ninter%16 ] != 0} {
+				if {$i == $ninter-1 && [expr $prev_ninter%16] != 0} {
 					set num_mi [ expr $prev_ninter%16 ]
 				} else {
 					set num_mi 16
@@ -343,40 +355,42 @@ proc create_outStream_Inter_tree { stream_name nslaves nmasters } {
 }
 
 # Creates and connects a nested interconnect
-proc createNestedInterconnect {} {
+proc createNestedInterconnect {parent_inter {num 1}} {
 	upvar #0 interconOpt interconOpt
-	upvar interface interface counter counter
+	upvar #0 board_interfaces board_interfaces
 
-	aitInfo "Creating nested interconnect for $interface"
+	set index [lsearch -regexp $board_interfaces $parent_inter]
+	set board_interfaces [lreplace $board_interfaces $index $index]
 
-	set parent_inter "${interface}_Inter"
-	set nested_inter "${interface}_Inter_[expr $counter/16 - 1]"
+	aitInfo "Creating $num nested interconnects for $parent_inter"
 
-	# Create new nested interconnect and configure it
-	create_bd_cell -vlnv xilinx.com:ip:axi_interconnect $nested_inter
-	set_property -dict [list CONFIG.NUM_MI {1} CONFIG.NUM_SI {1} CONFIG.STRATEGY $interconOpt] [get_bd_cells $nested_inter]
+	set parent_inter_slaves [get_property CONFIG.NUM_SI [get_bd_cells $parent_inter]]
+	set_property CONFIG.NUM_SI [expr $parent_inter_slaves + $num - 1] [get_bd_cells $parent_inter]
+	for {set i 0} {$i < $num} {incr i} {
+		set nested_inter "${parent_inter}_$i"
+		set port_num [format %02u [expr $parent_inter_slaves + $i - 1]]
 
-	# Connect clocks and resets
-	connectClock [get_bd_pins $nested_inter/ACLK]
-	connectClock [get_bd_pins $nested_inter/S00_ACLK]
-	connectClock [get_bd_pins $nested_inter/M00_ACLK]
-	connectRst [get_bd_pins $nested_inter/ARESETN] "interconnect"
-	connectRst [get_bd_pins $nested_inter/M00_ARESETN] "peripheral"
-	connectRst [get_bd_pins $nested_inter/S00_ARESETN] "peripheral"
+		# Create new nested interconnect and configure it
+		create_bd_cell -vlnv xilinx.com:ip:axi_interconnect $nested_inter
+		set_property -dict [list CONFIG.NUM_MI {1} CONFIG.NUM_SI {1} CONFIG.STRATEGY $interconOpt] [get_bd_cells $nested_inter]
 
-	# Disconnect lastly used port of parent interconnect
-	set parent_intf_net [get_bd_intf_nets -of_objects [get_bd_intf_pins $parent_inter/S[format %02u [expr 15 - ($counter/16 - 1)]]_AXI]]
-	set parent_intf_pin [get_bd_intf_pins -of_objects [get_bd_intf_nets $parent_intf_net] -filter {PATH !~ "*_AXI_*_Inter*"}]
-	delete_bd_objs [get_bd_intf_nets $parent_intf_net]
+		# Connect clocks and resets
+		connectClock [get_bd_pins $nested_inter/ACLK]
+		connectClock [get_bd_pins $nested_inter/M00_ACLK]
+		connectRst [get_bd_pins $nested_inter/ARESETN] "interconnect"
+		connectRst [get_bd_pins $nested_inter/M00_ARESETN] "peripheral"
 
-	# Reconnect to new nested interconnect
-	connect_bd_intf_net -boundary_type upper [get_bd_intf_pins $parent_intf_pin] [get_bd_intf_pins $nested_inter/S00_AXI]
+		# Connect nested interconnect to parent interconnect
+		connect_bd_intf_net -boundary_type upper [get_bd_intf_pins $parent_inter/S${port_num}_AXI] [get_bd_intf_pins $nested_inter/M00_AXI]
 
-	# Connect nested interconnect to parent interconnect
-	connect_bd_intf_net -boundary_type upper [get_bd_intf_pins $parent_inter/S[format %02u [expr 15 - ($counter/16 - 1)]]_AXI] [get_bd_intf_pins $nested_inter/M00_AXI]
+		connectClock [get_bd_pins $parent_inter/S${port_num}_ACLK]
+		connectRst [get_bd_pins $parent_inter/S${port_num}_ARESETN] "peripheral"
 
-	incr counter
-	save_bd_design
+		save_bd_design
+
+		lappend board_interfaces "$nested_inter 0"
+	}
+	set board_interfaces [lsort -integer -index 1 -increasing $board_interfaces]
 }
 
 # Connects the IP to the host through the given port
@@ -392,29 +406,25 @@ proc connectToInterface {src intf role {num ""}} {
 	set counter [lindex [lindex $intf_list $index] 1]
 	set intf_list [lreplace $intf_list $index $index]
 
-	# If interconnect already full, create a new nested one
+	# Interconnect is full
 	if {!($counter % 16) && ($counter > 0)} {
-		if {$counter == 256} {
-			# We already have filled 16 nested interconnects
-			aitError "${intf} interface occupation is 100%"
-		} else {
-			createNestedInterconnect
-		}
+		aitError "${intf} interface occupation is 100%"
 	}
 
-	set inter [expr ($counter > 15) ? "{${interface}_Inter_[expr ($counter/16) - 1]}" : "{${interface}_Inter}"]
+	set inter ${interface}
+	set port ${role}[format %02u [expr $counter%16]]
 
 	set_property -dict [list CONFIG.NUM_${role}I [expr ($counter%16) + 1]] [get_bd_cells $inter]
 	set_property -quiet -dict [list CONFIG.STRATEGY $interconOpt] [get_bd_cells $inter]
-	connectClock [get_bd_pins $inter/${role}[format %02u [expr $counter%16]]_ACLK]
-	connectRst [get_bd_pins $inter/${role}[format %02u [expr $counter%16]]_ARESETN] "peripheral"
-	connect_bd_intf_net -boundary_type upper [get_bd_intf_pins $src] [get_bd_intf_pins $inter/${role}[format %02u [expr $counter%16]]_AXI]
+	connectClock [get_bd_pins $inter/${port}_ACLK]
+	connectRst [get_bd_pins $inter/${port}_ARESETN] "peripheral"
+	connect_bd_intf_net -boundary_type upper [get_bd_intf_pins $src] [get_bd_intf_pins $inter/${port}_AXI]
 
 	incr counter
 	lappend intf_list "$interface $counter"
 
 	set intf_list [lsort -integer -index 1 -increasing $intf_list]
-	return "$interface"
+	return [list "$interface" "${port}_AXI"]
 }
 
 proc connectToMasterInterface {src {num ""}} {
@@ -438,7 +448,7 @@ proc connectToDataInterface {src {num ""}} {
 	set interface [connectToInterface $src data S $num]
 
 	# Add a line to datainterfaces.txt
-	puts $dataInterfaces_file "$src\t$interface"
+	puts $dataInterfaces_file "$src\t[lindex $interface 0]"
 
 	return "$interface"
 }
@@ -471,9 +481,8 @@ proc removeUnusedInter {} {
 	set interconnect_list [get_bd_cells -regexp (M|S)_AXI_(([join $access_type_list "|"])_?)+(_[0-9])?_Inter]
 
 	foreach interconnect $interconnect_list {
-		set port [string trim [regsub -all {_Inter} $interconnect ""] "/"]
 		upvar #0 board_interfaces intf_list
-		set index [lsearch $intf_list "$port *"]
+		set index [lsearch $intf_list "$interconnect *"]
 		set counter [lindex [lindex $intf_list $index] 1]
 		if {$counter == 0} {
 			set intf_list [lreplace $intf_list $index $index]
@@ -490,14 +499,30 @@ proc getInterfaceOccupation {} {
 	upvar #0 board_interfaces intf_list
 
 	foreach interconnect $interconnect_list {
-		set port [string trim [regsub -all {_Inter} $interconnect ""] "/"]
 		set role [string trim [regsub -all {_AXI_.+$} $interconnect ""] "/"]
 		set counter [expr [get_property CONFIG.NUM_${role}I $interconnect] - 1]
 		if {$counter < 16} {
-			lappend intf_list "${port} $counter"
+			lappend intf_list "$interconnect $counter"
 			set intf_list [lsort -integer -index 1 -increasing $intf_list]
 		}
 	}
+}
+
+proc getAvailableDataPorts {} {
+	upvar #0 board_interfaces board_interfaces
+	set available_ports 0
+
+	foreach interface $board_interfaces {
+		foreach {inter counter} $interface {
+			if {[string match "*data*" $inter]} {
+				incr available_ports [expr 16 - $counter]
+			}
+		}
+	}
+
+	puts $available_ports
+
+	return $available_ports
 }
 
 # If available, overwrite board-specific procedures
@@ -546,7 +571,7 @@ for {set i 0} {$i < [llength $bd_addr_segments]} {incr i} {
 	if {[expr ($addr % $size) != 0]} {
 		set addr [expr $addr + $size - ($addr % $size)]
 	}
-	set format_addr [format 0x%016x [expr $addr_base + $addr]]
+	set format_addr [format 0x%016x [expr [dict get $address_map "ompss_base_addr"] + $addr]]
 	lset bd_addr_segments $i [dict replace $cur_dict addr $format_addr size $size]
 
 	set name [dict get $cur_dict name]
@@ -569,8 +594,10 @@ for {set i 0} {$i < [llength $bd_addr_segments]} {incr i} {
 if {$arch_type == "soc"} {
 	variable addr_bitInfo "0x0000000080020000"
 } elseif {$arch_type == "fpga"} {
-	variable addr_bitInfo [format 0x%016x [expr $addr_base + $bitInfo_offset]]
+	variable addr_bitInfo [format 0x%016x [expr [dict get $address_map "ompss_base_addr"] + $bitInfo_offset]]
 }
+
+set axi_ports [dict create]
 
 # Create project and set board files
 create_project -force $name_Project $path_Project/$name_Project -part $chipPart
@@ -845,9 +872,11 @@ foreach acc $accs {
 		# NOTE: Only handle the ports generated by mcxx, which start with the "mcxx_" prefix
 		set listAccPorts [get_bd_intf_pins ${accName}_$j/$accName_long/m_axi_mcxx_*]
 
-		# Connect each M_AXI port to an AXI interface
-		foreach nameAccPort $listAccPorts {
-			connectToDataInterface $nameAccPort
+		# Store each M_AXI port to dictionary
+		foreach pathAccPort $listAccPorts {
+			set nameParentPort [string range $pathAccPort 0 [string last / $pathAccPort]]
+			set nameAccPort [string range $pathAccPort [expr [string last / $pathAccPort] + 1] end]
+			dict set axi_ports $pathAccPort [list ${accName}_$j $accName_long $nameAccPort]
 		}
 
 		# If available, forward the instrumentation ports
@@ -874,7 +903,7 @@ foreach acc $accs {
 				# Connect buffer port
 				set accInstrBufferPort [get_bd_intf_pins -quiet ${accName}_$j/Adapter_instr/m_axi* -filter {NAME =~ "*instr_buffer"}]
 				if {$accInstrBufferPort != ""} {
-					connectToDataInterface $accInstrBufferPort
+					dict set axi_ports $accInstrBufferPort ""
 				}
 			}
 
@@ -905,6 +934,50 @@ foreach acc $accs {
 
 	}
 
+}
+
+# If we are generating a design for a discrete FPGA, check for available ports
+# to DDR and instantiate a nested interconnect, if necessary
+if {$arch_type == "fpga" && ([dict size $axi_ports] > [getAvailableDataPorts])} {
+	createNestedInterconnect S_AXI_data_control_coherent_Inter [dict get $address_map "ddr_num_banks"]
+}
+
+# Check if there are enough available ports to DDR
+if {[dict size $axi_ports] > [getAvailableDataPorts]} {
+	aitError "Insufficient available ports to DDR"
+}
+
+# Connect data ports to DDR interconnection
+dict for {port info} $axi_ports {
+	set intf [connectToDataInterface $port]
+	set port_path [lindex $info 0]
+	set port_ip [lindex $info 1]
+	set port_name [lindex $info 2]
+
+	if {$interleaving_stride ne "None"} {
+		set addrInterleaver [create_bd_cell -type module -reference addrInterleaver ${port_path}/${port_name}_addrInterleaver]
+		connect_bd_net [get_bd_pins -regexp ${port}_awaddr] [get_bd_pins $addrInterleaver/in_awaddr]
+		connect_bd_net [get_bd_pins -regexp ${port}_araddr] [get_bd_pins $addrInterleaver/in_araddr]
+		connect_bd_net [get_bd_pins -regexp [lindex $intf 0]\/[lindex $intf 1].*_awaddr] [get_bd_pins $addrInterleaver/out_awaddr]
+		connect_bd_net [get_bd_pins -regexp [lindex $intf 0]\/[lindex $intf 1].*_araddr] [get_bd_pins $addrInterleaver/out_araddr]
+		set_property name ${port_name}_awaddr_interleaved [get_bd_pins ${port_path}/out_awaddr]
+		set_property name ${port_name}_araddr_interleaved [get_bd_pins ${port_path}/out_araddr]
+	}
+
+	save_bd_design
+
+	dict set axi_ports $port [lindex $intf 0]/[lindex $intf 1]
+}
+
+# If using it, configure addrInterleaver IP
+if {$interleaving_stride ne "None"} {
+	set addrInterleaver [get_bd_cell -hierarchical -regexp .*_addrInterleaver]
+	set_property -dict [ list \
+	  CONFIG.BANK_SIZE [dict get $address_map "ddr_bank_size"] \
+	  CONFIG.NUM_BANKS [dict get $address_map "ddr_num_banks"] \
+	  CONFIG.STRIDE $interleaving_stride \
+	  CONFIG.BASE_ADDR [dict get $address_map "ddr_base_addr"] \
+	] $addrInterleaver
 }
 
 # If enabled, add and connect hwcounter IP
@@ -1031,7 +1104,7 @@ if {$hwruntime == "som"} {
 }
 assign_bd_address [get_bd_addr_segs *bitInfo_BRAM_Ctrl*] -range 4K -offset $addr_bitInfo
 
-configureAddressMap $addr_list $size_DDR
+configureAddressMap $addr_list $address_map
 
 # Store real PS frequency in xtasks config file
 set config_file [open $path_Project/../${name_Project}.xtasks.config "r"]

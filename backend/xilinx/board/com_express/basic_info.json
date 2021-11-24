@@ -16,5 +16,10 @@
 
 	"ddr": {
 		"size": "1G"
+	},
+
+	"address_map": {
+		"ddr_base_addr": "0x0",
+		"ompss_base_addr": "0x80000000"
 	}
 }
