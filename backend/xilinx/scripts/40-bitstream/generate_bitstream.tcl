@@ -21,8 +21,8 @@
 # Configuration variables
 set script_path [file dirname [file normalize [info script]]]
 if {[catch {source -notrace $script_path/../projectVariables.tcl}]} {
-	puts "\[AIT\] ERROR: Failed sourcing project variables"
-	exit 1
+    puts "\[AIT\] ERROR: Failed sourcing project variables"
+    exit 1
 }
 
 # Open Vivado project
@@ -30,7 +30,7 @@ open_project $path_Project/$name_Project/$name_Project.xpr
 
 # Check if previous step finished correctly
 if {[string match "*ERROR*" [get_property STATUS [get_runs *impl_1]]]} {
-	aitError "Implementation step did not finished correctly. Cannot generate bitstream."
+    aitError "Implementation step did not finished correctly. Cannot generate bitstream."
 }
 
 # Open and validate Block Design
@@ -45,24 +45,24 @@ wait_on_run impl_1
 
 # Check if bitstream generation finished correctly
 if {[string match "*ERROR*" [get_property STATUS [get_runs *impl_1]]]} {
-	aitError "Bitstream generation failed."
+    aitError "Bitstream generation failed."
 }
 
 file mkdir $path_Project/$name_Project/$name_Project.sdk
 
 if {[version -short] >= 2019.2} {
-	# Generate hdf file (to use in petalinux 2018.3 and 2019.1)
-	write_hwdef -force -file $path_Project/$name_Project/$name_Project.sdk/${name_Project}_design_wrapper.hdf
+    # Generate hdf file (to use in petalinux 2018.3 and 2019.1)
+    write_hwdef -force -file $path_Project/$name_Project/$name_Project.sdk/${name_Project}_design_wrapper.hdf
 
-	# Set basic platform properties
-	set_property pfm_name [get_property board_part [current_project]] [get_files *.bd]
-	set_property PFM.CLOCK {clk_out1 {id "0" is_default "true" proc_sys_reset "processor_system_reset" }} [get_bd_cells clock_generator]
+    # Set basic platform properties
+    set_property pfm_name [get_property board_part [current_project]] [get_files *.bd]
+    set_property PFM.CLOCK {clk_out1 {id "0" is_default "true" proc_sys_reset "processor_system_reset" }} [get_bd_cells clock_generator]
 
-	# Generate xsa files (to use in petalinux 2019.2+)
-	write_hw_platform -force -fixed -unified -include_bit $path_Project/$name_Project/$name_Project.sdk/${name_Project}_design_wrapper.xsa
-	validate_hw_platform $path_Project/$name_Project/$name_Project.sdk/${name_Project}_design_wrapper.xsa
+    # Generate xsa files (to use in petalinux 2019.2+)
+    write_hw_platform -force -fixed -unified -include_bit $path_Project/$name_Project/$name_Project.sdk/${name_Project}_design_wrapper.xsa
+    validate_hw_platform $path_Project/$name_Project/$name_Project.sdk/${name_Project}_design_wrapper.xsa
 } else {
-	set files [exec ls $path_Project/$name_Project/$name_Project.runs/impl_1/]
-	file copy -force $path_Project/$name_Project/$name_Project.runs/impl_1/[lindex $files [lsearch $files *.sysdef]] $path_Project/$name_Project/$name_Project.sdk/${name_Project}_design_wrapper.hdf
+    set files [exec ls $path_Project/$name_Project/$name_Project.runs/impl_1/]
+    file copy -force $path_Project/$name_Project/$name_Project.runs/impl_1/[lindex $files [lsearch $files *.sysdef]] $path_Project/$name_Project/$name_Project.sdk/${name_Project}_design_wrapper.hdf
 }
 
