@@ -897,7 +897,8 @@ foreach acc $accs {
                 # Connect buffer port
                 set accInstrBufferPort [get_bd_intf_pins -quiet ${accName}_$j/Adapter_instr/m_axi* -filter {NAME =~ "*instr_buffer"}]
                 if {$accInstrBufferPort ne ""} {
-                    dict set axi_ports $accInstrBufferPort ""
+                    set nameInstrBufferPort [string range $accInstrBufferPort [expr [string last / $accInstrBufferPort] + 1] end]
+                    dict set axi_ports $accInstrBufferPort [list ${accName}_$j $accName_long $nameInstrBufferPort]
                 }
             }
 
