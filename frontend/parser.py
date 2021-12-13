@@ -333,7 +333,7 @@ class ArgParser:
         if (args.picos_dm_hash == 'P_PEARSON' and args.picos_hash_t_size != 64):
             msg.error('With P_PEARSON hash function, --picos_hash_t_size must be 64')
         if (args.picos_hash_t_size > args.picos_dm_size):
-            msg.error('Invalid --picos_hash_t_size, maximum value is --picos_dm_size')
+            msg.error('Invalid --picos_hash_t_size ({}), maximum value is --picos_dm_size ({})'.format(args.picos_hash_t_size, args.picos_dm_size))
         if (ceil(log2(args.picos_hash_t_size)) + ceil(log2(args.picos_num_dcts)) > 8):
             msg.error('Invalid combination of --picos_hash_t_size and --picos_num_dcts, ceil(log2(args.picos_hash_t_size))+ceil(log2(args.picos_num_dcts)) <= 8')
 

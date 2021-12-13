@@ -85,6 +85,7 @@ def get_accelerators(project_path):
 
     accs = []
     acc_types = []
+    acc_names = []
     num_accs = 0
     num_instances = 0
     num_acc_creators = 0
@@ -106,7 +107,10 @@ def get_accelerators(project_path):
 
             if acc.type in acc_types:
                 msg.error('Two accelerators use the same type: \'' + str(acc.type) + '\' (maybe you should use the onto clause)')
+            elif acc.name in acc_names:
+                msg.error('Two accelerators use the same name: \'' + str(acc.name) + '\' (maybe you should change the fpga task definition)')
             acc_types.append(acc.type)
+            acc_names.append(acc.name)
 
             # Check if the acc is a task creator
             if acc.task_creation:
