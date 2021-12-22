@@ -172,6 +172,9 @@ def ait_main():
     if args.simplify_interconnection and board.arch.type == 'soc':
         msg.error('Simplify DDR interconnection is only available for non-SoC boards')
 
+    if (args.slr_slices is not None or args.floorplanning_constr is not None) and not hasattr(board.arch, 'slr'):
+        msg.error('Use of placement constraints is only available for boards with SLRs')
+
     project_path = os.path.normpath(os.path.realpath(args.dir + '/' + args.name + '_ait'))
     project_backend_path = os.path.normpath(project_path + '/' + args.backend)
 

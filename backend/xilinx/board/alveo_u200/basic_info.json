@@ -6,7 +6,11 @@
 
 	"arch": {
 		"type": "fpga",
-		"bits": 64
+		"bits": 64,
+		"slr": {
+			"num": 3,
+			"master": 1
+		}
 	},
 
 	"frequency": {
