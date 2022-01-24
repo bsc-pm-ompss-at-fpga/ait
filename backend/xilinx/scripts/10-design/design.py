@@ -282,6 +282,7 @@ def run_design_step(project_args):
     global board
     global accs
     global chip_part
+    global start_time
     global num_accs
     global num_instances
     global num_acc_creators
@@ -291,12 +292,13 @@ def run_design_step(project_args):
     args = project_args['args']
     board = project_args['board']
     accs = project_args['accs']
-    chip_part = board.chip_part + ('-' + board.es if (board.es and not args.ignore_eng_sample) else '')
+    start_time = project_args['start_time']
     num_accs = project_args['num_accs']
     num_instances = project_args['num_instances']
     num_acc_creators = project_args['num_acc_creators']
     project_path = project_args['path']
 
+    chip_part = board.chip_part + ('-' + board.es if (board.es and not args.ignore_eng_sample) else '')
     ait_backend_path = ait_path + '/backend/' + args.backend
     project_backend_path = project_path + '/' + args.backend
     project_step_path = project_backend_path + '/scripts/' + script_folder
@@ -395,7 +397,7 @@ def run_design_step(project_args):
     retval = p.wait()
     del os.environ['MYVIVADO']
     if retval:
-        msg.error('Block Design generation failed', False)
+        msg.error('Block Design generation failed', start_time, False)
     else:
         msg.success('Block Design generated')
 

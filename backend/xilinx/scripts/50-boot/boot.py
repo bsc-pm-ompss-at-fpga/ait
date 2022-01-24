@@ -68,10 +68,12 @@ def restore_init_scripts():
 
 
 def run_boot_step(project_args):
+    global start_time
     global project_backend_path
     global petalinux_build_path
     global petalinux_install_path
 
+    start_time = project_args['start_time']
     project_path = project_args['path']
     board = project_args['board']
     args = project_args['args']
@@ -109,7 +111,7 @@ def run_boot_step(project_args):
     retval = p.wait()
     if retval:
         restore_init_scripts()
-        msg.error('Generation of petalinux boot files failed', False)
+        msg.error('Generation of petalinux boot files failed', start_time, False)
 
     if os.path.exists(petalinux_build_path + '/subsystems/linux/configs/device-tree/'):
         # Seems to be petalinux 2016.3 (may match other untested versions)
@@ -146,7 +148,7 @@ def run_boot_step(project_args):
         retval = p.wait()
         if retval:
             restore_init_scripts()
-            msg.error('Generation of petalinux boot files failed', False)
+            msg.error('Generation of petalinux boot files failed', start_time, False)
     elif os.path.exists(petalinux_build_path + '/project-spec/meta-user/recipes-bsp/device-tree/files/'):
         # Seems to be petalinux 2018.3 or 2019.1 (may match other untested versions)
         if args.verbose_info:
@@ -207,7 +209,7 @@ def run_boot_step(project_args):
     retval = p.wait()
     if retval:
         restore_init_scripts()
-        msg.error('Generation of petalinux boot files failed', False)
+        msg.error('Generation of petalinux boot files failed', start_time, False)
 
     path_bit = project_path + '/' + args.name + '.bit'
     command = 'petalinux-package --force --boot --fsbl ./images/linux/*_fsbl.elf'
@@ -222,7 +224,7 @@ def run_boot_step(project_args):
 
     retval = p.wait()
     if retval:
-        msg.error('Generation of petalinux boot files failed', False)
+        msg.error('Generation of petalinux boot files failed', start_time, False)
     else:
         shutil.copy2(petalinux_build_path + '/images/linux/BOOT.BIN', project_path)
         shutil.copy2(petalinux_build_path + '/images/linux/image.ub', project_path)

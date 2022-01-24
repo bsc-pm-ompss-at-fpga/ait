@@ -44,11 +44,13 @@ def run_synthesis_step(project_args):
     global args
     global board
     global chip_part
+    global start_time
     global ait_backend_path
     global project_backend_path
 
     args = project_args['args']
     board = project_args['board']
+    start_time = project_args['start_time']
     project_path = project_args['path']
 
     chip_part = board.chip_part + ('-' + board.es if (board.es and not args.ignore_eng_sample) else '')
@@ -92,7 +94,7 @@ def run_synthesis_step(project_args):
         retval = p.wait()
         del os.environ['MYVIVADO']
         if retval:
-            msg.error('Hardware synthesis failed', False)
+            msg.error('Hardware synthesis failed', start_time, False)
         else:
             msg.success('Hardware synthesized')
     else:

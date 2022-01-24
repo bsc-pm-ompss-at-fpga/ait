@@ -26,7 +26,7 @@ import sys
 import math
 import json
 
-from time import localtime, strftime
+from time import localtime, strftime, time
 
 
 class Accelerator:
@@ -72,9 +72,9 @@ class Messages:
     def warning(self, msg):
         print(self.__getHeader() + Color.YELLOW + 'WARNING: ' + msg + Color.END)
 
-    def error(self, msg, simple=True):
+    def error(self, msg, start_time, simple=True):
         if self.name and not simple:
-            print(self.__getHeader() + Color.RED + 'ERROR: ' + msg + '. Check ' + self.name + '.ait.log for more information' + Color.END)
+            print(self.__getHeader() + Color.RED + 'ERROR: ' + msg + ' after ' + str(int(time() - start_time)) + 's. Check ' + self.name + '.ait.log for more information' + Color.END)
         else:
             print(self.__getHeader() + Color.RED + 'ERROR: ' + msg + Color.END)
         sys.exit(1)

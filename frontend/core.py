@@ -214,6 +214,7 @@ def ait_main():
             step_func = getattr(module, 'STEP_FUNC')
             msg.info('Starting \'' + step + '\' step')
             step_start_time = time.time()
+            project_args['start_time'] = step_start_time
             step_func(project_args)
             msg.success('Step \'' + step + '\' finished. ' + str(int(time.time() - step_start_time)) + 's elapsed')
         else:

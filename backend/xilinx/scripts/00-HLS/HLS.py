@@ -115,9 +115,9 @@ def synthesize_accelerator(acc):
 
     retval = p.wait()
     if retval:
-        msg.error('Synthesis of \'' + acc.name + '\' failed', False)
         if not args.keep_files:
             shutil.rmtree(project_backend_path + '/HLS/' + acc.name, ignore_errors=True)
+        msg.error('Synthesis of \'' + acc.name + '\' failed', start_time, False)
     else:
         msg.success('Finished synthesis of \'' + acc.name + '\'')
 
@@ -128,6 +128,7 @@ def run_HLS_step(project_args):
     global args
     global board
     global chip_part
+    global start_time
     global num_accs
     global ait_backend_path
     global project_backend_path
@@ -136,14 +137,15 @@ def run_HLS_step(project_args):
 
     args = project_args['args']
     board = project_args['board']
+    start_time = project_args['start_time']
     num_accs = project_args['num_accs']
     project_path = project_args['path']
     accs = project_args['accs']
 
+    chip_part = board.chip_part + ('-' + board.es if (board.es and not args.ignore_eng_sample) else '')
     ait_backend_path = ait_path + '/backend/' + args.backend
     project_backend_path = project_path + '/' + args.backend
     project_step_path = project_backend_path + '/scripts/' + script_folder
-    chip_part = board.chip_part + ('-' + board.es if (board.es and not args.ignore_eng_sample) else '')
 
     # Check if the requirements are met
     check_requirements()
