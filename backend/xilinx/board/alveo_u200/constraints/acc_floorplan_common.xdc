@@ -40,6 +40,3 @@ add_cells_to_pblock [get_pblocks slr2_pblock] [get_cells -hierarchical -regexp -
 
 add_cells_to_pblock [get_pblocks slr2_pblock] [get_cells -hierarchical -regexp -filter { NAME =~ {.*axis_regSlice_in_1_2/.*slr_slave.*} }]
 add_cells_to_pblock [get_pblocks slr2_pblock] [get_cells -hierarchical -regexp -filter { NAME =~ {.*axis_regSlice_out_2_1/.*slr_master.*} }]
-
-]]
-
