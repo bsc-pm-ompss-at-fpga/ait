@@ -1,5 +1,5 @@
 #------------------------------------------------------------------------#
-#    (C) Copyright 2017-2021 Barcelona Supercomputing Center             #
+#    (C) Copyright 2017-2022 Barcelona Supercomputing Center             #
 #                            Centro Nacional de Supercomputacion         #
 #                                                                        #
 #    This file is part of OmpSs@FPGA toolchain.                          #
