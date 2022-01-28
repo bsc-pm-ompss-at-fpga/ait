@@ -23,6 +23,7 @@
 import os
 import sys
 import shutil
+import random
 import subprocess
 import distutils.spawn
 
@@ -78,6 +79,11 @@ def run_synthesis_step(project_args):
             p = subprocess.Popen('echo "enable_beta_device ' + chip_part + '" > '
                                  + project_backend_path + '/scripts/Vivado_init.tcl', shell=True)
             retval = p.wait()
+
+        user_id = str(hex(random.randrange(2**32)))
+        msg.info('Setting bitstream user id: ' + user_id)
+        p = subprocess.Popen('sed -i s/BITSTREAM_USERID/' + user_id + '/ ' + project_backend_path + '/board/' + board.name + '/constraints/basic_constraints.xdc', shell=True)
+        retval = p.wait()
 
         os.environ['MYVIVADO'] = project_backend_path + '/scripts'
 
