@@ -45,8 +45,12 @@ wait_on_run synth_1
 
 # Check if synthesis finished correctly
 if {[string match "*ERROR*" [get_property STATUS [get_runs *synth_1]]]} {
-    foreach {i} [exec ls {*}[glob $path_Project/$name_Project/$name_Project.runs/*_synth_1/runme.log]] {
-        aitInfo "Failed OOC synthesis [exec dirname $i | xargs basename]: [exec grep ERROR $i]"
+    foreach {index} [lsearch -all [get_property STATUS [get_runs *synth_1]] *ERROR*] {
+        if {[catch {exec grep ERROR $path_Project/$name_Project/$name_Project.runs/[lindex [get_runs *synth_1] $index]/runme.log}]} {
+            aitInfo "Failed OOC synthesis [lindex [get_runs *synth_1] $index]"
+        } else {
+            aitInfo "Failed OOC synthesis [lindex [get_runs *synth_1] $index]: [exec grep ERROR $path_Project/$name_Project/$name_Project.runs/[lindex [get_runs *synth_1] $index]/runme.log]"
+        }
     }
     aitError "Hardware synthesis failed."
 }

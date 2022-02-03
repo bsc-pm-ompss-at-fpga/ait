@@ -72,7 +72,7 @@ class Messages:
     def warning(self, msg):
         print(self.__getHeader() + Color.YELLOW + 'WARNING: ' + msg + Color.END)
 
-    def error(self, msg, start_time, simple=True):
+    def error(self, msg, start_time=None, simple=True):
         if self.name and not simple:
             print(self.__getHeader() + Color.RED + 'ERROR: ' + msg + ' after ' + str(int(time() - start_time)) + 's. Check ' + self.name + '.ait.log for more information' + Color.END)
         else:
