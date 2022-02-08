@@ -1199,6 +1199,11 @@ if {$hwruntime eq "som"} {
 } elseif {$hwruntime eq "pom"} {
     set bitmap_bitInfo [format 0x%08x [expr $bitmap_bitInfo | 0x1<<9]]
 }
+
+if {$simplify_interconnection} {
+    set bitmap_bitInfo [format 0x%08x [expr $bitmap_bitInfo | 0x1<<3]]
+}
+
 assign_bd_address [get_bd_addr_segs *bitInfo_BRAM_Ctrl*] -range 4K -offset $addr_bitInfo
 
 configureAddressMap $address_map
