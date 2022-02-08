@@ -895,13 +895,13 @@ foreach acc $accs {
                 if {$slr != $board_slr_master} {
                     # If the acc is in a different SLR
                     #   * Create register slices for data ports
-                    # Register slices are named asi_regSlice_slr_${port_index}_${slr_orig}_${slr_dest}
+                    # Register slices are named asi_regSlice_slr_acc_${port_index}_${slr_orig}_${slr_dest}
                     #   note that the slave side is is close to the acc master axi port
                     set slicePorts [list]
                     set portIdx 0
                     # Task-creating accelerators will not have register slices as they do not use data ports
                     foreach accPort $listAccPorts {
-                        set axiRegSlice [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_register_slice ${accName}_${j}/axi_regslice_${portIdx}_slr_${slr}_${board_slr_master}]
+                        set axiRegSlice [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_register_slice ${accName}_${j}/axi_regslice_${portIdx}_slr_acc_${slr}_${board_slr_master}]
                         set_property -dict [ list \
                             CONFIG.NUM_SLR_CROSSINGS {0} \
                             CONFIG.REG_AR {15} \

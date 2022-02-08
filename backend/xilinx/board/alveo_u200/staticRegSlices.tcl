@@ -1,6 +1,6 @@
-proc createDdrRegSlice {ddrName ddrPort masterSLR migSlr} {
+proc createDdrRegSlice {ddrName ddrPort board_slr_master migSlr} {
 	set ddrRegSlice [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_register_slice:2.1 \
-		bridge_to_host/DDR/${ddrName}_${ddrPort}_slrX_${masterSLR}_${migSlr} ]
+		bridge_to_host/DDR/${ddrName}_${ddrPort}_slr_static_${board_slr_master}_${migSlr} ]
 	set_property -dict [ list \
 		CONFIG.NUM_SLR_CROSSINGS {0} \
 		CONFIG.REG_AR {15} \
@@ -20,12 +20,13 @@ proc createDdrRegSlice {ddrName ddrPort masterSLR migSlr} {
 }
 
 proc staticLogicRegisters {} {
-	set masterSLR 1
+    upvar #0 board_slr_master board_slr_master
 
-    #DDR0
-    createDdrRegSlice DDR_0 S_AXI $masterSLR 0
-    createDdrRegSlice DDR_0 S_AXI_CTRL $masterSLR 0
-    createDdrRegSlice DDR_3 S_AXI $masterSLR 2
-    createDdrRegSlice DDR_3 S_AXI_CTRL $masterSLR 2
+    #DDR 0
+    createDdrRegSlice DDR_0 S_AXI $board_slr_master 0
+    createDdrRegSlice DDR_0 S_AXI_CTRL $board_slr_master 0
+    #DDR 3
+    createDdrRegSlice DDR_3 S_AXI $board_slr_master 2
+    createDdrRegSlice DDR_3 S_AXI_CTRL $board_slr_master 2
 
 }
