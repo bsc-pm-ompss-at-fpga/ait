@@ -1126,7 +1126,7 @@ if {($debugInterfaces eq "stream") || ($debugInterfaces eq "both")} {
     # Open .debuginterfaces.txt file
     set debugInterfaces_file [open $path_Project/../${name_Project}.debuginterfaces.txt "a"]
 
-    set stream_pin_list [get_bd_intf_pins -hierarchical -filter {VLNV =~ xilinx.com:interface:axis_rtl:* && PATH =~ *hls_automatic_mcxx*Adapter*Stream*} -of_objects [get_bd_cells -hierarchical -filter {VLNV =~ xilinx.com:module_ref:hsToStreamAdapter:* || VLNV =~ xilinx.com:module_ref:streamToHsAdapter:*}]]
+    set stream_pin_list [get_bd_intf_pins -hierarchical -filter {VLNV =~ xilinx.com:interface:axis_rtl:* && PATH =~ *Adapter*Stream*} -of_objects [get_bd_cells -hierarchical -filter {VLNV =~ xilinx.com:module_ref:hsToStreamAdapter:* || VLNV =~ xilinx.com:module_ref:streamToHsAdapter:*}]]
     foreach stream_pin $stream_pin_list {
         set_property HDL_ATTRIBUTE.DEBUG true [get_bd_intf_nets [get_bd_intf_nets -of_objects [get_bd_intf_pins $stream_pin]]]
         apply_bd_automation -rule xilinx.com:bd_rule:debug -dict [list [get_bd_intf_nets [get_bd_intf_nets -of_objects [get_bd_intf_pins $stream_pin]]] {AXIS_SIGNALS "Data and Trigger" CLK_SRC clock_generator/clk_out1 SYSTEM_ILA "Auto" APC_EN "0" }]
