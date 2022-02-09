@@ -81,7 +81,7 @@ def run_synthesis_step(project_args):
             retval = p.wait()
 
         user_id = str(hex(random.randrange(2**32)))
-        msg.info('Setting bitstream user id: ' + user_id)
+        msg.log('Setting bitstream user id: ' + user_id)
         p = subprocess.Popen('sed -i s/BITSTREAM_USERID/' + user_id + '/ ' + project_backend_path + '/board/' + board.name + '/constraints/basic_constraints.xdc', shell=True)
         retval = p.wait()
 
