@@ -1240,6 +1240,11 @@ foreach acc $accs {
     append xtasks_bin_str [ascii2hex $accName]
 }
 
+set bitInfo_intlv_stride 0
+if {$interleaving_stride ne "None"} {
+    set bitInfo_intlv_stride $interleaving_stride
+}
+
 # Create bitInfo.coe file
 set bitInfo_file [open $path_Project/$name_Project/bitInfo.coe "w"]
 set bitInfo_coe "memory_initialization_radix=16;\nmemory_initialization_vector=\n"
@@ -1273,6 +1278,8 @@ set hwruntime_vlnv [get_property VLNV [get_bd_cells /Hardware_Runtime/$name_hwru
 append bitInfo_coe [ascii2hex $hwruntime_vlnv\n]
 append bitInfo_coe "FFFFFFFF\n"
 append bitInfo_coe [ascii2hex $bitInfo_note\n]
+append bitInfo_coe "FFFFFFFF\n"
+append bitInfo_coe [format %08x $bitInfo_intlv_stride]\n
 append bitInfo_coe "FFFFFFFF;"
 puts $bitInfo_file $bitInfo_coe
 close $bitInfo_file
