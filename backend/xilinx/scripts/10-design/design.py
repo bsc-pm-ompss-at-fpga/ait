@@ -158,6 +158,7 @@ def generate_Vivado_variables_tcl():
                                 + 'variable spawnInQueue_len ' + str(args.spawnin_queue_len) + '\n' \
                                 + 'variable spawnOutQueue_len ' + str(args.spawnout_queue_len) + '\n' \
                                 + 'variable hwruntime_interconnect ' + str(args.hwruntime_interconnect) + '\n' \
+                                + 'variable enable_spawn_queues ' + str(not args.disable_spawn_queues) + '\n'
 
     vivado_project_variables += '\n' \
                                 + '# List of accelerators\n' \

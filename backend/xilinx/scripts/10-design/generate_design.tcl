@@ -535,9 +535,11 @@ set bd_addr_segments [list \
     [dict create name cmdOutQueue bd_seg_name Hardware_Runtime/cmdOutQueue_BRAM_Ctrl/S_AXI/Mem0 size [expr $cmdOutSubqueue_len*$num_accs*8]] \
     [dict create name hwruntime_rst bd_seg_name Hardware_Runtime/hwruntime_rst/S_AXI/Reg size 4096] \
 ]
-if {$extended_hwruntime} {
+if {$extended_hwruntime && $enable_spawn_queues} {
     lappend bd_addr_segments [dict create name spawnInQueue bd_seg_name Hardware_Runtime/spawnInQueue_BRAM_Ctrl/S_AXI/Mem0 size [expr $spawnInQueue_len*8]]
     lappend bd_addr_segments [dict create name spawnOutQueue bd_seg_name Hardware_Runtime/spawnOutQueue_BRAM_Ctrl/S_AXI/Mem0 size [expr $spawnOutQueue_len*8]]
+} else {
+
 }
 if {$hwcounter || $hwinst} {
     lappend bd_addr_segments [dict create name hwcounter bd_seg_name HW_Counter/s_axi/reg0 size 4096]
@@ -548,7 +550,7 @@ set bd_addr_segments [lsort -decreasing -command comp_bd_addr_seg $bd_addr_segme
 set addr_hwruntime_spawnInQueue 0x0000000000000000
 set addr_hwruntime_spawnOutQueue 0x0000000000000000
 set addr_hwcounter 0x0000000000000000
-if {!$extended_hwruntime} {
+if {!$extended_hwruntime || !$enable_spawn_queues} {
     set spawnInQueue_len 0
     set spawnOutQueue_len 0
 }
@@ -613,9 +615,9 @@ set_property STEPS.WRITE_BITSTREAM.ARGS.BIN_FILE true [get_runs impl_1]
 set_property ip_repo_paths $path_Repo [current_project]
 
 # Suppress known messages wrongly marked as critical warnigns
-set_msg_config -regexp -string "Bus Interface property MASTER_TYPE does not match between \/\(Hardware_Runtime\|bitInfo\)\/.*BRAM_PORT\(A\|B\).* and .*" -suppress
-set_msg_config -id {[BD 41-1753]} -suppress
-set_msg_config -id {[BD_TCL-1002]} -suppress
+set_msg_config -id {[BD 41-237]} -severity {CRITICAL WARNING} -regexp -string "Bus Interface property MASTER_TYPE does not match between \/\(Hardware_Runtime\|bitInfo\)\/.*BRAM_PORT\(A\|B\).* and .*" -suppress
+set_msg_config -id {[BD 41-1753]} -severity WARNING -suppress
+set_msg_config -id {[BD_TCL-1002]} -severity WARNING -suppress
 
 # Add BSC auxiliary IPs
 if {[file isdirectory $path_Project/IPs/]} {
@@ -678,79 +680,52 @@ if {[file exists $script_path/userPreDesign.tcl]} {
 
 getInterfaceOccupation
 
-# Add Smart OmpSs Manager template
 if {$hwruntime eq "som"} {
-    if {[catch {source -notrace $path_Project/templates/Smart_OmpSs_Manager.tcl}]} {
-        aitError "Failed sourcing Smart OmpSs Manager template"
-    }
-
     variable name_hwruntime Smart_OmpSs_Manager
-
-    if {$arch_type eq "soc"} {
-        connectToMasterInterface Hardware_Runtime/S_AXI_GP 1
-    } else {
-        connectToMasterInterface Hardware_Runtime/S_AXI_GP
-    }
-
-    connectClock [get_bd_pins Hardware_Runtime/aclk]
-    connectRst [get_bd_pins Hardware_Runtime/interconnect_aresetn] "interconnect"
-    connectRst [get_bd_pins Hardware_Runtime/peripheral_aresetn] "peripheral"
-
-    # Min value of MAX_ACCS is 2
-    set hwruntime_max_accs [expr max($num_accs, 2)]
-    set_property -dict [list CONFIG.Write_Depth_A [expr $cmdInSubqueue_len*$hwruntime_max_accs] CONFIG.Write_Width_B {32} CONFIG.Read_Width_B {32}] [get_bd_cells Hardware_Runtime/cmdInQueue]
-    set_property -dict [list CONFIG.Write_Depth_A [expr $cmdOutSubqueue_len*$hwruntime_max_accs] CONFIG.Write_Width_B {32} CONFIG.Read_Width_B {32}] [get_bd_cells Hardware_Runtime/cmdOutQueue]
-    set_property -dict [list CONFIG.MAX_ACCS $hwruntime_max_accs] [get_bd_cells Hardware_Runtime/$name_hwruntime]
-
-    if {$extended_hwruntime} {
-        set hwruntime_max_acc_creators [expr max($num_acc_creators, 2)]
-        set_property -dict [list CONFIG.MAX_ACC_CREATORS $hwruntime_max_acc_creators] [get_bd_cells Hardware_Runtime/$name_hwruntime]
-        set_property -dict [list CONFIG.Write_Depth_A $spawnInQueue_len CONFIG.Write_Width_B {32} CONFIG.Read_Width_B {32}] [get_bd_cells Hardware_Runtime/spawnInQueue]
-        set_property -dict [list CONFIG.Write_Depth_A $spawnOutQueue_len CONFIG.Write_Width_B {32} CONFIG.Read_Width_B {32}] [get_bd_cells Hardware_Runtime/spawnOutQueue]
-        # Add the second port to bitInfo and connect it to SOM
-        set_property -dict [list CONFIG.Memory_Type {True_Dual_Port_RAM} CONFIG.Register_PortA_Output_of_Memory_Primitives {false} CONFIG.Register_PortB_Output_of_Memory_Primitives {false}] [get_bd_cells bitInfo]
-        connect_bd_intf_net -boundary_type upper [get_bd_intf_pins Hardware_Runtime/bitInfo] [get_bd_intf_pins bitInfo/BRAM_PORTB]
-    }
-
-    # Use managed reset for the accelerators reset signal
-    variable name_ManagedRst Hardware_Runtime/managed_aresetn
 } elseif {$hwruntime eq "pom"} {
-    if {[catch {source -notrace $path_Project/templates/Picos_OmpSs_Manager.tcl}]} {
-        aitError "Failed sourcing Picos OmpSs Manager template"
-    }
-
     variable name_hwruntime Picos_OmpSs_Manager
+}
 
-    if {$arch_type eq "soc"} {
-        connectToMasterInterface Hardware_Runtime/S_AXI_GP 1
-    } else {
-        connectToMasterInterface Hardware_Runtime/S_AXI_GP
-    }
+# Add OmpSs Manager template
+if {[catch {source -notrace $path_Project/templates/$name_hwruntime.tcl}]} {
+	aitError "Failed sourcing $name_hwruntime template"
+}
 
-    connectClock [get_bd_pins Hardware_Runtime/aclk]
-    connectRst [get_bd_pins Hardware_Runtime/interconnect_aresetn] "interconnect"
-    connectRst [get_bd_pins Hardware_Runtime/peripheral_aresetn] "peripheral"
+if {$arch_type eq "soc"} {
+    connectToMasterInterface Hardware_Runtime/S_AXI_GP 1
+} else {
+    connectToMasterInterface Hardware_Runtime/S_AXI_GP
+}
 
-    # Min value of MAX_ACCS is 2
-    set hwruntime_max_accs [expr max($num_accs, 2)]
-    set_property -dict [list CONFIG.Write_Depth_A [expr $cmdInSubqueue_len*$hwruntime_max_accs] CONFIG.Write_Width_B {32} CONFIG.Read_Width_B {32}] [get_bd_cells Hardware_Runtime/cmdInQueue]
-    set_property -dict [list CONFIG.Write_Depth_A [expr $cmdOutSubqueue_len*$hwruntime_max_accs] CONFIG.Write_Width_B {32} CONFIG.Read_Width_B {32}] [get_bd_cells Hardware_Runtime/cmdOutQueue]
-    set_property -dict [list CONFIG.MAX_ACCS $hwruntime_max_accs CONFIG.MAX_ACC_CREATORS $hwruntime_max_accs CONFIG.PICOS_ARGS $picos_args_hash] [get_bd_cells Hardware_Runtime/$name_hwruntime]
+connectClock [get_bd_pins Hardware_Runtime/aclk]
+connectRst [get_bd_pins Hardware_Runtime/interconnect_aresetn] "interconnect"
+connectRst [get_bd_pins Hardware_Runtime/peripheral_aresetn] "peripheral"
 
-    if {$extended_hwruntime} {
-        set hwruntime_max_acc_creators [expr max($num_acc_creators, 2)]
-        set_property -dict [list CONFIG.MAX_ACC_CREATORS $hwruntime_max_acc_creators] [get_bd_cells Hardware_Runtime/$name_hwruntime]
+# Min value of MAX_ACCS is 2
+set hwruntime_max_accs [expr max($num_accs, 2)]
+set_property -dict [list CONFIG.Write_Depth_A [expr $cmdInSubqueue_len*$hwruntime_max_accs] CONFIG.Write_Width_B {32} CONFIG.Read_Width_B {32}] [get_bd_cells Hardware_Runtime/cmdInQueue]
+set_property -dict [list CONFIG.Write_Depth_A [expr $cmdOutSubqueue_len*$hwruntime_max_accs] CONFIG.Write_Width_B {32} CONFIG.Read_Width_B {32}] [get_bd_cells Hardware_Runtime/cmdOutQueue]
+set_property -dict [list CONFIG.MAX_ACCS $hwruntime_max_accs] [get_bd_cells Hardware_Runtime/$name_hwruntime]
+
+if {$extended_hwruntime} {
+    set hwruntime_max_acc_creators [expr max($num_acc_creators, 2)]
+    set_property -dict [list CONFIG.MAX_ACC_CREATORS $hwruntime_max_acc_creators CONFIG.ENABLE_SPAWN_QUEUES $enable_spawn_queues] [get_bd_cells Hardware_Runtime/$name_hwruntime]
+    if {$enable_spawn_queues} {
         set_property -dict [list CONFIG.Write_Depth_A $spawnInQueue_len CONFIG.Write_Width_B {32} CONFIG.Read_Width_B {32}] [get_bd_cells Hardware_Runtime/spawnInQueue]
         set_property -dict [list CONFIG.Write_Depth_A $spawnOutQueue_len CONFIG.Write_Width_B {32} CONFIG.Read_Width_B {32}] [get_bd_cells Hardware_Runtime/spawnOutQueue]
-
-        # Add the second port to bitInfo and connect it to POM
-        set_property -dict [list CONFIG.Memory_Type {True_Dual_Port_RAM} CONFIG.Register_PortA_Output_of_Memory_Primitives {false} CONFIG.Register_PortB_Output_of_Memory_Primitives {false}] [get_bd_cells bitInfo]
-        connect_bd_intf_net -boundary_type upper [get_bd_intf_pins Hardware_Runtime/bitInfo] [get_bd_intf_pins bitInfo/BRAM_PORTB]
+        set_property -dict [list CONFIG.SPAWNIN_QUEUE_LEN $spawnInQueue_len CONFIG.SPAWNOUT_QUEUE_LEN $spawnOutQueue_len] [get_bd_cells Hardware_Runtime/$name_hwruntime]
     }
-
-    # Use managed reset for the accelerators reset signal
-    variable name_ManagedRst Hardware_Runtime/managed_aresetn
+    # Add the second port to bitInfo and connect it to xOM
+    set_property -dict [list CONFIG.Memory_Type {True_Dual_Port_RAM} CONFIG.Register_PortA_Output_of_Memory_Primitives {false} CONFIG.Register_PortB_Output_of_Memory_Primitives {false}] [get_bd_cells bitInfo]
+    connect_bd_intf_net -boundary_type upper [get_bd_intf_pins Hardware_Runtime/bitInfo] [get_bd_intf_pins bitInfo/BRAM_PORTB]
 }
+
+if {$hwruntime eq "pom"} {
+    set_property -dict [list CONFIG.PICOS_ARGS $picos_args_hash] [get_bd_cells Hardware_Runtime/$name_hwruntime]
+}
+
+# Use managed reset for the accelerators reset signal
+variable name_ManagedRst Hardware_Runtime/managed_aresetn
 
 set_property -dict [list CONFIG.MAX_ACC_TYPES [expr max([llength $accs], 2)]] [get_bd_cells Hardware_Runtime/$name_hwruntime]
 set_property -dict [list CONFIG.CMDIN_SUBQUEUE_LEN $cmdInSubqueue_len CONFIG.CMDOUT_SUBQUEUE_LEN $cmdOutSubqueue_len] [get_bd_cells Hardware_Runtime/$name_hwruntime]
@@ -760,9 +735,6 @@ if {$lock_hwruntime} {
     incr num_common_hwruntime_intf
     # Enable lock support if needed
     set_property -dict [list CONFIG.LOCK_SUPPORT {1}] [get_bd_cells Hardware_Runtime/$name_hwruntime]
-}
-if {$extended_hwruntime} {
-    set_property -dict [list CONFIG.SPAWNIN_QUEUE_LEN $spawnInQueue_len CONFIG.SPAWNOUT_QUEUE_LEN $spawnOutQueue_len] [get_bd_cells Hardware_Runtime/$name_hwruntime]
 }
 
 #prefix_inStream
@@ -797,6 +769,8 @@ if {$hwruntime_interconnect == "centralized"} {
     set hwruntime_interconnect_script "$path_Project/scripts/10-design/hwr_dist_interconnect.tcl"
 }
 
+# Regular variables set outside the sourced script seem to not be propagated, only if they are set in the global namespace
+set ::enable_spawn_queues $enable_spawn_queues
 if {[catch {source -notrace $hwruntime_interconnect_script}]} {
     aitError "Failed sourcing $hwruntime_interconnect_script"
 }
