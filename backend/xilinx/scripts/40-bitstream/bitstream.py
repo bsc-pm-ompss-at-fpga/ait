@@ -47,16 +47,12 @@ def gen_utilization_report(out_path):
     used_resources = {}
     util_resources = {}
 
-    # Check Zynq boards path
+    # Check implementation reports path
     rpt_path = project_backend_path + '/' + args.name + '/' + args.name + '.runs/impl_1'
     rpt_path += '/' + args.name + '_design_wrapper_utilization_placed.rpt'
     if not os.path.exists(rpt_path):
-        # Check Alpha Data path
-        rpt_path = project_backend_path + '/' + args.name + '/' + args.name + '.runs/impl_1'
-        rpt_path += '/' + args.name + '_design_top_utilization_placed.rpt'
-        if not os.path.exists(rpt_path):
-            msg.warning('Cannot find rpt file. Skipping bitstream utilization report')
-            return
+        msg.warning('Cannot find rpt file. Skipping bitstream utilization report')
+        return
 
     with open(rpt_path, 'r') as rpt_file:
         rpt_data = rpt_file.readlines()
@@ -146,16 +142,12 @@ def gen_wns_report(out_path):
     num_fail = 0
     num_total = 0
 
-    # Check Zynq boards path
+    # Check implementation reports path
     rpt_path = project_backend_path + '/' + args.name + '/' + args.name + '.runs/impl_1'
     rpt_path += '/' + args.name + '_design_wrapper_timing_summary_routed.rpt'
     if not os.path.exists(rpt_path):
-        # Check Alpha Data path
-        rpt_path = project_backend_path + '/' + args.name + '/' + args.name + '.runs/impl_1'
-        rpt_path += '/' + args.name + '_design_top_timing_summary_routed.rpt'
-        if not os.path.exists(rpt_path):
-            msg.warning('Cannot find rpt file. Skipping WNS report')
-            return
+        msg.warning('Cannot find rpt file. Skipping WNS report')
+        return
 
     with open(rpt_path, 'r') as rpt_file:
         rpt_data = rpt_file.readlines()
