@@ -36,6 +36,8 @@ script_folder = os.path.basename(os.path.dirname(os.path.realpath(__file__)))
 def check_requirements():
     if not distutils.spawn.find_executable('vivado'):
         msg.error('vivado not found. Please set PATH correctly')
+    elif board.arch.type == 'soc' and board.arch.bits == 32 and not distutils.spawn.find_executable('bootgen'):
+        msg.warning('bootgen not found. .bit.bin file will not be generated')
 
     vivado_version = str(subprocess.check_output(['vivado -version | head -n1 | sed "s/\(Vivado.\+v\)\(\([0-9]\|\.\)\+\).\+/\\2/"'], shell=True), 'utf-8').strip()
     if vivado_version < MIN_VIVADO_VERSION:
@@ -236,15 +238,39 @@ def run_bitstream_step(project_args):
         if retval:
             msg.error('Bitstream generation failed', start_time, False)
         else:
+            if board.arch.type == 'soc' and board.arch.bits == 32:
+                bif_file = open(project_backend_path + '/' + args.name + '/' + args.name + '.runs/impl_1/bitstream.bif', 'w')
+                bif_file.write('all:\n'
+                               + '{\n'
+                               + '\t' + args.name + '_design_wrapper.bit\n'
+                               + '}')
+                bif_file.close()
+                p = subprocess.Popen('bootgen -image bitstream.bif -arch zynq -process_bitstream bin -w',
+                                     cwd=project_backend_path + '/' + args.name + '/' + args.name + '.runs/impl_1',
+                                     stdout=sys.stdout.subprocess,
+                                     stderr=sys.stdout.subprocess, shell=True)
+
+                if args.verbose:
+                    for line in iter(p.stdout.readline, b''):
+                        sys.stdout.write(line.decode('utf-8'))
+
+                retval = p.wait()
+                if retval:
+                    msg.warning('Could not create .bit.bin file')
+                else:
+                    shutil.copy2(glob.glob(project_backend_path + '/' + args.name + '/' + args.name
+                                 + '.runs/impl_1/' + args.name + '*.bit.bin')[0],
+                                 project_path + '/' + args.name + '.bit.bin')
+
             shutil.copy2(glob.glob(project_backend_path + '/' + args.name + '/' + args.name
                          + '.runs/impl_1/' + args.name + '*.bit')[0],
                          project_path + '/' + args.name + '.bit')
             shutil.copy2(glob.glob(project_backend_path + '/' + args.name + '/' + args.name
                          + '.runs/impl_1/' + args.name + '*.bin')[0],
                          project_path + '/' + args.name + '.bin')
-            msg.success('Bitstream generated')
             gen_utilization_report(project_path + '/' + args.name + '.resources-impl.txt')
             gen_wns_report(project_path + '/' + args.name + '.timing-impl.txt')
+            msg.success('Bitstream generated')
     else:
         msg.error('No Vivado .xpr file exists for the current project. Bitstream generation failed')
 
