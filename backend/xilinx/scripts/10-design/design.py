@@ -96,14 +96,14 @@ def generate_Vivado_variables_tcl():
         vivado_project_variables += 'variable path_CacheLocation ' + os.path.realpath(args.IP_cache_location) + '\n'
 
     regslice_all = '0'
-    regslice_ddr = '0'
+    regslice_mem = '0'
     regslice_hwruntime = '0'
     if args.interconnect_regslice is not None:
         for opt in args.interconnect_regslice:
             if opt == 'all':
                 regslice_all = '1'
-            elif opt == 'DDR':
-                regslice_ddr = '1'
+            elif opt == 'mem':
+                regslice_mem = '1'
             elif opt == 'hwruntime':
                 regslice_hwruntime = '1'
 
@@ -112,7 +112,7 @@ def generate_Vivado_variables_tcl():
                                 + 'variable interconOpt ' + str(args.interconnect_opt + 1) + '\n' \
                                 + 'variable debugInterfaces ' + str(args.debug_intfs) + '\n' \
                                 + 'variable interconRegSlice_all ' + regslice_all + '\n' \
-                                + 'variable interconRegSlice_ddr ' + regslice_ddr + '\n' \
+                                + 'variable interconRegSlice_mem ' + regslice_mem + '\n' \
                                 + 'variable interconRegSlice_hwruntime ' + regslice_hwruntime + '\n' \
                                 + 'variable interleaving_stride ' + (hex(utils.decimalFromHumanReadable(args.memory_interleaving_stride)) if args.memory_interleaving_stride is not None else str(args.memory_interleaving_stride)) + '\n'\
                                 + 'variable simplify_interconnection ' + str(args.simplify_interconnection).lower() + '\n' \
@@ -132,13 +132,14 @@ def generate_Vivado_variables_tcl():
 
     vivado_project_variables += 'variable address_map [dict create]\n' \
                                 + 'dict set address_map "ompss_base_addr" ' + board.address_map.ompss_base_addr + '\n' \
-                                + 'dict set address_map "ddr_base_addr" ' + board.address_map.ddr_base_addr + '\n'
+                                + 'dict set address_map "mem_base_addr" ' + board.address_map.mem_base_addr + '\n' \
+                                + 'dict set address_map "mem_type" ' + board.mem.type + '\n'
 
     if board.arch.type == 'soc':
-        vivado_project_variables += 'dict set address_map "ddr_size" ' + hex(utils.decimalFromHumanReadable(board.ddr.size)) + '\n'
+        vivado_project_variables += 'dict set address_map "mem_size" ' + hex(utils.decimalFromHumanReadable(board.mem.size)) + '\n'
     elif board.arch.type == 'fpga':
-        vivado_project_variables += 'dict set address_map "ddr_num_banks" ' + str(board.ddr.num_banks) + '\n' \
-                                    + 'dict set address_map "ddr_bank_size" ' + hex(utils.decimalFromHumanReadable(board.ddr.bank_size)) + '\n'
+        vivado_project_variables += 'dict set address_map "mem_num_banks" ' + str(board.mem.num_banks) + '\n' \
+                                    + 'dict set address_map "mem_bank_size" ' + hex(utils.decimalFromHumanReadable(board.mem.bank_size)) + '\n'
 
     if board.board_part:
         vivado_project_variables += '\n' \
@@ -339,7 +340,7 @@ def run_design_step(project_args):
 
     if args.memory_interleaving_stride is not None:
         subprocess.check_output(['sed -i "s/\`undef __ENABLE__/\`define __ENABLE__/" ' + project_backend_path + '/IPs/addrInterleaver.v'], shell=True)
-        subprocess.check_output(['sed -i "s/\`define __WIDTH__ 64/\`define __WIDTH__ ' + str(board.ddr.addr_width) + '/" ' + project_backend_path + '/IPs/addrInterleaver.v'], shell=True)
+        subprocess.check_output(['sed -i "s/\`define __WIDTH__ 64/\`define __WIDTH__ ' + str(board.mem.addr_width) + '/" ' + project_backend_path + '/IPs/addrInterleaver.v'], shell=True)
 
     if args.user_constraints and os.path.exists(args.user_constraints):
         constraints_path = project_backend_path + '/board/' + board.name + '/constraints'

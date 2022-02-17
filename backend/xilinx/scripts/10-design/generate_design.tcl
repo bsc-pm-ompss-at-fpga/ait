@@ -61,20 +61,20 @@ proc getBaseFreq {} {
     return [get_property CONFIG.FREQ_HZ [get_bd_pins clock_generator/clk_in1]]
 }
 
-# Maps board DDR to the address map
+# Maps board memory to address map
 proc configureAddressMap {address_map} {
     aitInfo "Using generic configureAddressMap procedure"
 
     upvar #0 arch_type arch_type
 
-    # Assign DDR address space
+    # Assign memory address space
     if {$arch_type eq "soc"} {
         assign_bd_address [get_bd_addr_segs -regexp ".*HP._DDR_LOW.*"]
-        set_property -quiet offset [dict get $address_map "ddr_base_addr"] [get_bd_addr_segs -regexp ".*SEG_.*HP._DDR_LOW.*"]
-        set_property -quiet range [dict get $address_map "ddr_size"] [get_bd_addr_segs -regexp ".*SEG_.*HP._DDR_LOW.*"]
+        set_property -quiet offset [dict get $address_map "mem_base_addr"] [get_bd_addr_segs -regexp ".*SEG_.*HP._DDR_LOW.*"]
+        set_property -quiet range [dict get $address_map "mem_size"] [get_bd_addr_segs -regexp ".*SEG_.*HP._DDR_LOW.*"]
     } else {
-        for {set i 0} {$i < [dict get $address_map "ddr_num_banks"]} {incr i} {
-            assign_bd_address [get_bd_addr_segs -regexp ".*DDR_${i}.*_DDR4_ADDRESS_BLOCK"] -offset [expr [dict get $address_map "ddr_base_addr"] + [dict get $address_map "ddr_bank_size"]*$i] -range [dict get $address_map "ddr_bank_size"]
+        for {set i 0} {$i < [dict get $address_map "mem_num_banks"]} {incr i} {
+            assign_bd_address [get_bd_addr_segs -regexp ".*DDR_${i}.*_DDR4_ADDRESS_BLOCK"] -offset [expr [dict get $address_map "mem_base_addr"] + [dict get $address_map "mem_bank_size"]*$i] -range [dict get $address_map "mem_bank_size"]
         }
     }
 }
@@ -664,7 +664,7 @@ if {$IP_caching} {
     check_ip_cache -import_from_project -use_cache_location $path_CacheLocation
 }
 
-# If enabled, simplify interconnection to DDR
+# If enabled, simplify interconnection to memory
 if {$simplify_interconnection} {
     move_bd_cells [get_bd_cells /] [get_bd_cells bridge_to_host/bridge_to_host_addrInterleaver] [get_bd_cells bridge_to_host/DDR_S_AXI_Inter]
     delete_bd_objs [get_bd_cells S_AXI_data_control_coherent_Inter]
@@ -995,18 +995,18 @@ foreach acc $accs {
 
 }
 
-# If we are generating a design for a discrete FPGA, check for available ports
-# to DDR and instantiate a nested interconnect, if necessary
-if {($arch_type eq "fpga") && ([dict size $axi_ports] > [getAvailableDataPorts])} {
-    createNestedInterconnect S_AXI_data_control_coherent_Inter [dict get $address_map "ddr_num_banks"]
+# If we are generating a design for a discrete FPGA that uses DDR, check for
+# available ports to memory and instantiate a nested interconnect, if necessary
+if {($arch_type eq "fpga") && ([dict get $address_map "mem_type"] eq "ddr") && ([dict size $axi_ports] > [getAvailableDataPorts])} {
+    createNestedInterconnect S_AXI_data_control_coherent_Inter [dict get $address_map "mem_num_banks"]
 }
 
-# Check if there are enough available ports to DDR
+# Check if there are enough available ports to memory
 if {[dict size $axi_ports] > [getAvailableDataPorts]} {
-    aitError "Insufficient available ports to DDR"
+    aitError "Insufficient available ports to memory"
 }
 
-# Connect data ports to DDR interconnection
+# Connect data ports to memory interconnection
 dict for {port info} $axi_ports {
     set intf [connectToDataInterface $port]
     set port_path [lindex $info 0]
@@ -1030,7 +1030,7 @@ dict for {port info} $axi_ports {
 
 # If using it, configure addrInterleaver IP
 if {$interleaving_stride ne "None"} {
-    set num_banks [dict get $address_map "ddr_num_banks"]
+    set num_banks [dict get $address_map "mem_num_banks"]
     set lg [expr log($num_banks)/log(2)]
     if { floor($lg) - ceil($lg) != 0 } {
         #number of banks is not power of 2
@@ -1040,10 +1040,10 @@ if {$interleaving_stride ne "None"} {
 
     set addrInterleaver [get_bd_cell -hierarchical -regexp .*_addrInterleaver]
     set_property -dict [list \
-      CONFIG.BANK_SIZE [dict get $address_map "ddr_bank_size"] \
+      CONFIG.BANK_SIZE [dict get $address_map "mem_bank_size"] \
       CONFIG.NUM_BANKS $num_banks \
       CONFIG.STRIDE $interleaving_stride \
-      CONFIG.BASE_ADDR [dict get $address_map "ddr_base_addr"] \
+      CONFIG.BASE_ADDR [dict get $address_map "mem_base_addr"] \
     ] $addrInterleaver
 }
 
@@ -1301,7 +1301,7 @@ if {$interconRegSlice_all} {
             set_property -dict [list CONFIG.S[format %02u $i]_HAS_REGSLICE {4}] [get_bd_cells $inter]
         }
     }
-} elseif {$interconRegSlice_ddr} {
+} elseif {$interconRegSlice_mem} {
     set interconnects [get_bd_cells -hierarchical -regexp -filter {VLNV =~ xilinx.com:ip:axi_interconnect.* && NAME =~ {.*(data|control|coherent|master).*}} .*]
 
     foreach inter $interconnects {

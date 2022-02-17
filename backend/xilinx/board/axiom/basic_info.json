@@ -14,12 +14,13 @@
 		"max": 400
 	},
 
-	"ddr": {
+	"mem": {
+		"type": "ddr",
 		"size": "4G"
 	},
 
 	"address_map": {
-		"ddr_base_addr": "0x0",
+		"mem_base_addr": "0x0",
 		"ompss_base_addr": "0xB0000000"
 	}
 }

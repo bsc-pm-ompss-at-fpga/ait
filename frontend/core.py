@@ -170,11 +170,14 @@ def ait_main():
     if args.memory_interleaving_stride is not None:
         if board.arch.type == 'soc':
             msg.error('Memory interleaving is only available for non-SoC boards')
-        elif math.log2(utils.decimalFromHumanReadable(board.ddr.bank_size)) - math.log2(utils.decimalFromHumanReadable(args.memory_interleaving_stride)) < math.ceil(math.log2(board.ddr.num_banks)):
-            msg.error('Max allowed interleaving stride in current board: ' + utils.decimalToHumanReadable(2**(math.log2(utils.decimalFromHumanReadable(board.ddr.bank_size)) - math.ceil(math.log2(board.ddr.num_banks))), 2))
+        elif math.log2(utils.decimalFromHumanReadable(board.mem.bank_size)) - math.log2(utils.decimalFromHumanReadable(args.memory_interleaving_stride)) < math.ceil(math.log2(board.mem.num_banks)):
+            msg.error('Max allowed interleaving stride in current board: ' + utils.decimalToHumanReadable(2**(math.log2(utils.decimalFromHumanReadable(board.mem.bank_size)) - math.ceil(math.log2(board.mem.num_banks))), 2))
 
     if args.simplify_interconnection and board.arch.type == 'soc':
-        msg.error('Simplify DDR interconnection is only available for non-SoC boards')
+        msg.error('Simplify memory interconnection is only available for non-SoC boards')
+
+    if (args.memory_interleaving_stride is not None and board.mem.type != 'ddr'):
+        msg.error('Memory interleaving is only available for DDR memories')
 
     if (args.slr_slices is not None or args.floorplanning_constr is not None) and not hasattr(board.arch, 'slr'):
         msg.error('Use of placement constraints is only available for boards with SLRs')

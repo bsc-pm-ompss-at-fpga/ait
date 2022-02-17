@@ -14,20 +14,22 @@
 		"max": MAX_FREQ
 	},
 
-	"ddr": {
+	"mem": {
 		"_comment": "Use this for SoC boards",
+		"type": "MEM_TYPE",
 		"size": "DDR_SIZE"
 	},
 
-	"ddr": {
+	"mem": {
 		"_comment": "Use this for FPGA boards",
+		"type": "MEM_TYPE",
 		"num_banks": NUM_BANKS,
 		"addr_width": ADDR_WIDTH,
 		"bank_size": "BANK_SIZE"
 	},
 
 	"address_map": {
-		"ddr_base_addr": "DDR_BASE_ADDR",
+		"mem_base_addr": "MEM_BASE_ADDR",
 		"ompss_base_addr": "OMPSS_BASE_ADDR"
 	}
 }
