@@ -5,8 +5,7 @@
 	"board_part": ["xilinx.com:zcu102"],
 
 	"arch": {
-		"type": "soc",
-		"bits": 64
+		"device": "zynqmp"
 	},
 
 	"frequency": {

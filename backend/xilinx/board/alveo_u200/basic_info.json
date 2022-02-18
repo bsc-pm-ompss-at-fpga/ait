@@ -5,8 +5,7 @@
 	"board_part": ["xilinx.com:au200"],
 
 	"arch": {
-		"type": "fpga",
-		"bits": 64,
+		"device": "alveo",
 		"slr": {
 			"num": 3,
 			"master": 1

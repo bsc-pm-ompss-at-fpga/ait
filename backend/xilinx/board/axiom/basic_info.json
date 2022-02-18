@@ -5,8 +5,7 @@
 	"board_part": "",
 
 	"arch": {
-		"type": "soc",
-		"bits": 64
+		"device": "zynqmp"
 	},
 
 	"frequency": {

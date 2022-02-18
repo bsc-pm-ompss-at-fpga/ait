@@ -5,8 +5,7 @@
 	"board_part": ["xilinx.com:zc706"],
 
 	"arch": {
-		"type": "soc",
-		"bits": 32
+		"device": "zynq"
 	},
 
 	"frequency": {

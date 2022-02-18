@@ -22,10 +22,11 @@
 
 import os
 import json
+import math
 import argparse
 import subprocess
 
-from frontend.config import msg
+from frontend.config import msg, utils
 
 
 class StoreChoiceValue(argparse.Action):
@@ -84,6 +85,16 @@ class ArgParser():
             for opt in args.interconnect_regslice:
                 if opt == 'all' and len(args.interconnect_regslice) != 1:
                     msg.error("Invalid combination of values for --interconnect_regslice")
+
+    def check_board_args(self, args, board):
+        if args.memory_interleaving_stride is not None:
+            if board.arch.device == 'zynq' or board.arch.device == 'zynqmp':
+                msg.error('Memory interleaving is not available on neither Zynq nor ZynqMP boards')
+            elif math.log2(utils.decimalFromHumanReadable(board.mem.bank_size)) - math.log2(utils.decimalFromHumanReadable(args.memory_interleaving_stride)) < math.ceil(math.log2(board.mem.num_banks)):
+                msg.error('Max allowed interleaving stride in current board: ' + utils.decimalToHumanReadable(2**(math.log2(utils.decimalFromHumanReadable(board.mem.bank_size)) - math.ceil(math.log2(board.mem.num_banks))), 2))
+
+        if args.simplify_interconnection and (board.arch.device == 'zynq' or board.arch.device == 'zynqmp'):
+            msg.error('Simplify memory interconnection is not available on neither Zynq nor ZynqMP boards')
 
 
 parser = ArgParser()

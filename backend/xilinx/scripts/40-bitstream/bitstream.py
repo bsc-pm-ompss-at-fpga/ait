@@ -36,7 +36,7 @@ script_folder = os.path.basename(os.path.dirname(os.path.realpath(__file__)))
 def check_requirements():
     if not distutils.spawn.find_executable('vivado'):
         msg.error('vivado not found. Please set PATH correctly')
-    elif board.arch.type == 'soc' and board.arch.bits == 32 and not distutils.spawn.find_executable('bootgen'):
+    elif board.arch.device == 'zynq' and not distutils.spawn.find_executable('bootgen'):
         msg.warning('bootgen not found. .bit.bin file will not be generated')
 
     vivado_version = str(subprocess.check_output(['vivado -version | head -n1 | sed "s/\(Vivado.\+v\)\(\([0-9]\|\.\)\+\).\+/\\2/"'], shell=True), 'utf-8').strip()
@@ -238,7 +238,7 @@ def run_bitstream_step(project_args):
         if retval:
             msg.error('Bitstream generation failed', start_time, False)
         else:
-            if board.arch.type == 'soc' and board.arch.bits == 32:
+            if board.arch.device == 'zynq':
                 bif_file = open(project_backend_path + '/' + args.name + '/' + args.name + '.runs/impl_1/bitstream.bif', 'w')
                 bif_file.write('all:\n'
                                + '{\n'

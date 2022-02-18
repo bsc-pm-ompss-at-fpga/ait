@@ -5,8 +5,12 @@
 	"board_part": ["BOARD_PART"],
 
 	"arch": {
-		"type": "ARCH_TYPE",
-		"bits": ARCH_BITS
+		"device": "BOARD_DEVICE",
+		"slr": {
+			"_comment": "Use this for boards with SLRs",
+			"num": NUM_SLRS,
+			"master": MASTER_SLR
+		}
 	},
 
 	"frequency": {

@@ -123,8 +123,7 @@ def generate_Vivado_variables_tcl():
                                 + 'variable board ' + board.name + '\n' \
                                 + 'variable chipPart ' + chip_part + '\n' \
                                 + 'variable clockFreq ' + str(args.clock) + '\n' \
-                                + 'variable arch_type ' + board.arch.type + '\n' \
-                                + 'variable arch_bits ' + str(board.arch.bits) + '\n'
+                                + 'variable arch_device ' + board.arch.device + '\n'
 
     if args.slr_slices is not None or args.floorplanning_constr is not None:
         vivado_project_variables += 'variable board_slr_num ' + str(board.arch.slr.num) + '\n' \
@@ -135,9 +134,9 @@ def generate_Vivado_variables_tcl():
                                 + 'dict set address_map "mem_base_addr" ' + board.address_map.mem_base_addr + '\n' \
                                 + 'dict set address_map "mem_type" ' + board.mem.type + '\n'
 
-    if board.arch.type == 'soc':
+    if board.arch.device == 'zynq' or board.arch.device == 'zynqmp':
         vivado_project_variables += 'dict set address_map "mem_size" ' + hex(utils.decimalFromHumanReadable(board.mem.size)) + '\n'
-    elif board.arch.type == 'fpga':
+    elif board.arch.device == 'alveo':
         vivado_project_variables += 'dict set address_map "mem_num_banks" ' + str(board.mem.num_banks) + '\n' \
                                     + 'dict set address_map "mem_bank_size" ' + hex(utils.decimalFromHumanReadable(board.mem.bank_size)) + '\n'
 

@@ -91,7 +91,7 @@ def synthesize_accelerator(acc):
                      + 'create_clock -period ' + str(args.clock) + 'MHz -name default\n' \
                      + 'config_rtl -reset control -reset_level low -reset_async\n'
 
-    if board.arch.bits == 64 or board.arch.type == 'fpga':
+    if board.arch.device == 'zynqmp' or board.arch.device == 'alveo':
         acc_tcl_script += 'config_interface -m_axi_addr64\n'
 
     acc_tcl_script += 'csynth_design\n' \

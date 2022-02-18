@@ -24,14 +24,13 @@ import os
 import re
 import sys
 import glob
-import math
 import json
 import time
 import importlib
 import subprocess
 
 from frontend.parser import ArgParser
-from frontend.config import msg, ait_path, generation_steps, Accelerator, utils, MIN_PYTHON_VERSION
+from frontend.config import msg, ait_path, generation_steps, Accelerator, MIN_PYTHON_VERSION
 
 if sys.version_info < MIN_PYTHON_VERSION:
     sys.exit('Python %s.%s or later is required.\n' % MIN_PYTHON_VERSION)
@@ -164,17 +163,11 @@ def ait_main():
 
     board = json.load(open(ait_path + '/backend/' + args.backend + '/board/' + args.board + '/basic_info.json'), object_hook=JSONObject)
 
+    # Check vendor-related board arguments
+    parser.vendor_parser[args.backend].check_board_args(args, board)
+
     if not int(board.frequency.min) <= args.clock <= int(board.frequency.max):
         msg.error('Clock frequency requested (' + str(args.clock) + 'MHz) is not within the board range (' + str(board.frequency.min) + '-' + str(board.frequency.max) + 'MHz)')
-
-    if args.memory_interleaving_stride is not None:
-        if board.arch.type == 'soc':
-            msg.error('Memory interleaving is only available for non-SoC boards')
-        elif math.log2(utils.decimalFromHumanReadable(board.mem.bank_size)) - math.log2(utils.decimalFromHumanReadable(args.memory_interleaving_stride)) < math.ceil(math.log2(board.mem.num_banks)):
-            msg.error('Max allowed interleaving stride in current board: ' + utils.decimalToHumanReadable(2**(math.log2(utils.decimalFromHumanReadable(board.mem.bank_size)) - math.ceil(math.log2(board.mem.num_banks))), 2))
-
-    if args.simplify_interconnection and board.arch.type == 'soc':
-        msg.error('Simplify memory interconnection is only available for non-SoC boards')
 
     if (args.memory_interleaving_stride is not None and board.mem.type != 'ddr'):
         msg.error('Memory interleaving is only available for DDR memories')

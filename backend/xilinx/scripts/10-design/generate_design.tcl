@@ -65,10 +65,10 @@ proc getBaseFreq {} {
 proc configureAddressMap {address_map} {
     aitInfo "Using generic configureAddressMap procedure"
 
-    upvar #0 arch_type arch_type
+    upvar #0 arch_device arch_device
 
     # Assign memory address space
-    if {$arch_type eq "soc"} {
+    if {($arch_device eq "zynq") || ($arch_device eq "zynqmp")} {
         assign_bd_address [get_bd_addr_segs -regexp ".*HP._DDR_LOW.*"]
         set_property -quiet offset [dict get $address_map "mem_base_addr"] [get_bd_addr_segs -regexp ".*SEG_.*HP._DDR_LOW.*"]
         set_property -quiet range [dict get $address_map "mem_size"] [get_bd_addr_segs -regexp ".*SEG_.*HP._DDR_LOW.*"]
@@ -589,9 +589,9 @@ for {set i 0} {$i < [llength $bd_addr_segments]} {incr i} {
     set addr [expr $addr + $size]
 }
 
-if {$arch_type eq "soc"} {
+if {($arch_device eq "zynq") || ($arch_device eq "zynqmp")} {
     variable addr_bitInfo "0x0000000080020000"
-} elseif {$arch_type eq "fpga"} {
+} elseif {$arch_device eq "alveo"} {
     variable addr_bitInfo [format 0x%016x [expr [dict get $address_map "ompss_base_addr"] + $bitInfo_offset]]
 }
 
@@ -691,7 +691,7 @@ if {[catch {source -notrace $path_Project/templates/$name_hwruntime.tcl}]} {
 	aitError "Failed sourcing $name_hwruntime template"
 }
 
-if {$arch_type eq "soc"} {
+if {($arch_device eq "zynq") || ($arch_device eq "zynqmp")} {
     connectToMasterInterface Hardware_Runtime/S_AXI_GP 1
 } else {
     connectToMasterInterface Hardware_Runtime/S_AXI_GP
@@ -997,7 +997,7 @@ foreach acc $accs {
 
 # If we are generating a design for a discrete FPGA that uses DDR, check for
 # available ports to memory and instantiate a nested interconnect, if necessary
-if {($arch_type eq "fpga") && ([dict get $address_map "mem_type"] eq "ddr") && ([dict size $axi_ports] > [getAvailableDataPorts])} {
+if {($arch_device eq "alveo") && ([dict get $address_map "mem_type"] eq "ddr") && ([dict size $axi_ports] > [getAvailableDataPorts])} {
     createNestedInterconnect S_AXI_data_control_coherent_Inter [dict get $address_map "mem_num_banks"]
 }
 
@@ -1051,7 +1051,7 @@ if {$interleaving_stride ne "None"} {
 if {$hwcounter || $hwinst} {
     create_bd_cell -type module -reference hwcounter HW_Counter
 
-    if {$arch_type eq "soc"} {
+    if {($arch_device eq "zynq") || ($arch_device eq "zynqmp")} {
         connectToMasterInterface HW_Counter/S_AXI 1
     } else {
         connectToMasterInterface HW_Counter/S_AXI

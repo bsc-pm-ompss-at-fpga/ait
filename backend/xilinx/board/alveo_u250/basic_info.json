@@ -5,8 +5,7 @@
 	"board_part": ["xilinx.com:au250"],
 
 	"arch": {
-		"type": "fpga",
-		"bits": 64
+		"device": "alveo"
 	},
 
 	"frequency": {

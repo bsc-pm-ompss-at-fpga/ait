@@ -5,8 +5,7 @@
 	"board_part": ["em.avnet.com:zed"],
 
 	"arch": {
-		"type": "soc",
-		"bits": 32
+		"device": "zynq"
 	},
 
 	"frequency": {
