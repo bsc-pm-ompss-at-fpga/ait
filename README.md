@@ -25,7 +25,7 @@ Follow instructions on their website to install it.
 ##### Xilinx Vivado
 
 Follow installation instructions from Xilinx
-Vivado, VivadoHLS and SDK, as well as the device support for the devices you're working, should be enabled during setup.
+Vivado, Vivado HLS and SDK, as well as the device support for the devices you're working, should be enabled during setup.
 However, components can be added or removed afterwards.
 
 Current version supports Vivado 2018.3 onwards.

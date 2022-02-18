@@ -192,7 +192,7 @@ class ArgParser:
         hwruntime_args.add_argument('--spawnin_queue_len', help='length (64-bit words) of the hwruntime spawn in queue. Must be power of 2\n(def: \'1024\')', type=IntPower(4), default=1024)
         hwruntime_args.add_argument('--spawnout_queue_len', help='length (64-bit words) of the hwruntime spawn out queue. Must be power of 2\n(def: \'1024\')', type=IntPower(4), default=1024)
         hwruntime_args.add_argument('--hwruntime_interconnect', help='type of hardware runtime interconnection with accelerators\ncentralized\ndistributed\n(def: \'centralized\')', choices=['centralized', 'distributed'], metavar='HWR_INTERCONNECT', default='centralized')  # TODO: Explain what does each option do
-        hwruntime_args.add_argument('--disable_spawn_queues', help='disable the hwruntmie spawn in/out queues', action='store_true', default=False)
+        hwruntime_args.add_argument('--disable_spawn_queues', help='disable the hwruntime spawn in/out queues', action='store_true', default=False)
 
         # Picos arguments
         picos_args = self.parser.add_argument_group('Picos')

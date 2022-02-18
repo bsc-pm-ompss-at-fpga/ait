@@ -1,20 +1,11 @@
 In order to add a new Xilinx board you have to create a directory tree in the ait/backend/xilinx/board/ folder with the following files:
 
 ait/backend/xilinx/board/BOARD_NAME/
-	- basic_info.json -> File containing some basic information:
-		+ BOARD_NAME: Board name that will be used to reference it by the Accelerator Integration Tool
-		+ CHIP_PART: Chip part number
-		+ ENGINEERING_SAMPLE_STATUS: Code of the engineering sample status, if exists
-		+ BOARD_PART: List of known board part names for this board
-		+ ARCH_TYPE: Architecture type of the board (soc or fpga)
-		+ ARCH_BITS: Number of bits of the board architecture (32 or 64)
-		+ MIN_FREQ: Board minimum frequency
-		+ MAX_FREQ: Board maximum frequency
-		+ DDR_SIZE: Size of the board DDR (M: megabytes, G: gygabtes)
+	- basic_info.json -> File containing some basic information
 	- baseDesign.tcl -> Vivado template containing the already configured base elements of the board
 	- [Optional] procs.tcl -> Tcl script that overwrites some board-specific procedures regarding clocks, frequency, address mappings, etc.
 
-	[Optional] ait/backend/xilinx/board/BOARD_NAME/constraints/	-> Folder containing the constraints files
+	[Optional] ait/backend/xilinx/board/BOARD_NAME/constraints/	-> Folder containing constraints files
 	[Optional] ait/backend/xilinx/board/BOARD_NAME/sources/     -> Folder containing different HDL files that need to be added to the block design
 	[Optional] ait/backend/xilinx/board/BOARD_NAME/ipdefs/      -> Folder containing a repository of the custom IPs present in the baseDesign.tcl template
 

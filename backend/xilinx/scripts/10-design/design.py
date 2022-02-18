@@ -263,7 +263,7 @@ def generate_Vivado_variables_tcl():
 
 
 def load_acc_placement(accList, args):
-    # read placement info from a file
+    # Read placement info from file
     if args.placement_file and os.path.exists(args.placement_file):
         usrPlacement = json.load(open(args.placement_file))
         for acc in accList:

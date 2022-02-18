@@ -98,7 +98,7 @@ else
       mv $s/__pycache__/*.pyc $s/
     done
 
-    # Copy basic templates, scripts, idpefs and HLS sources
+    # Copy basic templates, scripts, ipdefs and HLS sources
     mkdir -p $PREFIX/backend/$backend/templates
     mkdir -p $PREFIX/backend/$backend/scripts
     mkdir -p $PREFIX/backend/$backend/IPs

@@ -109,7 +109,7 @@ proc ascii2hex {str} {
     return $str_out
 }
 
-# Compares a bd address segment dictinary with the segment size
+# Compares a bd address segment dictionary with the segment size
 proc comp_bd_addr_seg {a b} {
     if {[dict get $a size] < [dict get $b size]} {
         return -1
@@ -425,7 +425,7 @@ proc connectToDataInterface {src {num ""}} {
     upvar #0 dataInterfaces_map dataInterfaces_map
     upvar dataInterfaces_file dataInterfaces_file
 
-    # If num is empty, look for $src in the dataInterfaces_map
+    # If num is empty, look for src in dataInterfaces_map
     if {$num eq ""} {
         set index [lsearch -regexp $dataInterfaces_map $src]
         if {$index != -1} {
@@ -515,21 +515,20 @@ proc getAvailableDataPorts {} {
 # If available, overwrite board-specific procedures
 if {[file exists $path_Project/board/$board/procs.tcl]} {
     if {[catch {source -notrace $path_Project/board/$board/procs.tcl}]} {
-        aitError "Failed overwritting board-specific procedures"
+        aitError "Failed overwriting board-specific procedures"
     }
 }
 
 # If available and enabled, add register slices for static logic
 if {[file exists $path_Project/board/$board/staticRegSlices.tcl] && (($slr_slices eq "static") || ($slr_slices eq "all"))} {
     aitInfo "Loading static register slices script"
-	if {[catch {source -notrace $path_Project/board/$board/staticRegSlices.tcl}]} {
-		aitError "Failed loading static losgic register slices"
-	}
+    if {[catch {source -notrace $path_Project/board/$board/staticRegSlices.tcl}]} {
+        aitError "Failed loading static logic register slices"
+    }
 }
 
-
 # Compute addresses
-# Lenght unit is 64-bit words
+# Length unit is 64-bit words
 set bd_addr_segments [list \
     [dict create name cmdInQueue bd_seg_name Hardware_Runtime/cmdInQueue_BRAM_Ctrl/S_AXI/Mem0 size [expr $cmdInSubqueue_len*$num_accs*8]] \
     [dict create name cmdOutQueue bd_seg_name Hardware_Runtime/cmdOutQueue_BRAM_Ctrl/S_AXI/Mem0 size [expr $cmdOutSubqueue_len*$num_accs*8]] \
@@ -614,7 +613,7 @@ set_property STEPS.WRITE_BITSTREAM.ARGS.BIN_FILE true [get_runs impl_1]
 # Set repository path
 set_property ip_repo_paths $path_Repo [current_project]
 
-# Suppress known messages wrongly marked as critical warnigns
+# Suppress known messages wrongly marked as critical warnings
 set_msg_config -id {[BD 41-237]} -severity {CRITICAL WARNING} -regexp -string "Bus Interface property MASTER_TYPE does not match between \/\(Hardware_Runtime\|bitInfo\)\/.*BRAM_PORT\(A\|B\).* and .*" -suppress
 set_msg_config -id {[BD 41-1753]} -severity WARNING -suppress
 set_msg_config -id {[BD_TCL-1002]} -severity WARNING -suppress
@@ -688,7 +687,7 @@ if {$hwruntime eq "som"} {
 
 # Add OmpSs Manager template
 if {[catch {source -notrace $path_Project/templates/$name_hwruntime.tcl}]} {
-	aitError "Failed sourcing $name_hwruntime template"
+    aitError "Failed sourcing $name_hwruntime template"
 }
 
 if {($arch_device eq "zynq") || ($arch_device eq "zynqmp")} {
@@ -951,7 +950,7 @@ foreach acc $accs {
                 connectClock [get_bd_pins ${accName}_$j/Adapter_instr/ap_clk]
                 connect_bd_net [get_bd_pins ${accName}_$j/Adapter_instr/ap_rst_n] [get_bd_pins ${accName}_$j/managed_aresetn]
 
-                # Connect to hwinst_counter
+                # Connect to hwcounter
                 connect_bd_net [get_bd_pins ${accName}_$j/hwinst_counter/Q] [get_bd_pins ${accName}_$j/Adapter_instr/hwcounter]
 
                 # Connect buffer port
@@ -1097,7 +1096,7 @@ if {($debugInterfaces eq "AXI") || ($debugInterfaces eq "both")} {
 
 # Mark AXI-Stream interfaces for debug
 if {($debugInterfaces eq "stream") || ($debugInterfaces eq "both")} {
-    # Open .debuginterfaces.txt file
+    # Open debuginterfaces.txt file
     set debugInterfaces_file [open $path_Project/../${name_Project}.debuginterfaces.txt "a"]
 
     set stream_pin_list [get_bd_intf_pins -hierarchical -filter {VLNV =~ xilinx.com:interface:axis_rtl:* && PATH =~ *Adapter*Stream*} -of_objects [get_bd_cells -hierarchical -filter {VLNV =~ xilinx.com:module_ref:hsToStreamAdapter:* || VLNV =~ xilinx.com:module_ref:streamToHsAdapter:*}]]
@@ -1114,7 +1113,7 @@ if {($debugInterfaces eq "stream") || ($debugInterfaces eq "both")} {
 
 # Mark custom interfaces for debug
 if {$debugInterfaces eq "custom"} {
-    # Open .debuginterfaces.txt file
+    # Open debuginterfaces.txt file
     set debugInterfaces_file [open $path_Project/../${name_Project}.debuginterfaces.txt "w"]
 
     foreach intf $debugInterfaces_list {

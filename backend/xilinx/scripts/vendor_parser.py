@@ -62,7 +62,7 @@ class ArgParser():
 
     def __init__(self):
         # Create vendor-specific parser
-        # NOTE: usage must be supressed as this parser is not called directly
+        # NOTE: usage must be suppressed as this parser is not called directly
         self.parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter, epilog='  environment variables:\n    PETALINUX_INSTALL\tpath where Petalinux is installed\n    PETALINUX_BUILD\tpath where the Petalinux project is located', prog='ait', usage=argparse.SUPPRESS)
 
         # Rename help title
@@ -73,7 +73,7 @@ class ArgParser():
         self.parser.add_argument('--debug_intfs_list', help='path of file with the list of interfaces to debug', action=StorePath)
         self.parser.add_argument('--ignore_eng_sample', help='ignore engineering sample status from chip part number', action='store_true', default=False)
         self.parser.add_argument('--interconnect_opt', help='AXI interconnect optimization strategy: Minimize \'area\' or maximize \'performance\'\n(def: \'area\')', choices=['area', 'performance'], metavar='OPT_STRATEGY', action=StoreChoiceValue, default=0)
-        self.parser.add_argument('--interconnect_regslice', help='enable register slices on AXI interconnects\nall: enables them on all interconnects\nmem: enables them on interconnects in memory datapath\nhwruntime: enables them on the AXI-stream interconnects betwen the hwruntime and the accelerators\n', nargs='+', choices=['mem', 'hwruntime', 'all'], metavar='INTER_REGSLICE_LIST')
+        self.parser.add_argument('--interconnect_regslice', help='enable register slices on AXI interconnects\nall: enables them on all interconnects\nmem: enables them on interconnects in memory datapath\nhwruntime: enables them on the AXI-stream interconnects between the hwruntime and the accelerators\n', nargs='+', choices=['mem', 'hwruntime', 'all'], metavar='INTER_REGSLICE_LIST')
         self.parser.add_argument('-j', '--jobs', help='specify the number of Vivado jobs to run simultaneously. By default it uses the value returned by `nproc`', type=int, default=int(subprocess.check_output(['nproc'])))
         self.parser.add_argument('--target_language', help='choose target language to synthesize files to: VHDL or Verilog\n(def: \'VHDL\')', choices=['VHDL', 'Verilog'], metavar='TARGET_LANG', default='VHDL')
         self.parser.add_argument('--simplify_interconnection', help='simplify interconnection between accelerators and memory. Might negatively impact timing', action='store_true', default=False)
