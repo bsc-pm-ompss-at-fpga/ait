@@ -96,5 +96,8 @@ class ArgParser():
         if args.simplify_interconnection and (board.arch.device == 'zynq' or board.arch.device == 'zynqmp'):
             msg.error('Simplify memory interconnection is not available on neither Zynq nor ZynqMP boards')
 
+        if (args.memory_interleaving_stride is not None and board.arch.device != 'alveo'):
+            msg.error('Memory interleaving is not available on neither Zynq nor ZynqMP boards')
+
 
 parser = ArgParser()

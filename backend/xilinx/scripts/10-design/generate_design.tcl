@@ -1012,7 +1012,7 @@ dict for {port info} $axi_ports {
     set port_ip [lindex $info 1]
     set port_name [lindex $info 2]
 
-    if {$interleaving_stride ne "None"} {
+    if {($interleaving_stride ne "None") && ([dict get $address_map "mem_type"] eq "ddr")} {
         set addrInterleaver [create_bd_cell -type module -reference addrInterleaver ${port_path}/${port_ip}_${port_name}_addrInterleaver]
         connect_bd_net [get_bd_pins -regexp ${port}_awaddr] [get_bd_pins $addrInterleaver/in_awaddr]
         connect_bd_net [get_bd_pins -regexp ${port}_araddr] [get_bd_pins $addrInterleaver/in_araddr]

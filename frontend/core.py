@@ -169,9 +169,6 @@ def ait_main():
     if not int(board.frequency.min) <= args.clock <= int(board.frequency.max):
         msg.error('Clock frequency requested (' + str(args.clock) + 'MHz) is not within the board range (' + str(board.frequency.min) + '-' + str(board.frequency.max) + 'MHz)')
 
-    if (args.memory_interleaving_stride is not None and board.mem.type != 'ddr'):
-        msg.error('Memory interleaving is only available for DDR memories')
-
     if (args.slr_slices is not None or args.floorplanning_constr is not None) and not hasattr(board.arch, 'slr'):
         msg.error('Use of placement constraints is only available for boards with SLRs')
 
