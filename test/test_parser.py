@@ -71,7 +71,7 @@ class Test_IP_caching(unittest.TestCase):
 
         self.assertTrue(True)  # Just check no errors are thrown
 
-    @patch('frontend.config.msg.error')
+    @patch('frontend.utils.msg.error')
     def test_enabled_not_exists(self, msg_error):
         # Create the args object which could contain any attribute
         args = type('', (), {})()

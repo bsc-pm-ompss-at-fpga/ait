@@ -28,7 +28,8 @@ import subprocess
 import distutils.spawn
 import xml.etree.cElementTree as cET
 
-from frontend.config import Accelerator, msg, ait_path, hwruntime_resources, MIN_VIVADO_HLS_VERSION
+from frontend.config import MIN_VIVADO_HLS_VERSION
+from frontend.utils import Accelerator, msg, ait_path, hwruntime_resources
 
 script_folder = os.path.basename(os.path.dirname(os.path.realpath(__file__)))
 

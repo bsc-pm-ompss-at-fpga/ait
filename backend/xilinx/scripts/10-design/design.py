@@ -29,8 +29,9 @@ import subprocess
 import distutils.spawn
 import json
 
-from frontend.config import msg, ait_path, BITINFO_VERSION, utils, \
-    VERSION_MAJOR, VERSION_MINOR, MIN_VIVADO_VERSION
+from frontend.config import BITINFO_VERSION, VERSION_MAJOR, \
+        VERSION_MINOR, MIN_VIVADO_VERSION
+from frontend.utils import msg, ait_path, utils
 
 script_folder = os.path.basename(os.path.dirname(os.path.realpath(__file__)))
 

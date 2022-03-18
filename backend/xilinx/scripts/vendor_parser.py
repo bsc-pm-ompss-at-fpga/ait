@@ -26,7 +26,7 @@ import math
 import argparse
 import subprocess
 
-from frontend.config import msg, utils
+from frontend.utils import msg, utils
 
 
 class StoreChoiceValue(argparse.Action):

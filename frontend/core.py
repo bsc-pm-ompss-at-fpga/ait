@@ -30,10 +30,7 @@ import importlib
 import subprocess
 
 from frontend.parser import ArgParser
-from frontend.config import msg, ait_path, generation_steps, Accelerator, MIN_PYTHON_VERSION
-
-if sys.version_info < MIN_PYTHON_VERSION:
-    sys.exit('Python %s.%s or later is required.\n' % MIN_PYTHON_VERSION)
+from frontend.utils import msg, ait_path, generation_steps, Accelerator
 
 
 class Logger(object):

@@ -27,7 +27,8 @@ import random
 import subprocess
 import distutils.spawn
 
-from frontend.config import msg, ait_path, MIN_VIVADO_VERSION
+from frontend.config import MIN_VIVADO_VERSION
+from frontend.utils import msg, ait_path
 
 script_folder = os.path.basename(os.path.dirname(os.path.realpath(__file__)))
 
