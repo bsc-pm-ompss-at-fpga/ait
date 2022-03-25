@@ -26,7 +26,7 @@ import math
 import argparse
 import subprocess
 
-from frontend.utils import msg, utils
+from frontend.utils import msg, decimalFromHumanReadable, decimalToHumanReadable
 
 
 class StoreChoiceValue(argparse.Action):
@@ -34,9 +34,13 @@ class StoreChoiceValue(argparse.Action):
         setattr(namespace, self.dest, self.choices.index(values))
 
 
-class StorePath(argparse.Action):
-    def __call__(self, parser, namespace, values, option_string=None):
-        setattr(namespace, self.dest, os.path.realpath(values))
+# Custom argparse type representing a path to a file
+class FileType:
+    def __call__(self, arg):
+        if os.path.isfile(arg):
+            return os.path.realpath(arg)
+        else:
+            raise argparse.ArgumentTypeError('Invalid file')
 
 
 class ArgParser():
@@ -70,7 +74,7 @@ class ArgParser():
 
         # Vendor-specific arguments
         self.parser.add_argument('--debug_intfs', help='choose which interfaces mark for debug and instantiate the correspondent ILA cores\nAXI: debug accelerator\'s AXI interfaces\nstream: debug accelerator\'s AXI-Stream interfaces\nboth: debug both accelerator\'s AXI and AXI-Stream interfaces\ncustom: debug user-defined interfaces\nnone: do not mark for debug any interface\n(def: \'none\')', choices=['AXI', 'stream', 'both', 'custom', 'none'], metavar='INTF_TYPE', default='none')
-        self.parser.add_argument('--debug_intfs_list', help='path of file with the list of interfaces to debug', action=StorePath)
+        self.parser.add_argument('--debug_intfs_list', help='path of file with the list of interfaces to debug', action=FileType)
         self.parser.add_argument('--ignore_eng_sample', help='ignore engineering sample status from chip part number', action='store_true', default=False)
         self.parser.add_argument('--interconnect_opt', help='AXI interconnect optimization strategy: Minimize \'area\' or maximize \'performance\'\n(def: \'area\')', choices=['area', 'performance'], metavar='OPT_STRATEGY', action=StoreChoiceValue, default=0)
         self.parser.add_argument('--interconnect_regslice', help='enable register slices on AXI interconnects\nall: enables them on all interconnects\nmem: enables them on interconnects in memory datapath\nhwruntime: enables them on the AXI-stream interconnects between the hwruntime and the accelerators\n', nargs='+', choices=['mem', 'hwruntime', 'all'], metavar='INTER_REGSLICE_LIST')
@@ -90,8 +94,8 @@ class ArgParser():
         if args.memory_interleaving_stride is not None:
             if board.arch.device == 'zynq' or board.arch.device == 'zynqmp':
                 msg.error('Memory interleaving is not available on neither Zynq nor ZynqMP boards')
-            elif math.log2(utils.decimalFromHumanReadable(board.mem.bank_size)) - math.log2(utils.decimalFromHumanReadable(args.memory_interleaving_stride)) < math.ceil(math.log2(board.mem.num_banks)):
-                msg.error('Max allowed interleaving stride in current board: ' + utils.decimalToHumanReadable(2**(math.log2(utils.decimalFromHumanReadable(board.mem.bank_size)) - math.ceil(math.log2(board.mem.num_banks))), 2))
+            elif math.log2(decimalFromHumanReadable(board.mem.bank_size)) - math.log2(args.memory_interleaving_stride) < math.ceil(math.log2(board.mem.num_banks)):
+                msg.error('Max allowed interleaving stride in current board: ' + decimalToHumanReadable(2**(math.log2(decimalFromHumanReadable(board.mem.bank_size)) - math.ceil(math.log2(board.mem.num_banks))), 2))
 
         if args.simplify_interconnection and (board.arch.device == 'zynq' or board.arch.device == 'zynqmp'):
             msg.error('Simplify memory interconnection is not available on neither Zynq nor ZynqMP boards')

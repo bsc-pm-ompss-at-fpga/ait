@@ -33,11 +33,11 @@ from frontend.config import BITINFO_VERSION, MIN_WRAPPER_VERSION, \
     VERSION_MAJOR, VERSION_MINOR, VERSION_COMMIT
 
 from frontend.utils import msg, ait_path, supported_boards, generation_steps, \
-    available_hwruntimes, utils
+    available_hwruntimes, decimalFromHumanReadable
 
 
 # Custom argparse type representing a power of 2 int
-class IntPower:
+class IntPowerType:
     def __init__(self, imin=None, imax=None):
         self.imin = imin
         self.imax = imax
@@ -67,7 +67,7 @@ class IntPower:
 
 
 # Custom argparse type representing a bounded int
-class IntRange:
+class IntRangeType:
     def __init__(self, imin=None, imax=None):
         self.imin = imin
         self.imax = imax
@@ -92,14 +92,40 @@ class IntRange:
             return argparse.ArgumentTypeError('must be an integer')
 
 
-class StoreHumanReadable(argparse.Action):
-    def __call__(self, parser, namespace, values, option_string=None):
-        setattr(namespace, self.dest, utils.decimalFromHumanReadable(values))
+# Custom argparse type representing a human readable number
+class HumanReadableType:
+    def __call__(self, arg):
+        try:
+            value = decimalFromHumanReadable(arg)
+        except ValueError:
+            raise self.valueException()
+        except TypeError:
+            raise self.typeException()
+        return value
+
+    def typeException(self):
+        return argparse.ArgumentTypeError('Invalid unit')
+
+    def valueException(self):
+        return argparse.ArgumentTypeError('Invalid value')
 
 
-class StorePath(argparse.Action):
-    def __call__(self, parser, namespace, values, option_string=None):
-        setattr(namespace, self.dest, os.path.realpath(values))
+# Custom argparse type representing a path
+class PathType:
+    def __call__(self, arg):
+        if os.path.isdir(arg):
+            return os.path.realpath(arg)
+        else:
+            raise argparse.ArgumentTypeError('Invalid path')
+
+
+# Custom argparse type representing a path to a file
+class FileType:
+    def __call__(self, arg):
+        if os.path.isfile(arg):
+            return os.path.realpath(arg)
+        else:
+            raise argparse.ArgumentTypeError('Invalid file')
 
 
 class StoreChoiceValue(argparse.Action):
@@ -158,12 +184,12 @@ class ArgParser:
 
         # Generation flow arguments
         flow_args = self.parser.add_argument_group('Generation flow')
-        flow_args.add_argument('-d', '--dir', help='path where the project directory tree will be created\n(def: \'./\')', action=StorePath, default='./')
+        flow_args.add_argument('-d', '--dir', help='path where the project directory tree will be created\n(def: \'./\')', type=PathType(), default='./')
         flow_args.add_argument('--disable_IP_caching', help='disable IP caching. Significantly increases generation time', action='store_true', default=False)
         flow_args.add_argument('--disable_utilization_check', help='disable resources utilization check during HLS generation', action='store_true', default=False)
         flow_args.add_argument('--disable_board_support_check', help='disable board support check', action='store_true', default=False)
         flow_args.add_argument('--from_step', help='initial generation step. Generation steps by vendor:\n' + '\n'.join([key + ': ' + ', '.join([value for value in values]) for key, values in generation_steps.items()]) + '\n(def: \'HLS\')', choices=[value for key, values in generation_steps.items() for value in values], metavar='FROM_STEP', default='HLS')
-        flow_args.add_argument('--IP_cache_location', help='path where the IP cache will be located\n(def: \'/var/tmp/ait/<vendor>/IP_cache/\')', action=StorePath)
+        flow_args.add_argument('--IP_cache_location', help='path where the IP cache will be located\n(def: \'/var/tmp/ait/<vendor>/IP_cache/\')', type=PathType())
         flow_args.add_argument('--to_step', help='final generation step. Generation steps by vendor:\n' + '\n'.join([key + ': ' + ', '.join([value for value in values]) for key, values in generation_steps.items()]) + '\n(def: \'bitstream\')', choices=[value for key, values in generation_steps.items() for value in values], metavar='TO_STEP', default='bitstream')
 
         # Bitstream configuration arguments
@@ -172,42 +198,42 @@ class ArgParser:
         bitstream_args.add_argument('--hwruntime', help='add a hardware runtime. Available hardware runtimes by vendor:\n' + '\n'.join([key + ': ' + ', '.join([value for value in values]) for key, values in available_hwruntimes.items()]) + '\n(def: som)', choices=[value for key, values in available_hwruntimes.items() for value in values], metavar='HWRUNTIME', default='som')
         bitstream_args.add_argument('--hwcounter', help='add a hardware counter to the bitstream', action='store_true', default=False)
         bitstream_args.add_argument('--wrapper_version', help='version of accelerator wrapper shell. This information will be placed in the bitstream information', type=int)
-        bitstream_args.add_argument('--datainterfaces_map', help='path of mappings file for the data interfaces', action=StorePath)
-        bitstream_args.add_argument('--placement_file', help='json file specifying accelerator placement', action=StorePath)
+        bitstream_args.add_argument('--datainterfaces_map', help='path of mappings file for the data interfaces', type=FileType())
+        bitstream_args.add_argument('--placement_file', help='json file specifying accelerator placement', type=FileType())
         bitstream_args.add_argument('--floorplanning_constr', help='built-in floorplanning constraints for accelerators and static logic\nacc: accelerator kernels are constrained to a SLR region\nstatic: each static logic IP is constrained to its relevant SLR\nall: enables both \'acc\' and \'static\' options\nBy default no floorplanning constraints are used', choices=['acc', 'static', 'all'], metavar='FLOORPLANNING_CONSTR')
         bitstream_args.add_argument('--slr_slices', help='enable SLR crossing register slices\nacc: create register slices for SLR crossing on accelerator-related interfaces\nstatic: create register slices for static logic IPs\nall: enable both \'acc\' and \'static\' options \nBy default they are disabled', choices=['acc', 'static', 'all'], metavar='SLR_SLICES')
-        bitstream_args.add_argument('--memory_interleaving_stride', help='size in bytes of the stride of the memory interleaving. By default there is no interleaving', metavar='MEM_INTERLEAVING_STRIDE', action=StoreHumanReadable)
+        bitstream_args.add_argument('--memory_interleaving_stride', help='size in bytes of the stride of the memory interleaving. By default there is no interleaving', metavar='MEM_INTERLEAVING_STRIDE', type=HumanReadableType())
         bitstream_args.add_argument('--bitinfo_note', help='custom note to add to the bitInfo', type=ascii, default='')
 
         # User-defined files arguments
         user_args = self.parser.add_argument_group('User-defined files')
-        user_args.add_argument('--user_constraints', help='path of user defined constraints file', action=StorePath)
-        user_args.add_argument('--user_pre_design', help='path of user TCL script to be executed before the design step (not after the board base design)', action=StorePath)
-        user_args.add_argument('--user_post_design', help='path of user TCL script to be executed after the design step', action=StorePath)
+        user_args.add_argument('--user_constraints', help='path of user defined constraints file', type=FileType())
+        user_args.add_argument('--user_pre_design', help='path of user TCL script to be executed before the design step (not after the board base design)', type=FileType())
+        user_args.add_argument('--user_post_design', help='path of user TCL script to be executed after the design step', type=FileType())
 
         # Hardware Runtime arguments
         hwruntime_args = self.parser.add_argument_group('Hardware Runtime')
-        hwruntime_args.add_argument('--cmdin_queue_len', help='maximum length (64-bit words) of the queue for the hwruntime command in\nThis argument is mutually exclusive with --cmdin_subqueue_len', type=IntRange(4))
-        hwruntime_args.add_argument('--cmdin_subqueue_len', help='length (64-bit words) of each accelerator subqueue for the hwruntime command in.\nThis argument is mutually exclusive with --cmdin_queue_len\nMust be power of 2\nDef. max(64, 1024/num_accs)', type=IntPower(4))
-        hwruntime_args.add_argument('--cmdout_queue_len', help='maximum length (64-bit words) of the queue for the hwruntime command out\nThis argument is mutually exclusive with --cmdout_subqueue_len', type=IntRange(2))
-        hwruntime_args.add_argument('--cmdout_subqueue_len', help='length (64-bit words) of each accelerator subqueue for the hwruntime command out. This argument is mutually exclusive with --cmdout_queue_len\nMust be power of 2\nDef. max(64, 1024/num_accs)', type=IntPower(2))
-        hwruntime_args.add_argument('--spawnin_queue_len', help='length (64-bit words) of the hwruntime spawn in queue. Must be power of 2\n(def: \'1024\')', type=IntPower(4), default=1024)
-        hwruntime_args.add_argument('--spawnout_queue_len', help='length (64-bit words) of the hwruntime spawn out queue. Must be power of 2\n(def: \'1024\')', type=IntPower(4), default=1024)
+        hwruntime_args.add_argument('--cmdin_queue_len', help='maximum length (64-bit words) of the queue for the hwruntime command in\nThis argument is mutually exclusive with --cmdin_subqueue_len', type=IntRangeType(4))
+        hwruntime_args.add_argument('--cmdin_subqueue_len', help='length (64-bit words) of each accelerator subqueue for the hwruntime command in.\nThis argument is mutually exclusive with --cmdin_queue_len\nMust be power of 2\nDef. max(64, 1024/num_accs)', type=IntPowerType(4))
+        hwruntime_args.add_argument('--cmdout_queue_len', help='maximum length (64-bit words) of the queue for the hwruntime command out\nThis argument is mutually exclusive with --cmdout_subqueue_len', type=IntRangeType(2))
+        hwruntime_args.add_argument('--cmdout_subqueue_len', help='length (64-bit words) of each accelerator subqueue for the hwruntime command out. This argument is mutually exclusive with --cmdout_queue_len\nMust be power of 2\nDef. max(64, 1024/num_accs)', type=IntPowerType(2))
+        hwruntime_args.add_argument('--spawnin_queue_len', help='length (64-bit words) of the hwruntime spawn in queue. Must be power of 2\n(def: \'1024\')', type=IntPowerType(4), default=1024)
+        hwruntime_args.add_argument('--spawnout_queue_len', help='length (64-bit words) of the hwruntime spawn out queue. Must be power of 2\n(def: \'1024\')', type=IntPowerType(4), default=1024)
         hwruntime_args.add_argument('--hwruntime_interconnect', help='type of hardware runtime interconnection with accelerators\ncentralized\ndistributed\n(def: \'centralized\')', choices=['centralized', 'distributed'], metavar='HWR_INTERCONNECT', default='centralized')  # TODO: Explain what does each option do
         hwruntime_args.add_argument('--disable_spawn_queues', help='disable the hwruntime spawn in/out queues', action='store_true', default=False)
 
         # Picos arguments
         picos_args = self.parser.add_argument_group('Picos')
-        picos_args.add_argument('--picos_max_args_per_task', help='maximum number of arguments for any task in the bitstream\n(def: \'15\')', type=IntRange(1), default=15)
-        picos_args.add_argument('--picos_max_deps_per_task', help='maximum number of dependencies for any task in the bitstream\n(def: \'8\')', type=IntRange(2), default=8)
-        picos_args.add_argument('--picos_max_copies_per_task', help='maximum number of copies for any task in the bitstream\n(def: \'15\')', type=IntRange(1), default=15)
+        picos_args.add_argument('--picos_max_args_per_task', help='maximum number of arguments for any task in the bitstream\n(def: \'15\')', type=IntRangeType(1), default=15)
+        picos_args.add_argument('--picos_max_deps_per_task', help='maximum number of dependencies for any task in the bitstream\n(def: \'8\')', type=IntRangeType(2), default=8)
+        picos_args.add_argument('--picos_max_copies_per_task', help='maximum number of copies for any task in the bitstream\n(def: \'15\')', type=IntRangeType(1), default=15)
         picos_args.add_argument('--picos_num_dcts', help='number of DCTs instantiated\n(def: \'1\')', choices=['1', '2', '4'], metavar='NUM_DCTS', default=1)
-        picos_args.add_argument('--picos_tm_size', help='size of the TM memory\n(def: \'128\')', type=IntRange(2), default=128)
-        picos_args.add_argument('--picos_dm_size', help='size of the DM memory\n(def: \'512\')', type=IntRange(2), default=512)
-        picos_args.add_argument('--picos_vm_size', help='size of the VM memory\n(def: \'512\')', type=IntRange(2), default=512)
+        picos_args.add_argument('--picos_tm_size', help='size of the TM memory\n(def: \'128\')', type=IntRangeType(2), default=128)
+        picos_args.add_argument('--picos_dm_size', help='size of the DM memory\n(def: \'512\')', type=IntRangeType(2), default=512)
+        picos_args.add_argument('--picos_vm_size', help='size of the VM memory\n(def: \'512\')', type=IntRangeType(2), default=512)
         picos_args.add_argument('--picos_dm_ds', help='data structure of the DM memory\nBINTREE: Binary search tree (not autobalanced)\nLINKEDLIST: Linked list\n(def: \'BINTREE\')', choices=['BINTREE', 'LINKEDLIST'], metavar='DATA_STRUCT', default='BINTREE')
         picos_args.add_argument('--picos_dm_hash', help='hashing function applied to dependence addresses\nP_PEARSON: Parallel Pearson function\nXOR\n(def: \'P_PEARSON\')', choices=['P_PEARSON', 'XOR'], metavar='HASH_FUN', default='P_PEARSON')  # TODO: Explain what XOR does
-        picos_args.add_argument('--picos_hash_t_size', help='DCT hash table size\n(def: \'64\')', type=IntRange(2), default=64)
+        picos_args.add_argument('--picos_hash_t_size', help='DCT hash table size\n(def: \'64\')', type=IntRangeType(2), default=64)
 
         # Miscellaneous arguments
         misc_args = self.parser.add_argument_group('Miscellaneous')
@@ -270,9 +296,7 @@ class ArgParser:
         if args.wrapper_version and args.wrapper_version < MIN_WRAPPER_VERSION:
             msg.error('Unsupported wrapper version (' + str(args.wrapper_version) + '). Minimum version is ' + str(MIN_WRAPPER_VERSION))
 
-        if not os.path.isdir(args.dir):
-            msg.error('Project directory (' + args.dir + ') does not exist or is not a folder')
-        elif not os.path.exists(args.dir + '/' + args.name + '_ait'):
+        if not os.path.exists(args.dir + '/' + args.name + '_ait'):
             os.mkdir(args.dir + '/' + args.name + '_ait')
 
     def check_flow_args(self, args):

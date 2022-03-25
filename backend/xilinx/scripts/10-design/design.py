@@ -30,8 +30,8 @@ import distutils.spawn
 import json
 
 from frontend.config import BITINFO_VERSION, VERSION_MAJOR, \
-        VERSION_MINOR, MIN_VIVADO_VERSION
-from frontend.utils import msg, ait_path, utils
+    VERSION_MINOR, MIN_VIVADO_VERSION
+from frontend.utils import msg, ait_path, decimalFromHumanReadable
 
 script_folder = os.path.basename(os.path.dirname(os.path.realpath(__file__)))
 
@@ -115,7 +115,7 @@ def generate_Vivado_variables_tcl():
                                 + 'variable interconRegSlice_all ' + regslice_all + '\n' \
                                 + 'variable interconRegSlice_mem ' + regslice_mem + '\n' \
                                 + 'variable interconRegSlice_hwruntime ' + regslice_hwruntime + '\n' \
-                                + 'variable interleaving_stride ' + (hex(utils.decimalFromHumanReadable(args.memory_interleaving_stride)) if args.memory_interleaving_stride is not None else str(args.memory_interleaving_stride)) + '\n'\
+                                + 'variable interleaving_stride ' + (hex(args.memory_interleaving_stride) if args.memory_interleaving_stride is not None else str(args.memory_interleaving_stride)) + '\n'\
                                 + 'variable simplify_interconnection ' + str(args.simplify_interconnection).lower() + '\n' \
                                 + 'variable floorplanning_constr ' + str(args.floorplanning_constr) + '\n' \
                                 + 'variable slr_slices ' + str(args.slr_slices) + '\n' \
@@ -136,10 +136,10 @@ def generate_Vivado_variables_tcl():
                                 + 'dict set address_map "mem_type" ' + board.mem.type + '\n'
 
     if board.arch.device == 'zynq' or board.arch.device == 'zynqmp':
-        vivado_project_variables += 'dict set address_map "mem_size" ' + hex(utils.decimalFromHumanReadable(board.mem.size)) + '\n'
+        vivado_project_variables += 'dict set address_map "mem_size" ' + hex(decimalFromHumanReadable(board.mem.size)) + '\n'
     elif board.arch.device == 'alveo':
         vivado_project_variables += 'dict set address_map "mem_num_banks" ' + str(board.mem.num_banks) + '\n' \
-                                    + 'dict set address_map "mem_bank_size" ' + hex(utils.decimalFromHumanReadable(board.mem.bank_size)) + '\n'
+                                    + 'dict set address_map "mem_bank_size" ' + hex(decimalFromHumanReadable(board.mem.bank_size)) + '\n'
 
     if board.board_part:
         vivado_project_variables += '\n' \
