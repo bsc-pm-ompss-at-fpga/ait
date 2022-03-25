@@ -75,7 +75,7 @@ class Messages:
 
     def error(self, msg, start_time=None, simple=True):
         if self.name and not simple:
-            print(self.__getHeader() + Color.RED + 'ERROR: ' + msg + ' after ' + str(int(time() - start_time)) + 's. Check ' + self.name + '.ait.log for more information' + Color.END)
+            print(self.__getHeader() + Color.RED + 'ERROR: ' + msg + ' after ' + secondsToHumanReadable(int(time() - start_time)) + '. Check ' + self.name + '.ait.log for more information' + Color.END)
         else:
             print(self.__getHeader() + Color.RED + 'ERROR: ' + msg + Color.END)
         sys.exit(1)
@@ -121,6 +121,25 @@ def decimalFromHumanReadable(number):
             return int(number)
         else:
             raise ValueError('Invalid value')
+
+
+def secondsToHumanReadable(seconds):
+    TIME_DURATION_UNITS = (
+        ('week', 60 * 60 * 24 * 7),
+        ('day', 60 * 60 * 24),
+        ('hour', 60 * 60),
+        ('min', 60),
+        ('sec', 1)
+    )
+
+    if seconds == 0:
+        return 'inf'
+    parts = []
+    for unit, div in TIME_DURATION_UNITS:
+        amount, seconds = divmod(int(seconds), div)
+        if amount > 0:
+            parts.append('{} {}{}'.format(amount, unit, '' if amount == 1 else 's'))
+    return ', '.join(parts)
 
 
 ait_path = os.path.normpath(os.path.dirname(os.path.realpath(__file__)) + '/..')

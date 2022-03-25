@@ -30,7 +30,7 @@ import importlib
 import subprocess
 
 from frontend.parser import ArgParser
-from frontend.utils import msg, ait_path, generation_steps, Accelerator
+from frontend.utils import msg, ait_path, generation_steps, Accelerator, secondsToHumanReadable
 
 
 class Logger(object):
@@ -206,11 +206,11 @@ def ait_main():
             step_start_time = time.time()
             project_args['start_time'] = step_start_time
             step_func(project_args)
-            msg.success('Step \'' + step + '\' finished. ' + str(int(time.time() - step_start_time)) + 's elapsed')
+            msg.success('Step \'' + step + '\' finished. ' + secondsToHumanReadable(int(time.time() - step_start_time)) + ' elapsed')
         else:
             msg.warning('Step \'' + step + '\' is disabled')
 
-    msg.success('Accelerator automatic integration finished. ' + str(int(time.time() - start_time)) + 's elapsed')
+    msg.success('Accelerator automatic integration finished. ' + secondsToHumanReadable(int(time.time() - start_time)) + ' elapsed')
 
 
 if __name__ == '__main__':
