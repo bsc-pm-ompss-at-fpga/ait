@@ -43,6 +43,40 @@ class FileType:
             raise argparse.ArgumentTypeError('Invalid file')
 
 
+# Custom argparse type representing a bounded int
+class IntRangeType:
+    def __init__(self, imin=None, imax=None):
+        self.imin = imin
+        self.imax = imax
+
+    def __call__(self, arg):
+        try:
+            value = int(arg)
+        except ValueError:
+            raise self.exception()
+        if (self.imin is not None and value < self.imin) or (self.imax is not None and value > self.imax):
+            raise self.exception()
+        return value
+
+    def exception(self):
+        if self.imin is not None and self.imax is not None:
+            return argparse.ArgumentTypeError('must be an integer in the range [{}, {}]'.format(self.imin, self.imax))
+        elif self.imin is not None:
+            return argparse.ArgumentTypeError('must be an integer >= {}'.format(self.imin))
+        elif self.imax is not None:
+            return argparse.ArgumentTypeError('must be an integer <= {}'.format(self.imax))
+        else:
+            return argparse.ArgumentTypeError('must be an integer')
+
+
+def getNumJobs():
+    # NOTE: assuming at most 3GB of memory usage per job
+    procsByMem = int(subprocess.check_output(["free -b | grep 'Mem:' | awk {'print int(($4/1024**3)/3)'}"], shell=True))
+    nprocs = int(subprocess.check_output(['nproc']))
+
+    return min(procsByMem, nprocs)
+
+
 class ArgParser():
     def parse_known_args(self, args=None, namespace=None):
         # Check if configuration file exists and parse its values
@@ -78,7 +112,7 @@ class ArgParser():
         self.parser.add_argument('--ignore_eng_sample', help='ignore engineering sample status from chip part number', action='store_true', default=False)
         self.parser.add_argument('--interconnect_opt', help='AXI interconnect optimization strategy: Minimize \'area\' or maximize \'performance\'\n(def: \'area\')', choices=['area', 'performance'], metavar='OPT_STRATEGY', action=StoreChoiceValue, default=0)
         self.parser.add_argument('--interconnect_regslice', help='enable register slices on AXI interconnects\nall: enables them on all interconnects\nmem: enables them on interconnects in memory datapath\nhwruntime: enables them on the AXI-stream interconnects between the hwruntime and the accelerators\n', nargs='+', choices=['mem', 'hwruntime', 'all'], metavar='INTER_REGSLICE_LIST')
-        self.parser.add_argument('-j', '--jobs', help='specify the number of Vivado jobs to run simultaneously. By default it uses the value returned by `nproc`', type=int, default=int(subprocess.check_output(['nproc'])))
+        self.parser.add_argument('-j', '--jobs', help='specify the number of Vivado jobs to run simultaneously\nBy default it will use as many jobs as cores with at least 3GB of dedicated free memory, or the value returned by `nproc`, whichever is less.', type=IntRangeType(1), default=getNumJobs())
         self.parser.add_argument('--target_language', help='choose target language to synthesize files to: VHDL or Verilog\n(def: \'VHDL\')', choices=['VHDL', 'Verilog'], metavar='TARGET_LANG', default='VHDL')
         self.parser.add_argument('--simplify_interconnection', help='simplify interconnection between accelerators and memory. Might negatively impact timing', action='store_true', default=False)
 
@@ -89,6 +123,8 @@ class ArgParser():
             for opt in args.interconnect_regslice:
                 if opt == 'all' and len(args.interconnect_regslice) != 1:
                     msg.error("Invalid combination of values for --interconnect_regslice")
+        if args.jobs > getNumJobs():
+            msg.warning('Using more Vivado jobs ({}) than the recommended default ({}). Performance of the compilation process might be affected'.format(args.jobs, getNumJobs()))
 
     def check_board_args(self, args, board):
         if args.memory_interleaving_stride is not None:
