@@ -92,11 +92,11 @@ class ArgParser():
 
         return args, extras
 
-        def is_default(self, dest, backend):
-            value = False
-            if self.defaults[backend][dest] is not None:
-                value = self.defaults[backend][dest]['used']
-            return value
+    def is_default(self, dest, backend):
+        value = False
+        if self.defaults[backend][dest] is not None:
+            value = self.defaults[backend][dest]['used']
+        return value
 
     def __init__(self):
         # Create vendor-specific parser
@@ -122,7 +122,7 @@ class ArgParser():
         if args.interconnect_regslice is not None:
             for opt in args.interconnect_regslice:
                 if opt == 'all' and len(args.interconnect_regslice) != 1:
-                    msg.error("Invalid combination of values for --interconnect_regslice")
+                    msg.error('Invalid combination of values for --interconnect_regslice')
         if args.jobs > getNumJobs():
             msg.warning('Using more Vivado jobs ({}) than the recommended default ({}). Performance of the compilation process might be affected'.format(args.jobs, getNumJobs()))
 

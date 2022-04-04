@@ -93,13 +93,13 @@ def decimalToHumanReadable(number, precision=0):
 
     # Using 15 decimals of precision to avoid rounding
     if log_number > 30:
-        return "{:.15f}".format(number / 1024**3)[:-15 + precision] + 'G'
+        return '{:.15f}'.format(number / 1024**3)[:-15 + precision] + 'G'
     elif log_number > 20:
-        return "{:.15f}".format(number / 1024**2)[:-15 + precision] + 'M'
+        return '{:.15f}'.format(number / 1024**2)[:-15 + precision] + 'M'
     elif log_number > 10:
-        return "{:.15f}".format(number / 1024)[:-15 + precision] + 'K'
+        return '{:.15f}'.format(number / 1024)[:-15 + precision] + 'K'
     else:
-        return "{:.15f}".format(number)[:-15 + precision]
+        return '{:.15f}'.format(number)[:-15 + precision]
 
 
 def decimalFromHumanReadable(number):

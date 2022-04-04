@@ -174,7 +174,7 @@ def generate_Vivado_variables_tcl():
 
     # Generate acc instance list with SLR info
     # Placement info is only needed for registers, constraints are dumped into constraint file
-    if (args.slr_slices == "acc") or (args.slr_slices == "all"):
+    if (args.slr_slices == 'acc') or (args.slr_slices == 'all'):
         acc_pl_dict = 'set acc_placement [dict create '
         for acc in accs[0:num_accs]:
             acc_pl_dict += ' ' + str(acc.type) + ' [list'
@@ -185,7 +185,7 @@ def generate_Vivado_variables_tcl():
         vivado_project_variables += acc_pl_dict + '\n'
 
     # Generate acc constraint file
-    if (args.floorplanning_constr == "acc") or (args.floorplanning_constr == "all"):
+    if (args.floorplanning_constr == 'acc') or (args.floorplanning_constr == 'all'):
         accConstrFiles = open(f'{project_backend_path}/board/{board.name}/constraints/acc_floorplan.xdc', 'w')
         for acc in accs[0:num_accs]:
             # Instantiate each accelerator with a single instance and placement info
@@ -269,11 +269,11 @@ def load_acc_placement(accList, args):
         usrPlacement = json.load(open(args.placement_file))
         for acc in accList:
             if acc.name not in usrPlacement:
-                msg.warning("No placement given for acc " + acc.name)
+                msg.warning('No placement given for acc ' + acc.name)
             else:
                 placeList = usrPlacement[acc.name]
                 if len(placeList) != acc.num_instances:
-                    msg.warning("Placement list does not match number instances, placing only matching instances")
+                    msg.warning('Placement list does not match number instances, placing only matching instances')
                 acc.SLR = placeList
 
     elif args.placement_file:
