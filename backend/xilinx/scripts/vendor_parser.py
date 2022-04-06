@@ -71,7 +71,7 @@ class IntRangeType:
 
 def getNumJobs():
     # NOTE: assuming at most 3GB of memory usage per job
-    procsByMem = int(subprocess.check_output(["free -b | grep 'Mem:' | awk {'print int(($4/1024**3)/3)'}"], shell=True))
+    procsByMem = int(subprocess.check_output(["free -b | grep 'Mem:' | awk {'print int(($4/1024^3)/3)'}"], shell=True))
     nprocs = int(subprocess.check_output(['nproc']))
 
     return min(procsByMem, nprocs)
