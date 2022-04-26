@@ -118,4 +118,9 @@ fi
 find $BASE_DIR -iname *.pyc -delete
 find . -type d -iname __pycache__ -delete
 
+# Restore VERSION_COMMIT value to unknown
+if [ "$VERSION_COMMIT" != "" ]; then
+  sed -i "s~VERSION_COMMIT = .*~VERSION_COMMIT = 'unknown'~" $BASE_DIR/frontend/config.py
+fi
+
 print_msg "Installation done in '$PREFIX'"

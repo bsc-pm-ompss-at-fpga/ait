@@ -514,6 +514,7 @@ proc getAvailableDataPorts {} {
 
 # If available, overwrite board-specific procedures
 if {[file exists $path_Project/board/$board/procs.tcl]} {
+    aitInfo "Loading board-specific procedures"
     if {[catch {source -notrace $path_Project/board/$board/procs.tcl}]} {
         aitError "Failed overwriting board-specific procedures"
     }
