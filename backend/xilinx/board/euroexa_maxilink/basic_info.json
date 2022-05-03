@@ -1,0 +1,31 @@
+{
+	"name": "euroexa_maxilink",
+	"chip_part": "xcvu9p-fsgd2104-2-i",
+	"es": "",
+	"board_part": "",
+
+	"arch": {
+		"device": "alveo",
+		"slr": {
+			"num": 3,
+			"master": 1
+		}
+	},
+
+	"frequency": {
+		"min": 5,
+		"max": 933
+	},
+
+	"mem": {
+		"type": "ddr",
+		"num_banks": 4,
+		"addr_width": 48,
+		"bank_size": "8G"
+	},
+
+	"address_map": {
+		"mem_base_addr": "0x2000000000",
+		"ompss_base_addr": "0x3000000000"
+	}
+}

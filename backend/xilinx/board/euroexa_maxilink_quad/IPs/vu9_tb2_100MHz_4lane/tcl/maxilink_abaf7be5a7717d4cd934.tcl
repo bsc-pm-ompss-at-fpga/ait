@@ -1,0 +1,8 @@
+set project_directory [get_property DIRECTORY [current_project]]
+set project [get_property NAME [current_project]]
+set rom_module drp_variable_rom_crdb_vu9
+set gt_module xilinx_gty_crdb_vu9
+create_ip -name gtwizard_ultrascale -vendor xilinx.com -library ip -version 1.7 -module_name $gt_module
+set_property -dict [list CONFIG.CHANNEL_ENABLE {X1Y20 X1Y21 X1Y22 X1Y23} CONFIG.TX_MASTER_CHANNEL {X1Y20} CONFIG.RX_MASTER_CHANNEL {X1Y20} CONFIG.TX_LINE_RATE {16} CONFIG.TX_USER_DATA_WIDTH {64} CONFIG.RX_LINE_RATE {16} CONFIG.RX_USER_DATA_WIDTH {64} CONFIG.RX_BUFFER_MODE {0} CONFIG.RX_BUFFER_BYPASS_MODE {SINGLE} CONFIG.ENABLE_OPTIONAL_PORTS {drpaddr_common_in drpaddr_in drpclk_common_in drpclk_in drpdi_common_in drpdi_in drpen_common_in drpen_in drpwe_common_in drpwe_in drpdo_common_out drpdo_out drprdy_common_out drprdy_out txprecursor_in  txpostcursor_in txdiffctrl_in  rxlpmen_in eyescanreset_in gtrxresetsel_in rxresetdone_out} CONFIG.TX_PLL_TYPE {QPLL0} CONFIG.RX_PLL_TYPE {QPLL0} CONFIG.RX_REFCLK_SOURCE {X1Y20 clk0+1 X1Y21 clk0+1 X1Y22 clk0+1 X1Y23 clk0+1 } CONFIG.TX_REFCLK_SOURCE { X1Y20 clk0+1 X1Y21 clk0+1 X1Y22 clk0+1 X1Y23 clk0+1} CONFIG.LOCATE_TX_USER_CLOCKING {CORE} CONFIG.LOCATE_RX_USER_CLOCKING {CORE} CONFIG.TX_QPLL_FRACN_NUMERATOR {0} CONFIG.RX_QPLL_FRACN_NUMERATOR {0} CONFIG.TX_REFCLK_FREQUENCY {100} CONFIG.TX_INT_DATA_WIDTH {32} CONFIG.RX_REFCLK_FREQUENCY {100} CONFIG.RX_INT_DATA_WIDTH {32} CONFIG.FREERUN_FREQUENCY {150} CONFIG.RX_COMMA_SHOW_REALIGN_ENABLE {false} CONFIG.RX_SLIDE_MODE {PCS} CONFIG.RX_COMMA_ALIGN_WORD {2} ] [get_ips $gt_module]
+generate_target {instantiation_template} [get_files $project_directory/$project.srcs/sources_1/ip/$gt_module/$gt_module.xci]
+update_compile_order -fileset sources_1
