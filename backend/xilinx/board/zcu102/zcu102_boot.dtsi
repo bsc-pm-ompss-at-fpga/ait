@@ -6,14 +6,15 @@
 	};
 };
 
-&gem3 {
-	phy-handle = <&phyc>;
-	phyc: phy@c {
-		reg = <0xc>;
-		ti,rx-internal-delay = <0x8>;
-		ti,tx-internal-delay = <0xa>;
-		ti,fifo-depth = <0x1>;
-	};
-	/* Cleanup from RevA */
-	/delete-node/ phy@21;
-};
+//NOTE: Commenting out as this seems to have been fixed in newer Petalinux versions
+//&gem3 {
+//	phy-handle = <&phyc>;
+//	phyc: phy@c {
+//		reg = <0xc>;
+//		ti,rx-internal-delay = <0x8>;
+//		ti,tx-internal-delay = <0xa>;
+//		ti,fifo-depth = <0x1>;
+//	};
+//	/* Cleanup from RevA */
+//	/delete-node/ phy@21;
+//};
