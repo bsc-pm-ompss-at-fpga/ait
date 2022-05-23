@@ -253,7 +253,7 @@ proc create_hier_cell_DDR_3 { parentCell nameHier } {
   # Create instance: DDR4, and set properties
   set DDR4 [ create_bd_cell -type ip -vlnv xilinx.com:ip:ddr4 DDR4 ]
   set_property -dict [ list \
-   CONFIG.C0.DDR4_AxiAddressWidth {33} \
+   CONFIG.C0.DDR4_AxiAddressWidth {34} \
    CONFIG.C0.DDR4_AxiDataWidth {512} \
    CONFIG.C0.DDR4_AxiNarrowBurst {true} \
    CONFIG.C0.DDR4_CasLatency {11} \
@@ -261,7 +261,7 @@ proc create_hier_cell_DDR_3 { parentCell nameHier } {
    CONFIG.C0.DDR4_DataMask {NO_DM_NO_DBI} \
    CONFIG.C0.DDR4_DataWidth {72} \
    CONFIG.C0.DDR4_InputClockPeriod {3334} \
-   CONFIG.C0.DDR4_MemoryPart {MTA9ASF1G72AZ-2G3} \
+   CONFIG.C0.DDR4_MemoryPart {MTA18ASF2G72AZ-2G3} \
    CONFIG.C0.DDR4_MemoryType {UDIMMs} \
    CONFIG.C0.DDR4_TimePeriod {1250} \
  ] $DDR4
@@ -348,7 +348,7 @@ proc create_hier_cell_DDR_2 { parentCell nameHier } {
   # Create instance: DDR4, and set properties
   set DDR4 [ create_bd_cell -type ip -vlnv xilinx.com:ip:ddr4 DDR4 ]
   set_property -dict [ list \
-   CONFIG.C0.DDR4_AxiAddressWidth {33} \
+   CONFIG.C0.DDR4_AxiAddressWidth {34} \
    CONFIG.C0.DDR4_AxiDataWidth {512} \
    CONFIG.C0.DDR4_AxiNarrowBurst {true} \
    CONFIG.C0.DDR4_CasLatency {11} \
@@ -356,7 +356,7 @@ proc create_hier_cell_DDR_2 { parentCell nameHier } {
    CONFIG.C0.DDR4_DataMask {NO_DM_NO_DBI} \
    CONFIG.C0.DDR4_DataWidth {72} \
    CONFIG.C0.DDR4_InputClockPeriod {3334} \
-   CONFIG.C0.DDR4_MemoryPart {MTA9ASF1G72AZ-2G3} \
+   CONFIG.C0.DDR4_MemoryPart {MTA18ASF2G72AZ-2G3} \
    CONFIG.C0.DDR4_MemoryType {UDIMMs} \
    CONFIG.C0.DDR4_TimePeriod {1250} \
  ] $DDR4
@@ -443,7 +443,7 @@ proc create_hier_cell_DDR_1 { parentCell nameHier } {
   # Create instance: DDR4, and set properties
   set DDR4 [ create_bd_cell -type ip -vlnv xilinx.com:ip:ddr4 DDR4 ]
   set_property -dict [ list \
-   CONFIG.C0.DDR4_AxiAddressWidth {33} \
+   CONFIG.C0.DDR4_AxiAddressWidth {34} \
    CONFIG.C0.DDR4_AxiDataWidth {512} \
    CONFIG.C0.DDR4_AxiNarrowBurst {true} \
    CONFIG.C0.DDR4_CasLatency {11} \
@@ -451,7 +451,7 @@ proc create_hier_cell_DDR_1 { parentCell nameHier } {
    CONFIG.C0.DDR4_DataMask {NO_DM_NO_DBI} \
    CONFIG.C0.DDR4_DataWidth {72} \
    CONFIG.C0.DDR4_InputClockPeriod {3334} \
-   CONFIG.C0.DDR4_MemoryPart {MTA9ASF1G72AZ-2G3} \
+   CONFIG.C0.DDR4_MemoryPart {MTA18ASF2G72AZ-2G3} \
    CONFIG.C0.DDR4_MemoryType {UDIMMs} \
    CONFIG.C0.DDR4_TimePeriod {1250} \
  ] $DDR4
