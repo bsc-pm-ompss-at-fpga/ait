@@ -26,7 +26,7 @@ MIN_VIVADO_HLS_VERSION = '2018.3'
 MIN_VIVADO_VERSION = '2018.3'
 BITINFO_VERSION = 9
 VERSION_MAJOR = 5
-VERSION_MINOR = 19
+VERSION_MINOR = 20
 
 # NOTE: The variable will be overwritten by the install script, do not manually modify.
 VERSION_COMMIT = 'unknown'
