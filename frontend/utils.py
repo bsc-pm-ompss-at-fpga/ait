@@ -103,24 +103,24 @@ def decimalToHumanReadable(number, precision=0):
 
 
 def decimalFromHumanReadable(number):
-    if re.match(r'[a-zA-Z]', str(number)[-1:]):
-        if (number[:-1]).isdigit() and int(number[:-1]) > 0:
-            if str(number)[-1:] == "G":
+    if re.match(r'[a-zA-Z]', number[-1:]):
+        if (number[:-1]).replace('.', '', 1).isdigit() and float(number[:-1]) > 0:
+            if number[-1:] == "G":
                 return int(float(number[:-1]) * 1024**3)
-            elif str(number)[-1:] == "M":
+            elif number[-1:] == "M":
                 return int(float(number[:-1]) * 1024**2)
-            elif str(number)[-1:] == "K":
+            elif number[-1:] == "K":
                 return int(float(number[:-1]) * 1024)
             else:
-                raise TypeError('Invalid unit')
+                raise TypeError('invalid unit')
         else:
-            raise ValueError('Invalid value')
+            raise ValueError('invalid value')
 
     else:
         if number.isdigit() and int(number) > 0:
             return int(number)
         else:
-            raise ValueError('Invalid value')
+            raise ValueError('invalid value')
 
 
 def secondsToHumanReadable(seconds):

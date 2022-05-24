@@ -33,7 +33,7 @@ from frontend.config import BITINFO_VERSION, MIN_WRAPPER_VERSION, \
     VERSION_MAJOR, VERSION_MINOR, VERSION_COMMIT
 
 from frontend.utils import msg, ait_path, supported_boards, generation_steps, \
-    available_hwruntimes, decimalFromHumanReadable
+    available_hwruntimes, decimalFromHumanReadable, decimalToHumanReadable
 
 
 # Custom argparse type representing a power of 2 int
@@ -94,6 +94,14 @@ class IntRangeType:
 
 # Custom argparse type representing a human readable number
 class HumanReadableType:
+    def __init__(self, vmin=None, vmax=None):
+        self.vmin = vmin
+        self.vmax = vmax
+        if vmin is not None:
+            self.vmin = decimalFromHumanReadable(vmin)
+        if vmax is not None:
+            self.vmax = decimalFromHumanReadable(vmax)
+
     def __call__(self, arg):
         try:
             value = decimalFromHumanReadable(arg)
@@ -101,13 +109,23 @@ class HumanReadableType:
             raise self.valueException()
         except TypeError:
             raise self.typeException()
+        if (self.vmin is not None and value < self.vmin) or (self.vmax is not None and value > self.vmax):
+            raise self.rangeException()
         return value
 
     def typeException(self):
-        return argparse.ArgumentTypeError('Invalid unit')
+        return argparse.ArgumentTypeError('invalid unit')
 
     def valueException(self):
-        return argparse.ArgumentTypeError('Invalid value')
+        return argparse.ArgumentTypeError('invalid value')
+
+    def rangeException(self):
+        if self.vmin is not None and self.vmax is not None:
+            return argparse.ArgumentTypeError('value must be in the range [{}, {}]'.format(decimalToHumanReadable(self.vmin), decimalToHumanReadable(self.vmax)))
+        elif self.vmin is not None:
+            return argparse.ArgumentTypeError('value must be >= {}'.format(decimalToHumanReadable(self.vmin)))
+        elif self.vmax is not None:
+            return argparse.ArgumentTypeError('value must be <= {}'.format(decimalToHumanReadable(self.vmax)))
 
 
 # Custom argparse type representing a path
@@ -116,7 +134,7 @@ class PathType:
         if os.path.isdir(arg):
             return os.path.realpath(arg)
         else:
-            raise argparse.ArgumentTypeError('Invalid path')
+            raise argparse.ArgumentTypeError('invalid path')
 
 
 # Custom argparse type representing a path to a file
@@ -125,7 +143,7 @@ class FileType:
         if os.path.isfile(arg):
             return os.path.realpath(arg)
         else:
-            raise argparse.ArgumentTypeError('Invalid file')
+            raise argparse.ArgumentTypeError('invalid file')
 
 
 class StoreChoiceValue(argparse.Action):
@@ -202,7 +220,7 @@ class ArgParser:
         bitstream_args.add_argument('--placement_file', help='json file specifying accelerator placement', type=FileType())
         bitstream_args.add_argument('--floorplanning_constr', help='built-in floorplanning constraints for accelerators and static logic\nacc: accelerator kernels are constrained to a SLR region\nstatic: each static logic IP is constrained to its relevant SLR\nall: enables both \'acc\' and \'static\' options\nBy default no floorplanning constraints are used', choices=['acc', 'static', 'all'], metavar='FLOORPLANNING_CONSTR')
         bitstream_args.add_argument('--slr_slices', help='enable SLR crossing register slices\nacc: create register slices for SLR crossing on accelerator-related interfaces\nstatic: create register slices for static logic IPs\nall: enable both \'acc\' and \'static\' options \nBy default they are disabled', choices=['acc', 'static', 'all'], metavar='SLR_SLICES')
-        bitstream_args.add_argument('--memory_interleaving_stride', help='size in bytes of the stride of the memory interleaving. By default there is no interleaving', metavar='MEM_INTERLEAVING_STRIDE', type=HumanReadableType())
+        bitstream_args.add_argument('--memory_interleaving_stride', help='size in bytes of the stride of the memory interleaving. By default there is no interleaving', metavar='MEM_INTERLEAVING_STRIDE', type=HumanReadableType(vmin='4K'))
         bitstream_args.add_argument('--bitinfo_note', help='custom note to add to the bitInfo', type=ascii, default='')
 
         # User-defined files arguments
@@ -213,27 +231,27 @@ class ArgParser:
 
         # Hardware Runtime arguments
         hwruntime_args = self.parser.add_argument_group('Hardware Runtime')
-        hwruntime_args.add_argument('--cmdin_queue_len', help='maximum length (64-bit words) of the queue for the hwruntime command in\nThis argument is mutually exclusive with --cmdin_subqueue_len', type=IntRangeType(4))
-        hwruntime_args.add_argument('--cmdin_subqueue_len', help='length (64-bit words) of each accelerator subqueue for the hwruntime command in.\nThis argument is mutually exclusive with --cmdin_queue_len\nMust be power of 2\nDef. max(64, 1024/num_accs)', type=IntPowerType(4))
-        hwruntime_args.add_argument('--cmdout_queue_len', help='maximum length (64-bit words) of the queue for the hwruntime command out\nThis argument is mutually exclusive with --cmdout_subqueue_len', type=IntRangeType(2))
-        hwruntime_args.add_argument('--cmdout_subqueue_len', help='length (64-bit words) of each accelerator subqueue for the hwruntime command out. This argument is mutually exclusive with --cmdout_queue_len\nMust be power of 2\nDef. max(64, 1024/num_accs)', type=IntPowerType(2))
-        hwruntime_args.add_argument('--spawnin_queue_len', help='length (64-bit words) of the hwruntime spawn in queue. Must be power of 2\n(def: \'1024\')', type=IntPowerType(4), default=1024)
-        hwruntime_args.add_argument('--spawnout_queue_len', help='length (64-bit words) of the hwruntime spawn out queue. Must be power of 2\n(def: \'1024\')', type=IntPowerType(4), default=1024)
+        hwruntime_args.add_argument('--cmdin_queue_len', help='maximum length (64-bit words) of the queue for the hwruntime command in\nThis argument is mutually exclusive with --cmdin_subqueue_len', type=IntRangeType(imin=4))
+        hwruntime_args.add_argument('--cmdin_subqueue_len', help='length (64-bit words) of each accelerator subqueue for the hwruntime command in.\nThis argument is mutually exclusive with --cmdin_queue_len\nMust be power of 2\nDef. max(64, 1024/num_accs)', type=IntPowerType(imin=4))
+        hwruntime_args.add_argument('--cmdout_queue_len', help='maximum length (64-bit words) of the queue for the hwruntime command out\nThis argument is mutually exclusive with --cmdout_subqueue_len', type=IntRangeType(imin=2))
+        hwruntime_args.add_argument('--cmdout_subqueue_len', help='length (64-bit words) of each accelerator subqueue for the hwruntime command out. This argument is mutually exclusive with --cmdout_queue_len\nMust be power of 2\nDef. max(64, 1024/num_accs)', type=IntPowerType(imin=2))
+        hwruntime_args.add_argument('--spawnin_queue_len', help='length (64-bit words) of the hwruntime spawn in queue. Must be power of 2\n(def: \'1024\')', type=IntPowerType(imin=4), default=1024)
+        hwruntime_args.add_argument('--spawnout_queue_len', help='length (64-bit words) of the hwruntime spawn out queue. Must be power of 2\n(def: \'1024\')', type=IntPowerType(imin=4), default=1024)
         hwruntime_args.add_argument('--hwruntime_interconnect', help='type of hardware runtime interconnection with accelerators\ncentralized\ndistributed\n(def: \'centralized\')', choices=['centralized', 'distributed'], metavar='HWR_INTERCONNECT', default='centralized')  # TODO: Explain what does each option do
         hwruntime_args.add_argument('--disable_spawn_queues', help='disable the hwruntime spawn in/out queues', action='store_true', default=False)
 
         # Picos arguments
         picos_args = self.parser.add_argument_group('Picos')
-        picos_args.add_argument('--picos_max_args_per_task', help='maximum number of arguments for any task in the bitstream\n(def: \'15\')', type=IntRangeType(1), default=15)
-        picos_args.add_argument('--picos_max_deps_per_task', help='maximum number of dependencies for any task in the bitstream\n(def: \'8\')', type=IntRangeType(2), default=8)
-        picos_args.add_argument('--picos_max_copies_per_task', help='maximum number of copies for any task in the bitstream\n(def: \'15\')', type=IntRangeType(1), default=15)
+        picos_args.add_argument('--picos_max_args_per_task', help='maximum number of arguments for any task in the bitstream\n(def: \'15\')', type=IntRangeType(imin=1), default=15)
+        picos_args.add_argument('--picos_max_deps_per_task', help='maximum number of dependencies for any task in the bitstream\n(def: \'8\')', type=IntRangeType(imin=2), default=8)
+        picos_args.add_argument('--picos_max_copies_per_task', help='maximum number of copies for any task in the bitstream\n(def: \'15\')', type=IntRangeType(imin=1), default=15)
         picos_args.add_argument('--picos_num_dcts', help='number of DCTs instantiated\n(def: \'1\')', choices=['1', '2', '4'], metavar='NUM_DCTS', default=1)
-        picos_args.add_argument('--picos_tm_size', help='size of the TM memory\n(def: \'128\')', type=IntRangeType(2), default=128)
-        picos_args.add_argument('--picos_dm_size', help='size of the DM memory\n(def: \'512\')', type=IntRangeType(2), default=512)
-        picos_args.add_argument('--picos_vm_size', help='size of the VM memory\n(def: \'512\')', type=IntRangeType(2), default=512)
+        picos_args.add_argument('--picos_tm_size', help='size of the TM memory\n(def: \'128\')', type=IntRangeType(imin=2), default=128)
+        picos_args.add_argument('--picos_dm_size', help='size of the DM memory\n(def: \'512\')', type=IntRangeType(imin=2), default=512)
+        picos_args.add_argument('--picos_vm_size', help='size of the VM memory\n(def: \'512\')', type=IntRangeType(imin=2), default=512)
         picos_args.add_argument('--picos_dm_ds', help='data structure of the DM memory\nBINTREE: Binary search tree (not autobalanced)\nLINKEDLIST: Linked list\n(def: \'BINTREE\')', choices=['BINTREE', 'LINKEDLIST'], metavar='DATA_STRUCT', default='BINTREE')
         picos_args.add_argument('--picos_dm_hash', help='hashing function applied to dependence addresses\nP_PEARSON: Parallel Pearson function\nXOR\n(def: \'P_PEARSON\')', choices=['P_PEARSON', 'XOR'], metavar='HASH_FUN', default='P_PEARSON')  # TODO: Explain what XOR does
-        picos_args.add_argument('--picos_hash_t_size', help='DCT hash table size\n(def: \'64\')', type=IntRangeType(2), default=64)
+        picos_args.add_argument('--picos_hash_t_size', help='DCT hash table size\n(def: \'64\')', type=IntRangeType(imin=2), default=64)
 
         # Miscellaneous arguments
         misc_args = self.parser.add_argument_group('Miscellaneous')
