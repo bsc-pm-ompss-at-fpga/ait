@@ -64,7 +64,7 @@ This will install AIT for all the vendor backends available and all the boards s
 
 #### Style testing
 
-The python code follows pycodestyle (formerly pep8) which is verified using the `pycodestyle` tool (can be installed with `pip install pycodestyle`).
+The python code follows pycodestyle which is verified using the `pycodestyle` tool (can be installed with `pip install pycodestyle`).
 To check the current source code just execute `pycodestyle`.
 
 #### Unit testing
