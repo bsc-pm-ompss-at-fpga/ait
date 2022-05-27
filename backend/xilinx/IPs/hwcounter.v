@@ -62,9 +62,9 @@ module hwcounter #
 
   // Implement axi_arready generation
   // axi_arready is asserted for one s_axi_aclk clock cycle when
-  // S_AXI_ARVALID is asserted. axi_awready is 
-  // de-asserted when reset (active low) is asserted. 
-  // The read address is also latched when S_AXI_ARVALID is 
+  // S_AXI_ARVALID is asserted. axi_awready is
+  // de-asserted when reset (active low) is asserted.
+  // The read address is also latched when S_AXI_ARVALID is
   // asserted. axi_araddr is reset to zero on reset assertion.
 
   always @(posedge s_axi_aclk)
@@ -80,15 +80,15 @@ module hwcounter #
     begin
       axi_arready <= 1'b0;
     end
-  end 
+  end
 
   // Implement axi_arvalid generation
-  // axi_rvalid is asserted for one s00_axi_aclk clock cycle when both 
-  // S_AXI_ARVALID and axi_arready are asserted. The slave registers 
-  // data are available on the axi_rdata bus at this instance. The 
-  // assertion of axi_rvalid marks the validity of read data on the 
-  // bus and axi_rresp indicates the status of read transaction.axi_rvalid 
-  // is deasserted on reset (active low). axi_rresp and axi_rdata are 
+  // axi_rvalid is asserted for one s00_axi_aclk clock cycle when both
+  // S_AXI_ARVALID and axi_arready are asserted. The slave registers
+  // data are available on the axi_rdata bus at this instance. The
+  // assertion of axi_rvalid marks the validity of read data on the
+  // bus and axi_rresp indicates the status of read transaction.axi_rvalid
+  // is deasserted on reset (active low). axi_rresp and axi_rdata are
   // cleared to zero on reset (active low).
   always @(posedge s_axi_aclk)
   begin
@@ -122,9 +122,9 @@ module hwcounter #
   // Output register or memory read data
   always @(posedge s_axi_aclk)
   begin
-    // When there is a valid read address (S_AXI_ARVALID) with 
-    // acceptance of read address by the slave (axi_arready), 
-    // output the read dada 
+    // When there is a valid read address (S_AXI_ARVALID) with
+    // acceptance of read address by the slave (axi_arready),
+    // output the read data
     if (slv_reg_rden)
     begin
       axi_rdata <= reg_data_out;     // register read data
