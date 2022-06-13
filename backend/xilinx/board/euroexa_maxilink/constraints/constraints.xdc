@@ -54,11 +54,11 @@
 
 
 #N_0
-set_property PACKAGE_PIN BF8 [get_ports {o_virtex_cdma_introut_0}]
-set_property IOSTANDARD LVCMOS18 [get_ports {o_virtex_cdma_introut_0}]
+#set_property PACKAGE_PIN BF8 [get_ports {o_virtex_cdma_introut_0}]
+#set_property IOSTANDARD LVCMOS18 [get_ports {o_virtex_cdma_introut_0}]
 #N_1
-set_property PACKAGE_PIN BE10 [get_ports {o_virtex_cdma_introut_1}]
-set_property IOSTANDARD LVCMOS18 [get_ports {o_virtex_cdma_introut_1}]
+#set_property PACKAGE_PIN BE10 [get_ports {o_virtex_cdma_introut_1}]
+#set_property IOSTANDARD LVCMOS18 [get_ports {o_virtex_cdma_introut_1}]
 
 ### RFU accelerator interrupts...
 ##P_2
