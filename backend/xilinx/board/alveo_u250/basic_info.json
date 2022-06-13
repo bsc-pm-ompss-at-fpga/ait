@@ -16,7 +16,6 @@
 	"mem": {
 		"type": "ddr",
 		"num_banks": 4,
-		"addr_width": 64,
 		"bank_size": "16G"
 	},
 

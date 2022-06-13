@@ -28,7 +28,6 @@
 		"_comment": "Use this for FPGA boards",
 		"type": "MEM_TYPE",
 		"num_banks": NUM_BANKS,
-		"addr_width": ADDR_WIDTH,
 		"bank_size": "BANK_SIZE"
 	},
 

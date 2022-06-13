@@ -340,7 +340,6 @@ def run_design_step(project_args):
 
     if args.memory_interleaving_stride is not None:
         subprocess.check_output(['sed -i "s/\`undef __ENABLE__/\`define __ENABLE__/" ' + project_backend_path + '/IPs/addrInterleaver.v'], shell=True)
-        subprocess.check_output(['sed -i "s/\`define __WIDTH__ 64/\`define __WIDTH__ ' + str(board.mem.addr_width) + '/" ' + project_backend_path + '/IPs/addrInterleaver.v'], shell=True)
 
     if args.user_constraints and os.path.exists(args.user_constraints):
         constraints_path = project_backend_path + '/board/' + board.name + '/constraints'

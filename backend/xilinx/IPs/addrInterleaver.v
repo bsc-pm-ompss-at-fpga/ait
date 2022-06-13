@@ -21,29 +21,29 @@
 `timescale 1ns / 1ps
 
 `undef __ENABLE__
-`define __WIDTH__ 64
+`define __ADDR_WIDTH__ 64
 
 
 `ifdef __ENABLE__
 module addrInterleaver#(
     parameter NUM_BANKS = 4,
-    parameter STRIDE = `__WIDTH__'h2000, //8K
-    parameter BANK_SIZE = `__WIDTH__'h400000000, //16G
-    parameter BASE_ADDR = `__WIDTH__'h0
+    parameter STRIDE = `__ADDR_WIDTH__'h2000, //8K
+    parameter BANK_SIZE = `__ADDR_WIDTH__'h400000000, //16G
+    parameter BASE_ADDR = `__ADDR_WIDTH__'h0
 )
 `else
 module addrInterleaver
 `endif
 (
-    input wire [(`__WIDTH__-1):0] in_awaddr,
-    input wire [(`__WIDTH__-1):0] in_araddr,
+    input wire [(`__ADDR_WIDTH__-1):0] in_awaddr,
+    input wire [(`__ADDR_WIDTH__-1):0] in_araddr,
 
-    output wire [(`__WIDTH__-1):0] out_awaddr,
-    output wire [(`__WIDTH__-1):0] out_araddr
+    output wire [(`__ADDR_WIDTH__-1):0] out_awaddr,
+    output wire [(`__ADDR_WIDTH__-1):0] out_araddr
 );
 
-    reg [(`__WIDTH__-1):0] r_out_awaddr;
-    reg [(`__WIDTH__-1):0] r_out_araddr;
+    reg [(`__ADDR_WIDTH__-1):0] r_out_awaddr;
+    reg [(`__ADDR_WIDTH__-1):0] r_out_araddr;
 
 `ifdef __ENABLE__
     localparam NUM_SELECTOR_BITS = $clog2(NUM_BANKS);
@@ -58,7 +58,7 @@ module addrInterleaver
     always @(*) begin
     `ifdef __ENABLE__
         if (in_awaddr < BASE_ADDR + BANK_SIZE*NUM_BANKS) begin
-            r_out_awaddr <= {in_awaddr[(`__WIDTH__-1)                       : DST_SELECTOR_BIT+NUM_SELECTOR_BITS],
+            r_out_awaddr <= {in_awaddr[(`__ADDR_WIDTH__-1)                  : DST_SELECTOR_BIT+NUM_SELECTOR_BITS],
                              in_awaddr[SRC_SELECTOR_BIT+NUM_SELECTOR_BITS-1 : SRC_SELECTOR_BIT],
                              in_awaddr[DST_SELECTOR_BIT+NUM_SELECTOR_BITS-1 : SRC_SELECTOR_BIT+NUM_SELECTOR_BITS],
                              in_awaddr[SRC_SELECTOR_BIT-1                   : 0]};
@@ -75,7 +75,7 @@ module addrInterleaver
     always @(*) begin
     `ifdef __ENABLE__
         if (in_araddr < BASE_ADDR + BANK_SIZE*NUM_BANKS) begin
-            r_out_araddr <= {in_araddr[(`__WIDTH__-1)                       : DST_SELECTOR_BIT+NUM_SELECTOR_BITS],
+            r_out_araddr <= {in_araddr[(`__ADDR_WIDTH__-1)                  : DST_SELECTOR_BIT+NUM_SELECTOR_BITS],
                              in_araddr[SRC_SELECTOR_BIT+NUM_SELECTOR_BITS-1 : SRC_SELECTOR_BIT],
                              in_araddr[DST_SELECTOR_BIT+NUM_SELECTOR_BITS-1 : SRC_SELECTOR_BIT+NUM_SELECTOR_BITS],
                              in_araddr[SRC_SELECTOR_BIT-1                   : 0]};
