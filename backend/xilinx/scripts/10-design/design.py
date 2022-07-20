@@ -117,6 +117,7 @@ def generate_Vivado_variables_tcl():
                                 + 'variable interconRegSlice_hwruntime ' + regslice_hwruntime + '\n' \
                                 + 'variable interleaving_stride ' + (hex(args.memory_interleaving_stride) if args.memory_interleaving_stride is not None else str(args.memory_interleaving_stride)) + '\n'\
                                 + 'variable simplify_interconnection ' + str(args.simplify_interconnection).lower() + '\n' \
+                                + 'variable interconPriority ' + str(args.interconnect_priorities) + '\n' \
                                 + 'variable floorplanning_constr ' + str(args.floorplanning_constr) + '\n' \
                                 + 'variable slr_slices ' + str(args.slr_slices) + '\n' \
                                 + '\n' \

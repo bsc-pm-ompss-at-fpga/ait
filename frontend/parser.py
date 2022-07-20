@@ -261,6 +261,11 @@ class ArgParser:
         misc_args.add_argument('-v', '--verbose', help='print vendor backend messages', action='store_true', default=False)
         misc_args.add_argument('--version', help='print AIT version and exits', action='version', version=str('.'.join([str(VERSION_MAJOR), str(VERSION_MINOR)]) + ' (commit: ' + VERSION_COMMIT + ', bitInfo: ' + str(BITINFO_VERSION) + ')'))
 
+        # Data path arguments
+        #   Options that affect how accelerators access data
+        data_args = self.parser.add_argument_group('Data path')
+        data_args.add_argument('--interconnect_priorities', help='enable priorities in the memory interconnect', action='store_true', default=False)
+
     def parse_args(self):
         # Check if configuration file exists and parse its values
         config_file_path = os.path.expanduser('~') + '/.ait/config.json'
