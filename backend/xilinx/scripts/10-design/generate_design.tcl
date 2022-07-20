@@ -394,7 +394,7 @@ proc createNestedInterconnect {parent_inter {num 1}} {
 
 # Connects the IP to the host through the given port
 proc connectToInterface {src intf role {num ""}} {
-    upvar #0 board_interfaces intf_list interconOpt interconOpt
+    upvar #0 board_interfaces intf_list interconOpt interconOpt interconPriority interconPriority
 
     if {$num ne ""} {
         set index [lsearch -regexp $intf_list ${role}_AXI_${intf}.*_${num}]
@@ -415,6 +415,13 @@ proc connectToInterface {src intf role {num ""}} {
 
     set_property -dict [list CONFIG.NUM_${role}I [expr ($counter%16) + 1]] [get_bd_cells $inter]
     set_property -quiet -dict [list CONFIG.STRATEGY $interconOpt] [get_bd_cells $inter]
+
+    if {$interconPriority} {
+        #Enable advanced settings in order to set priorities and set proper data path
+        set_property -dict [list CONFIG.ENABLE_ADVANCED_OPTIONS {1} CONFIG.XBAR_DATA_WIDTH.VALUE_SRC PROPAGATED] [get_bd_cells $inter]
+        #set priority (0-15)
+        set_property -dict [list CONFIG.${port}_ARB_PRIORITY [expr 15 - ($counter%16)]] [get_bd_cells $inter]
+    }
     connectClock [get_bd_pins $inter/${port}_ACLK]
     connectRst [get_bd_pins $inter/${port}_ARESETN] "peripheral"
     connect_bd_intf_net -boundary_type upper [get_bd_intf_pins $src] [get_bd_intf_pins $inter/${port}_AXI]
@@ -674,6 +681,12 @@ set_property sim.ip.auto_export_scripts false [current_project]
 # If enabled, set cache location
 if {$IP_caching} {
     check_ip_cache -import_from_project -use_cache_location $path_CacheLocation
+}
+
+#If interconnect priorities are enabled, set PCIe master as max priority
+if {$interconPriority} {
+    set_property -dict [list CONFIG.ENABLE_ADVANCED_OPTIONS {1} CONFIG.XBAR_DATA_WIDTH.VALUE_SRC PROPAGATED] [get_bd_cells bridge_to_host/DDR_S_AXI_Inter]
+    set_property -dict [list CONFIG.S00_ARB_PRIORITY 15] [get_bd_cells bridge_to_host/DDR_S_AXI_Inter]
 }
 
 # If enabled, simplify interconnection to memory
