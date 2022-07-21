@@ -58,7 +58,16 @@ proc setAndGetFreq {targetFreq} {
 
 # Returns base frequency used to feed the clock generator
 proc getBaseFreq {} {
-    return [get_property CONFIG.FREQ_HZ [get_bd_pins clock_generator/clk_in1]]
+
+    if {[llength [get_bd_pins clock_generator/clk_in1]] > 0} {
+        # Using single pin clocks
+        set baseFreq [get_property CONFIG.FREQ_HZ [get_bd_pins clock_generator/clk_in1]]
+    } else {
+        # Using differential clock
+        set baseFreq [get_property CONFIG.FREQ_HZ [get_bd_intf_pins clock_generator/clk_in1_d]]
+
+    }
+    return $baseFreq
 }
 
 # Maps board memory to address map

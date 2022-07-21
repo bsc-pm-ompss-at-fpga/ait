@@ -537,7 +537,6 @@ proc create_hier_cell_bridge_to_host { parentCell nameHier } {
   create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 pcie_refclk
 
   # Create pins
-  create_bd_pin -dir O -type clk ui_clk
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type rst interconnect_aresetn
   create_bd_pin -dir I -type rst pcie_perstn
@@ -608,7 +607,7 @@ proc create_hier_cell_bridge_to_host { parentCell nameHier } {
   connect_bd_net -net DDR_DDR_3_ui_clk [get_bd_pins DDR/DDR_3_ui_clk] [get_bd_pins DDR_S_AXI_Inter/M03_ACLK] [get_bd_pins QDMA_M_AXI_LITE_Inter/M03_ACLK]
   connect_bd_net -net QDMA_QDMA_m_axi_araddr [get_bd_pins QDMA/QDMA_m_axi_araddr] [get_bd_pins bridge_to_host_addrInterleaver/in_araddr]
   connect_bd_net -net QDMA_QDMA_m_axi_awaddr [get_bd_pins QDMA/QDMA_m_axi_awaddr] [get_bd_pins bridge_to_host_addrInterleaver/in_awaddr]
-  connect_bd_net -net QDMA_aclk [get_bd_pins DDR_S_AXI_Inter/S00_ACLK] [get_bd_pins QDMA/aclk] [get_bd_pins QDMA_M_AXI_LITE_Inter/S00_ACLK] [get_bd_pins ui_clk]
+  connect_bd_net -net QDMA_aclk [get_bd_pins DDR_S_AXI_Inter/S00_ACLK] [get_bd_pins QDMA/aclk] [get_bd_pins QDMA_M_AXI_LITE_Inter/S00_ACLK]
   connect_bd_net -net QDMA_aresetn [get_bd_pins DDR_S_AXI_Inter/S00_ARESETN] [get_bd_pins QDMA/aresetn] [get_bd_pins QDMA_M_AXI_LITE_Inter/S00_ARESETN]
   connect_bd_net -net S00_AXI_araddr_1 [get_bd_pins DDR_S_AXI_Inter/S00_AXI_araddr] [get_bd_pins bridge_to_host_addrInterleaver/out_araddr]
   connect_bd_net -net S00_AXI_awaddr_1 [get_bd_pins DDR_S_AXI_Inter/S00_AXI_awaddr] [get_bd_pins bridge_to_host_addrInterleaver/out_awaddr]
@@ -680,6 +679,8 @@ proc create_root_design { parentCell } {
   set_property -dict [ list \
    CONFIG.FREQ_HZ {100000000} \
    ] $pcie_refclk
+  set si570_usr_clk [create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 USER_SI570_CLOCK]
+  set_property CONFIG.FREQ_HZ 156250000 $si570_usr_clk
 
   # Create ports
   set pcie_perstn [ create_bd_port -dir I -type rst pcie_perstn ]
@@ -729,6 +730,7 @@ proc create_root_design { parentCell } {
    CONFIG.RESET_BOARD_INTERFACE {resetn} \
    CONFIG.RESET_PORT {resetn} \
    CONFIG.RESET_TYPE {ACTIVE_LOW} \
+   CONFIG.PRIM_SOURCE {Differential_clock_capable_pin} \
  ] $clock_generator
 
   # Create instance: processor_system_reset, and set properties
@@ -751,7 +753,8 @@ proc create_root_design { parentCell } {
   connect_bd_intf_net -intf_net qdma_0_pcie_mgt [get_bd_intf_ports pci_express_x16] [get_bd_intf_pins bridge_to_host/pci_express_x16]
 
   # Create port connections
-  connect_bd_net -net bridge_to_host_ui_clk [get_bd_pins bridge_to_host/ui_clk] [get_bd_pins clock_generator/clk_in1]
+  #connect external clock
+  connect_bd_intf_net [get_bd_intf_ports USER_SI570_CLOCK] [get_bd_intf_pins clock_generator/CLK_IN1_D]
   connect_bd_net -net clock_generator_clk_out1 [get_bd_pins M_AXI_master_Inter/ACLK] [get_bd_pins M_AXI_master_Inter/M00_ACLK] [get_bd_pins M_AXI_master_Inter/M01_ACLK] [get_bd_pins M_AXI_master_Inter/S00_ACLK] [get_bd_pins S_AXI_data_control_coherent_Inter/ACLK] [get_bd_pins S_AXI_data_control_coherent_Inter/M00_ACLK] [get_bd_pins S_AXI_data_control_coherent_Inter/S00_ACLK] [get_bd_pins bitInfo_BRAM_Ctrl/s_axi_aclk] [get_bd_pins bridge_to_host/aclk] [get_bd_pins clock_generator/clk_out1] [get_bd_pins processor_system_reset/slowest_sync_clk]
   connect_bd_net -net clock_generator_locked [get_bd_pins clock_generator/locked] [get_bd_pins processor_system_reset/dcm_locked]
   connect_bd_net -net pcie_perstn_1 [get_bd_ports pcie_perstn] [get_bd_pins bridge_to_host/pcie_perstn] [get_bd_pins clock_generator/resetn] [get_bd_pins processor_system_reset/ext_reset_in]
