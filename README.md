@@ -9,10 +9,10 @@ Moreover, there are pre-built SD images for the current supported board families
 They are also available at [OmpSs@FPGA pre-built SD images](https://ompssatfpga.bsc.es/downloads/sd-images/).
 
 # Prerequisites
- - [Git Large File Storage](https://git-lfs.github.com/)
- - [Python 3.5 or later](https://www.python.org/)
+ - [Python 3.5 or later](https://www.python.org)
+ - [pip](https://pip.pypa.io)
  - Vendor backends:
-   - [Xilinx Vivado 2018.3 or later](https://www.xilinx.com/support/download/index.html/content/xilinx/en/downloadNav/vivado-design-tools.html)
+   - [Xilinx Vivado 2018.3 or later](https://www.xilinx.com/support/download/index.html/content/xilinx/en/downloadNav/vivado-design-tools/archive.html)
 
 #### Git Large File Storage
 
@@ -32,39 +32,46 @@ Current version supports Vivado 2018.3 onwards.
 
 # Installation
 
-* Clone AIT's repository
+You can use `pip` to easily install `ait` on your system:
 
-    From GitHub:
+    python3 -m pip install ait-bsc
 
-	  git clone https://github.com/bsc-pm-ompss-at-fpga/ait.git
+# Development
 
-	From our internal GitLab repository (BSC users only):
+1. Make sure you have the following packages installed on your system.
 
-	  git clone https://pm.bsc.es/gitlab/ompss-at-fpga/ait.git
+    * `git-lfs` ([Git Large File Storage](https://git-lfs.github.com))
+    * `setuptools >= 61.0` ([setuptools](https://setuptools.pypa.io/en/latest/userguide/quickstart.html#installation))
 
-* Enable Git LFS and install
+2. Clone AIT's repository
 
-	  cd ait
-	  git lfs install
-	  git lfs pull
-	  export AIT=/path/to/install/ait
-	  ./install.sh $AIT all
+    * From GitHub:
 
-* Add the installed binaries to your PATH
+          git clone https://github.com/bsc-pm-ompss-at-fpga/ait.git
 
-	  export PATH=$AIT:$PATH
+	* From our internal GitLab repository (BSC users only):
 
-This will install AIT for all the vendor backends available and all the boards supported. If you want to make a lighter installation, with fewer vendors, you can change the arguments passed to `install.sh`:
+	      git clone https://pm.bsc.es/gitlab/ompss-at-fpga/ait.git
 
-	USAGE:  ./install.sh <prefix> <backend>
-  	<prefix> path where the AIT files will be installed
-  	<backend> supported values: all, xilinx
+3. Enable Git LFS and install
+
+	   cd ait
+	   git lfs install
+	   git lfs pull
+	   export AIT_HOME="/path/to/install/ait"
+	   export DEB_PYTHON_INSTALL_LAYOUT=deb_system
+	   python3 -m pip install . -t $AIT_HOME
+
+4. Add the installed binaries to your PATH
+
+	   export PATH=$AIT_HOME/bin:$PATH
+	   export PYTHONPATH=$AIT_HOME:$PYTHONPATH
 
 # Tests
 
 #### Style testing
 
-The python code follows pycodestyle which is verified using the `pycodestyle` tool (can be installed with `pip install pycodestyle`).
+The python code follows pycodestyle which is verified using the `pycodestyle` tool (can be installed with `python3 -m pip install pycodestyle`).
 To check the current source code just execute `pycodestyle`.
 
 #### Unit testing
