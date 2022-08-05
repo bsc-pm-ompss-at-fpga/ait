@@ -148,7 +148,7 @@ def run_step(project_args):
     msg.info('Synthesizing ' + str(num_accs) + ' accelerator' + ('s' if num_accs > 1 else ''))
 
     # Load used resources by hwruntime
-    used_resources = json.load(open(ait_backend_path + '/IPs/hwruntime/' + args.hwruntime + '/resource_utilization.json'))
+    used_resources = json.load(open(ait_backend_path + '/IPs/hwruntime/' + args.hwruntime + '/' + args.hwruntime + '_resource_utilization.json'))
     available_resources = dict()
 
     for acc in range(0, num_accs):

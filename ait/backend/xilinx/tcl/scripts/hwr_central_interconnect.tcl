@@ -19,7 +19,7 @@
 #------------------------------------------------------------------------#
 
 # Create interconnect hierarchy to connect with accelerators
-if {$extended_hwruntime} {
+if {$advanced_hwruntime} {
     # The extra masters redirect all cmdout_in and lock_in transfers from acc creators
     create_inStream_Inter_tree $pi/inS_common_Inter $num_common_hwruntime_intf [expr $num_acc_no_creators+1]
     # spawn_out + taskwait_out + cmdin_out and lock_out which are collapsed in the same master
@@ -56,7 +56,7 @@ for {set i 0} {$i < $ninter} {incr i} {
         ] [get_bd_cell $pi/inS_common_Inter_lvl0_$i]
     }
 }
-if {$extended_hwruntime} {
+if {$advanced_hwruntime} {
     set ninter [expr int(ceil($num_acc_creators/16.))]
     for {set i 0} {$i < $ninter} {incr i} {
         set_property -dict [list \
@@ -70,7 +70,7 @@ if {$extended_hwruntime} {
     }
 }
 
-if {$extended_hwruntime} {
+if {$advanced_hwruntime} {
     if {$max_level_ext == 0} {
         connect_bd_intf_net [get_bd_intf_pins $pi/inS_common_Inter_lvl0_0/S00_AXIS] [get_bd_intf_pins $pi/inS_ext_Inter_lvl0_0/M00_AXIS]
         connect_bd_intf_net [get_bd_intf_pins $pi/spawn_in] [get_bd_intf_pins $pi/inS_ext_Inter_lvl0_0/M01_AXIS]
@@ -132,15 +132,17 @@ for {set i 0} {$i < $num_accs} {incr i} {
         lappend config_list CONFIG.M${intf_i}_AXIS_BASETDEST [format 0x%08X $i] CONFIG.M${intf_i}_AXIS_HIGHTDEST [format 0x%08X $i]
     }
 }
-if {$extended_hwruntime} {
+if {$advanced_hwruntime} {
     set_property -dict $config_list [get_bd_cell $po/outS_common_Inter_lvl0_${prev_inter_i}]
 }
 
 if {[expr $interconRegSlice_hwruntime || $interconRegSlice_all]} {
     set inStream_interconnects [get_bd_cells $pi/inS_common_Inter_lvl0_*]
-    lappend inStream_interconnects [get_bd_cells $pi/inS_ext_Inter_lvl0_*]
     set outStream_interconnects [get_bd_cells $po/outS_common_Inter_lvl0_*]
+if {$advanced_hwruntime} {
+    lappend inStream_interconnects [get_bd_cells $pi/inS_ext_Inter_lvl0_*]
     lappend outStream_interconnects [get_bd_cells $po/outS_ext_Inter_lvl0_*]
+}
 
     foreach inter $inStream_interconnects {
         for {set i 0} {$i < [get_property CONFIG.NUM_MI $inter]} {incr i} {

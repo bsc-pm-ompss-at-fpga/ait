@@ -20,7 +20,7 @@
 
 create_inStream_Inter_tree $pi/inS_common_Inter $num_common_hwruntime_intf $num_accs
 set max_level_common [create_outStream_Inter_tree $po/outS_common_Inter $num_common_hwruntime_intf $num_accs]
-if {$extended_hwruntime} {
+if {$advanced_hwruntime} {
     # spawn + taskwait
     create_inStream_Inter_tree $pi/inS_ext_Inter 2 $num_acc_creators
     set max_level_ext [create_outStream_Inter_tree $po/outS_ext_Inter 2 $num_acc_creators]
@@ -50,7 +50,7 @@ for {set i 0} {$i < $ninter} {incr i} {
     }
 }
 
-if {$extended_hwruntime} {
+if {$advanced_hwruntime} {
     set ninter [expr int(ceil($num_acc_creators/16.))]
     for {set i 0} {$i < $ninter} {incr i} {
         set_property -dict [list \
@@ -117,7 +117,7 @@ for {set i 0} {$i < $num_accs} {incr i} {
     }
 }
 
-if {$extended_hwruntime} {
+if {$advanced_hwruntime} {
     if {$max_level_ext == 0} {
         connect_bd_intf_net [get_bd_intf_pins $pi/spawn_in] [get_bd_intf_pins $pi/inS_ext_Inter_lvl0_0/M00_AXIS]
         connect_bd_intf_net [get_bd_intf_pins $pi/taskwait_in] [get_bd_intf_pins $pi/inS_ext_Inter_lvl0_0/M01_AXIS]
@@ -150,9 +150,11 @@ if {$max_level_common == 0} {
 
 if {[expr $interconRegSlice_hwruntime || $interconRegSlice_all]} {
     set inStream_interconnects [get_bd_cells $pi/inS_common_Inter_lvl0_*]
-    lappend inStream_interconnects [get_bd_cells $pi/inS_ext_Inter_lvl0_*]
     set outStream_interconnects [get_bd_cells $po/outS_common_Inter_lvl0_*]
-    lappend outStream_interconnects [get_bd_cells $po/outS_ext_Inter_lvl0_*]
+    if {$advanced_hwruntime} {
+        lappend inStream_interconnects [get_bd_cells $pi/inS_ext_Inter_lvl0_*]
+        lappend outStream_interconnects [get_bd_cells $po/outS_ext_Inter_lvl0_*]
+    }
 
     foreach inter $inStream_interconnects {
         for {set i 0} {$i < [get_property CONFIG.NUM_MI $inter]} {incr i} {

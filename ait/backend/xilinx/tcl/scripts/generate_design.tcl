@@ -59,7 +59,7 @@ proc setAndGetFreq {targetFreq} {
 # Returns base frequency used to feed the clock generator
 proc getBaseFreq {} {
 
-    if {[llength [get_bd_pins clock_generator/clk_in1]] > 0} {
+    if {[llength [get_bd_pins -quiet clock_generator/clk_in1]] > 0} {
         # Using single pin clocks
         set baseFreq [get_property CONFIG.FREQ_HZ [get_bd_pins clock_generator/clk_in1]]
     } else {
@@ -569,7 +569,7 @@ set bd_addr_segments [list \
     [dict create name cmdOutQueue bd_seg_name Hardware_Runtime/cmdOutQueue_BRAM_Ctrl/S_AXI/Mem0 size [expr $cmdOutSubqueue_len*$num_accs*8]] \
     [dict create name hwruntime_rst bd_seg_name Hardware_Runtime/hwruntime_rst/S_AXI/Reg size 4096] \
 ]
-if {$extended_hwruntime && $enable_spawn_queues} {
+if {$advanced_hwruntime && $enable_spawn_queues} {
     lappend bd_addr_segments [dict create name spawnInQueue bd_seg_name Hardware_Runtime/spawnInQueue_BRAM_Ctrl/S_AXI/Mem0 size [expr $spawnInQueue_len*8]]
     lappend bd_addr_segments [dict create name spawnOutQueue bd_seg_name Hardware_Runtime/spawnOutQueue_BRAM_Ctrl/S_AXI/Mem0 size [expr $spawnOutQueue_len*8]]
 } else {
@@ -584,7 +584,7 @@ set bd_addr_segments [lsort -decreasing -command comp_bd_addr_seg $bd_addr_segme
 set addr_hwruntime_spawnInQueue 0x0000000000000000
 set addr_hwruntime_spawnOutQueue 0x0000000000000000
 set addr_hwcounter 0x0000000000000000
-if {!$extended_hwruntime || !$enable_spawn_queues} {
+if {!$advanced_hwruntime || !$enable_spawn_queues} {
     set spawnInQueue_len 0
     set spawnOutQueue_len 0
 }
@@ -721,17 +721,15 @@ if {[file exists $script_path/userPreDesign.tcl]} {
 
 getInterfaceOccupation
 
-if {$hwruntime eq "som"} {
+if {$hwruntime eq "fom"} {
+    variable name_hwruntime Fast_OmpSs_Manager
+} elseif {$hwruntime eq "som"} {
     variable name_hwruntime Smart_OmpSs_Manager
 } elseif {$hwruntime eq "pom"} {
     variable name_hwruntime Picos_OmpSs_Manager
 }
 
-if {$extended_hwruntime} {
-    variable hwruntime_template tcl/templates/hwruntime/$hwruntime/extended/$name_hwruntime.tcl
-} else {
-    variable hwruntime_template tcl/templates/hwruntime/$hwruntime/$name_hwruntime.tcl
-}
+variable hwruntime_template tcl/templates/hwruntime/$hwruntime/$name_hwruntime.tcl
 
 # Add OmpSs Manager template
 if {[catch {source -notrace $hwruntime_template}]} {
@@ -754,7 +752,7 @@ set_property -dict [list CONFIG.Write_Depth_A [expr $cmdInSubqueue_len*$hwruntim
 set_property -dict [list CONFIG.Write_Depth_A [expr $cmdOutSubqueue_len*$hwruntime_max_accs] CONFIG.Write_Width_B {32} CONFIG.Read_Width_B {32}] [get_bd_cells Hardware_Runtime/cmdOutQueue]
 set_property -dict [list CONFIG.MAX_ACCS $hwruntime_max_accs] [get_bd_cells Hardware_Runtime/$name_hwruntime]
 
-if {$extended_hwruntime} {
+if {$advanced_hwruntime} {
     set hwruntime_max_acc_creators [expr max($num_acc_creators, 2)]
     set_property -dict [list CONFIG.MAX_ACC_CREATORS $hwruntime_max_acc_creators CONFIG.ENABLE_SPAWN_QUEUES $enable_spawn_queues] [get_bd_cells Hardware_Runtime/$name_hwruntime]
     if {$enable_spawn_queues} {
@@ -799,7 +797,7 @@ for {set i 0} {$i < $num_accs} {incr i} {
 
 create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 $pi/cmdout_in
 create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 $po/cmdin_out
-if {$extended_hwruntime} {
+if {$advanced_hwruntime} {
     create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 $pi/spawn_in
     create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 $pi/taskwait_in
     create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 $po/spawn_out
@@ -828,7 +826,7 @@ move_bd_cells [get_bd_cells Hardware_Runtime] [get_bd_cells $po]
 
 connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/$name_hwruntime/cmdout_in] [get_bd_intf_pins Hardware_Runtime/$pi/cmdout_in]
 connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/$name_hwruntime/cmdin_out] [get_bd_intf_pins Hardware_Runtime/$po/cmdin_out]
-if {$extended_hwruntime} {
+if {$advanced_hwruntime} {
     connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/$name_hwruntime/spawn_in] [get_bd_intf_pins Hardware_Runtime/$pi/spawn_in]
     connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/$name_hwruntime/spawn_out] [get_bd_intf_pins Hardware_Runtime/$po/spawn_out]
     connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/$name_hwruntime/taskwait_in] [get_bd_intf_pins Hardware_Runtime/$pi/taskwait_in]
@@ -1260,7 +1258,7 @@ foreach bd_addr_seg $bd_addr_segments {
     assign_bd_address [get_bd_addr_segs $bd_seg_name] -range $range -offset $addr
 }
 
-if {$extended_hwruntime} {
+if {$advanced_hwruntime} {
     set bitmap_bitInfo [format 0x%08x [expr $bitmap_bitInfo | 0x1<<7]]
 }
 

@@ -78,7 +78,7 @@ def get_accelerators(project_path):
     num_accs = 0
     num_instances = 0
     num_acc_creators = 0
-    args.extended_hwruntime = False  # Can't be enabled if no accelerator requires it
+    args.advanced_hwruntime = False  # Can't be enabled if no accelerator requires it
     args.lock_hwruntime = False  # Will not be enabled if no accelerator requires it
 
     for file_ in sorted(glob.glob(os.getcwd() + '/ait_*.json')):
@@ -103,7 +103,10 @@ def get_accelerators(project_path):
 
             # Check if the acc is a task creator
             if acc.task_creation:
-                args.extended_hwruntime = True
+                if args.hwruntime == 'fom':
+                    msg.error('Using advanced hwruntime features not present in FOM')
+
+                args.advanced_hwruntime = True
                 num_acc_creators += acc.num_instances
                 accs.insert(0, acc)
             else:

@@ -140,7 +140,7 @@ def generate_Vivado_variables_tcl():
     vivado_project_variables += '\n' \
                                 + '# HW runtime variables\n' \
                                 + 'variable hwruntime ' + str(args.hwruntime) + '\n' \
-                                + 'variable extended_hwruntime ' + str(args.extended_hwruntime) + '\n' \
+                                + 'variable advanced_hwruntime ' + str(args.advanced_hwruntime) + '\n' \
                                 + 'variable lock_hwruntime ' + str(args.lock_hwruntime) + '\n' \
                                 + 'variable cmdInSubqueue_len ' + str(args.cmdin_subqueue_len) + '\n' \
                                 + 'variable cmdOutSubqueue_len ' + str(args.cmdout_subqueue_len) + '\n' \
@@ -332,6 +332,11 @@ def run_step(project_args):
         shutil.copy2(args.user_post_design, project_backend_path + '/tcl/scripts/userPostDesign.tcl')
     elif args.user_post_design:
         msg.error('User POST design TCL script not found: ' + args.user_post_design)
+
+    if not args.advanced_hwruntime and (args.hwruntime == 'som' or args.hwruntime == 'pom'):
+        msg.info('No use of hardware runtime advanced features detected. Defaulting to FOM')
+        args.hwruntime = 'fom'
+        args.advanced_hwruntime = False
 
     # Generate tcl file with project variables
     generate_Vivado_variables_tcl()
