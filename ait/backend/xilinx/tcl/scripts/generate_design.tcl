@@ -100,6 +100,19 @@ proc generateWrapper {} {
 }
 
 ## Misc procedures
+# Returns the binary representation of $i
+# width determines the length of the returned string with 0-padding, must be always bigger or equal to the width of i
+proc dec2bin {i width} {
+	set res {}
+	while {$i > 0} {
+		set res [expr $i%2]$res
+		set i [expr $i/2]
+	}
+	if {$res eq {}} {set res 0}
+
+	set res [string repeat 0 [expr $width - [string length $res]]]$res
+	return $res
+}
 
 # Converts an ascii string to a hex string of 32-bit values separated by \n
 proc ascii2hex {str} {
@@ -834,6 +847,8 @@ save_bd_design
 ############# Start Block Design generation ############
 #### User IPs
 set accID 0
+set accIDWidth [expr max(int(ceil(log($num_accs)/log(2))), 1)]
+set axi_ports []
 
 foreach acc $accs {
     lassign [split $acc ":"] accHash accNumInstances accName instanceNr
@@ -858,36 +873,54 @@ foreach acc $accs {
         connectClock [get_bd_pins ${accName}_$j/aclk]
         connect_bd_net [get_bd_pins ${accName}_$j/managed_aresetn] [get_bd_pins $name_ManagedRst]
 
-        # If available, forward the outPort
-        if {[get_bd_pins -quiet ${accName}_$j/$accName_long/mcxx_outPort_*] ne ""} {
-            # Create and connect the hsToStreamAdapter
-            create_bd_cell -type module -reference hsToStreamAdapter ${accName}_$j/Adapter_outStream
-            set_property -dict [list CONFIG.ACCID_WIDTH [expr max(int(ceil(log($num_accs)/log(2))), 1)]] [get_bd_cells ${accName}_$j/Adapter_outStream]
-            connect_bd_net [get_bd_pins ${accName}_$j/Adapter_outStream/in_hs_ap_vld] [get_bd_pins ${accName}_$j/$accName_long/mcxx_outPort_V_ap_vld]
-            connect_bd_net [get_bd_pins ${accName}_$j/Adapter_outStream/in_hs_ap_ack] [get_bd_pins ${accName}_$j/$accName_long/mcxx_outPort_V_ap_ack]
-            connect_bd_net [get_bd_pins ${accName}_$j/Adapter_outStream/in_hs] [get_bd_pins ${accName}_$j/$accName_long/mcxx_outPort_V]
-            connect_bd_net [get_bd_pins ${accName}_$j/Adapter_outStream/aclk] [get_bd_pins ${accName}_$j/aclk]
-            connect_bd_net [get_bd_pins ${accName}_$j/Adapter_outStream/aresetn] [get_bd_pins ${accName}_$j/managed_aresetn]
-            connect_bd_net [get_bd_pins ${accName}_$j/Adapter_outStream/accID] [get_bd_pins ${accName}_$j/accID/dout]
+        # Check if acc has already stream ports instead of handshake
+        if {[get_bd_intf_pins -quiet ${accName}_$j/$accName_long/mcxx_outPort] ne ""} {
+            # If no hsToStreamAdapter is used, we need to insert accID to the TID AXI-Stream signal
+            set tidSubsetConv [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_subset_converter ${accName}_${j}/TID_subset_converter]
+            connect_bd_intf [get_bd_intf_pins ${accName}_$j/$accName_long/mcxx_outPort] [get_bd_intf_pins $tidSubsetConv/S_AXIS]
+            connect_bd_net [get_bd_pins ${accName}_$j/aclk] [get_bd_pins $tidSubsetConv/aclk]
+            connect_bd_net [get_bd_pins ${accName}_$j/managed_aresetn] [get_bd_pins $tidSubsetConv/aresetn]
+
+            # Format accID as a 4-bit value
+            set_property -dict [list CONFIG.M_TID_WIDTH.VALUE_SRC USER] $tidSubsetConv
+            set_property -dict [list CONFIG.M_TID_WIDTH $accIDWidth CONFIG.TID_REMAP "$accIDWidth'b[dec2bin $accID $accIDWidth]"] $tidSubsetConv
+
+            set outStreamAccPort [get_bd_intf_pins $tidSubsetConv/M_AXIS]
+        } else {
+            # If available, forward the outPort
+            if {[get_bd_pins -quiet ${accName}_$j/$accName_long/mcxx_outPort_*] ne ""} {
+                # Create and connect the hsToStreamAdapter
+                create_bd_cell -type module -reference hsToStreamAdapter ${accName}_$j/Adapter_outStream
+                set_property -dict [list CONFIG.TID_WIDTH [expr max(int(ceil(log($num_accs)/log(2))), 1)] CONFIG.ACCID $accID] [get_bd_cells ${accName}_$j/Adapter_outStream]
+                connect_bd_net [get_bd_pins ${accName}_$j/Adapter_outStream/in_hs_ap_vld] [get_bd_pins ${accName}_$j/$accName_long/mcxx_outPort_V_ap_vld]
+                connect_bd_net [get_bd_pins ${accName}_$j/Adapter_outStream/in_hs_ap_ack] [get_bd_pins ${accName}_$j/$accName_long/mcxx_outPort_V_ap_ack]
+                connect_bd_net [get_bd_pins ${accName}_$j/Adapter_outStream/in_hs] [get_bd_pins ${accName}_$j/$accName_long/mcxx_outPort_V]
+                connect_bd_net [get_bd_pins ${accName}_$j/Adapter_outStream/aclk] [get_bd_pins ${accName}_$j/aclk]
+                connect_bd_net [get_bd_pins ${accName}_$j/Adapter_outStream/aresetn] [get_bd_pins ${accName}_$j/managed_aresetn]
+            }
+            set outStreamAccPort [get_bd_intf_pins ${accName}_$j/Adapter_outStream/outStream]
         }
 
         # If available, forward the inPort
-        if {[get_bd_pins -quiet ${accName}_$j/$accName_long/mcxx_inPort_*] ne ""} {
-            # Create and connect the streamToHsAdapter
-            create_bd_cell -type module -reference streamToHsAdapter ${accName}_$j/Adapter_inStream
-            connect_bd_net [get_bd_pins ${accName}_$j/Adapter_inStream/out_hs_ap_vld] [get_bd_pins ${accName}_$j/$accName_long/mcxx_inPort_V_V_ap_vld]
-            connect_bd_net [get_bd_pins ${accName}_$j/Adapter_inStream/out_hs_ap_ack] [get_bd_pins ${accName}_$j/$accName_long/mcxx_inPort_V_V_ap_ack]
-            connect_bd_net [get_bd_pins ${accName}_$j/Adapter_inStream/out_hs] [get_bd_pins ${accName}_$j/$accName_long/mcxx_inPort_V_V]
-            connect_bd_net [get_bd_pins ${accName}_$j/Adapter_inStream/aclk] [get_bd_pins ${accName}_$j/aclk]
-            connect_bd_net [get_bd_pins ${accName}_$j/Adapter_inStream/aresetn] [get_bd_pins ${accName}_$j/managed_aresetn]
+        if {[get_bd_intf_pins -quiet ${accName}_$j/$accName_long/mcxx_inPort_V_V] ne ""} {
+            set inStreamAccPort [get_bd_intf_pins ${accName}_$j/$accName_long/mcxx_inPort_V_V]
+        } else {
+            if {[get_bd_pins -quiet ${accName}_$j/$accName_long/mcxx_inPort_*] ne ""} {
+                # Create and connect the streamToHsAdapter
+                create_bd_cell -type module -reference streamToHsAdapter ${accName}_$j/Adapter_inStream
+                connect_bd_net [get_bd_pins ${accName}_$j/Adapter_inStream/out_hs_ap_vld] [get_bd_pins ${accName}_$j/$accName_long/mcxx_inPort_V_V_ap_vld]
+                connect_bd_net [get_bd_pins ${accName}_$j/Adapter_inStream/out_hs_ap_ack] [get_bd_pins ${accName}_$j/$accName_long/mcxx_inPort_V_V_ap_ack]
+                connect_bd_net [get_bd_pins ${accName}_$j/Adapter_inStream/out_hs] [get_bd_pins ${accName}_$j/$accName_long/mcxx_inPort_V_V]
+                connect_bd_net [get_bd_pins ${accName}_$j/Adapter_inStream/aclk] [get_bd_pins ${accName}_$j/aclk]
+                connect_bd_net [get_bd_pins ${accName}_$j/Adapter_inStream/aresetn] [get_bd_pins ${accName}_$j/managed_aresetn]
+            }
+            set inStreamAccPort [get_bd_intf_pins ${accName}_$j/Adapter_inStream/inStream]
         }
 
-        set inStreamAccPort [get_bd_intf_pins ${accName}_$j/Adapter_inStream/inStream]
-        set outStreamAccPort [get_bd_intf_pins ${accName}_$j/Adapter_outStream/outStream]
 
         # Get list of M_AXI interfaces
         # NOTE: Only handle AXI interfaces generated by mcxx, which start with the "mcxx_" prefix
-        set list_acc_AXIPorts [get_bd_intf_pins ${accName}_$j/$accName_long/m_axi_mcxx_*]
+        set list_acc_AXIPorts [get_bd_intf_pins -quiet ${accName}_$j/$accName_long/m_axi_mcxx_*]
 
         # Store each M_AXI port to dictionary
         foreach acc_AXIPort $list_acc_AXIPorts {
@@ -1064,8 +1097,6 @@ foreach acc $accs {
         connect_bd_intf_net -boundary_type upper [get_bd_intf_pins ${accName}_${j}/outStream] [get_bd_intf_pins Hardware_Runtime/$pi/S${accID}_AXIS]
         connect_bd_intf_net -boundary_type upper [get_bd_intf_pins ${accName}_${j}/inStream] [get_bd_intf_pins Hardware_Runtime/$po/M${accID}_AXIS]
 
-        set_property -dict [list CONFIG.CONST_VAL $accID CONFIG.CONST_WIDTH [expr max(int(ceil(log($num_accs)/log(2))), 1)]] [get_bd_cells ${accName}_$j/accID]
-
         regenerate_bd_layout -hierarchy [get_bd_cell ${accName}_$j]
 
         save_bd_design
@@ -1150,7 +1181,7 @@ if {($debugInterfaces eq "AXI") || ($debugInterfaces eq "both")} {
     # Create .debuginterfaces.txt file
     set debugInterfaces_file [open ../${name_Project}.debuginterfaces.txt "w"]
 
-    set axi_pin_list [get_bd_intf_pins -hierarchical -filter {PATH =~ *_ompss*} -of_objects [get_bd_cells -hierarchical -filter {NAME =~ *_ompss}]]
+    set axi_pin_list [get_bd_intf_pins -quiet -hierarchical -filter {VLNV =~ xilinx.com:interface:aximm_rtl:* && NAME =~ m_axi_mcxx*} -of_objects [get_bd_cells -hierarchical -filter {NAME =~ *_ompss}]]
     foreach axi_pin $axi_pin_list {
         set_property HDL_ATTRIBUTE.DEBUG true [get_bd_intf_nets [get_bd_intf_nets -of_objects [get_bd_intf_pins $axi_pin]]]
         apply_bd_automation -rule xilinx.com:bd_rule:debug -dict [list [get_bd_intf_nets [get_bd_intf_nets -of_objects [get_bd_intf_pins $axi_pin]]] {AXI_R_ADDRESS "Data and Trigger" AXI_R_DATA "Data and Trigger" AXI_W_ADDRESS "Data and Trigger" AXI_W_DATA "Data and Trigger" AXI_W_RESPONSE "Data and Trigger" CLK_SRC clock_generator/clk_out1 SYSTEM_ILA "Auto" APC_EN "0" }]
@@ -1167,7 +1198,9 @@ if {($debugInterfaces eq "stream") || ($debugInterfaces eq "both")} {
     # Open debuginterfaces.txt file
     set debugInterfaces_file [open ../${name_Project}.debuginterfaces.txt "a"]
 
-    set stream_pin_list [get_bd_intf_pins -hierarchical -filter {VLNV =~ xilinx.com:interface:axis_rtl:* && PATH =~ *Adapter*Stream*} -of_objects [get_bd_cells -hierarchical -filter {VLNV =~ xilinx.com:module_ref:hsToStreamAdapter:* || VLNV =~ xilinx.com:module_ref:streamToHsAdapter:*}]]
+    set stream_pin_list [get_bd_intf_pins -quiet -hierarchical -filter {VLNV =~ xilinx.com:interface:axis_rtl:*} -of_objects [get_bd_cells -hierarchical -filter {VLNV =~ xilinx.com:module_ref:hsToStreamAdapter:* || VLNV =~ xilinx.com:module_ref:streamToHsAdapter:*}]]
+    lappend stream_pin_list [get_bd_intf_pins -quiet -hierarchical -filter {VLNV =~ xilinx.com:interface:axis_rtl:* && NAME =~ mcxx_inPort*} -of_objects [get_bd_cells -hierarchical -filter {NAME =~ *_ompss}]]
+    lappend stream_pin_list [get_bd_intf_pins -quiet -hierarchical -filter {VLNV =~ xilinx.com:interface:axis_rtl:* && NAME =~ M_AXIS} -of_objects [get_bd_cells -hierarchical -filter {NAME =~ TID_subset_converter}]]
     foreach stream_pin $stream_pin_list {
         set_property HDL_ATTRIBUTE.DEBUG true [get_bd_intf_nets [get_bd_intf_nets -of_objects [get_bd_intf_pins $stream_pin]]]
         apply_bd_automation -rule xilinx.com:bd_rule:debug -dict [list [get_bd_intf_nets [get_bd_intf_nets -of_objects [get_bd_intf_pins $stream_pin]]] {AXIS_SIGNALS "Data and Trigger" CLK_SRC clock_generator/clk_out1 SYSTEM_ILA "Auto" APC_EN "0" }]
@@ -1336,14 +1369,14 @@ if {[file isdirectory ./board/$board/constraints/]} {
 # Delete floorplanning constrains if requested
 # We should only keep board related constraints
 if {($floorplanning_constr ne "static") && ($floorplanning_constr ne "all")} {
-    remove_files -fileset constrs_1 [get_files static_floorplan.xdc]
+    remove_files -fileset constrs_1 [get_files -quiet static_floorplan.xdc]
 }
 
 if {($floorplanning_constr ne "acc") && ($floorplanning_constr ne "all")} {
-    remove_files -fileset constrs_1 [get_files acc_floorplan_common.xdc]
+    remove_files -fileset constrs_1 [get_files -quiet acc_floorplan_common.xdc]
 }
 
-reorder_files -fileset constrs_1 -front [get_files create_pblocks.xdc]
+reorder_files -fileset constrs_1 -front [get_files -quiet create_pblocks.xdc]
 
 # If available, execute the user defined post-design tcl script
 if {[file exists $script_path/userPostDesign.tcl]} {

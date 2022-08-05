@@ -22,12 +22,12 @@
 
 module hsToStreamAdapter #(
     parameter USE_BUFFER = 0,
-    parameter ACCID_WIDTH = 4
+    parameter TID_WIDTH = 4,
+    parameter ACCID = 0
 )
 (
     input       aclk,
     input       aresetn,
-    input [ACCID_WIDTH-1:0] accID,
 
     input [67:0] in_hs,
     input        in_hs_ap_vld,
@@ -35,7 +35,7 @@ module hsToStreamAdapter #(
 
     output [63:0] outStream_tdata,
     output [2:0]  outStream_tdest,
-    output [ACCID_WIDTH-1:0]  outStream_tid,
+    output [TID_WIDTH-1:0]  outStream_tid,
     output        outStream_tlast,
     output        outStream_tvalid,
     input         outStream_tready
@@ -52,7 +52,7 @@ module hsToStreamAdapter #(
     reg buf_last;
     reg ack;
 
-    assign outStream_tid = accID;
+    assign outStream_tid = ACCID;
     assign outStream_tdata = buf_data;
     assign outStream_tlast = buf_last;
     assign outStream_tdest = buf_dest;
@@ -92,7 +92,7 @@ module hsToStreamAdapter #(
 
     end else begin
 
-    assign outStream_tid = accID;
+    assign outStream_tid = ACCID;
     assign outStream_tdata = in_hs[67:4];
     assign outStream_tlast = in_hs[0];
     assign outStream_tdest = in_hs[3:1];

@@ -184,7 +184,7 @@ def generate_Vivado_variables_tcl():
                                      + f'*/{accBlock}/Adapter_outStream '
                                      + f'*/{accBlock}/Adapter_inStream '
                                      + f'*/{accBlock}/Adapter_instr '
-                                     + f'*/{accBlock}/accID '
+                                     + f'*/{accBlock}/TID_subset_converter '
                                      + f'*/{accBlock}/{acc.name}_ompss'
                                      + '}]\n')
         accConstrFiles.close()

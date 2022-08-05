@@ -147,7 +147,6 @@ proc create_hier_cell_dummy_acc_1 { parentCell nameHier } {
   create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 outStream
 
   # Create pins
-  create_bd_pin -dir I -from 7 -to 0 accID
   create_bd_pin -dir I ap_clk
   create_bd_pin -dir I ap_rst_n
 
@@ -197,13 +196,6 @@ proc create_hier_cell_dummy_acc { parentCell nameHier } {
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type rst managed_aresetn
 
-  # Create instance: accID, and set properties
-  set accID [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant accID ]
-  set_property -dict [ list \
-   CONFIG.CONST_VAL {0} \
-   CONFIG.CONST_WIDTH {8} \
- ] $accID
-
   # Create instance: dummy_acc
   create_hier_cell_dummy_acc_1 $hier_obj dummy_acc
 
@@ -212,7 +204,6 @@ proc create_hier_cell_dummy_acc { parentCell nameHier } {
   connect_bd_intf_net -intf_net inStream_1 [get_bd_intf_pins inStream] [get_bd_intf_pins dummy_acc/inStream]
 
   # Create port connections
-  connect_bd_net -net accID_dout [get_bd_pins accID/dout] [get_bd_pins dummy_acc/accID]
   connect_bd_net -net aclk_1 [get_bd_pins aclk] [get_bd_pins dummy_acc/ap_clk]
   connect_bd_net -net managed_aresetn_1 [get_bd_pins managed_aresetn] [get_bd_pins dummy_acc/ap_rst_n]
 
