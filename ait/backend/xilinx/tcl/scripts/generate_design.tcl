@@ -872,10 +872,10 @@ foreach acc $accs {
         connect_bd_net [get_bd_pins ${accName}_$j/managed_aresetn] [get_bd_pins $name_ManagedRst]
 
         # Check if acc has already stream ports instead of handshake
-        if {[get_bd_intf_pins -quiet ${accName}_$j/$accName_long/mcxx_outPort] ne ""} {
+        if {[get_bd_intf_pins -quiet ${accName}_$j/$accName_long/mcxx_outPort*] ne ""} {
             # If no hsToStreamAdapter is used, we need to insert accID to the TID AXI-Stream signal
             set tidSubsetConv [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_subset_converter ${accName}_${j}/TID_subset_converter]
-            connect_bd_intf [get_bd_intf_pins ${accName}_$j/$accName_long/mcxx_outPort] [get_bd_intf_pins $tidSubsetConv/S_AXIS]
+            connect_bd_intf [get_bd_intf_pins ${accName}_$j/$accName_long/mcxx_outPort*] [get_bd_intf_pins $tidSubsetConv/S_AXIS]
             connect_bd_net [get_bd_pins ${accName}_$j/aclk] [get_bd_pins $tidSubsetConv/aclk]
             connect_bd_net [get_bd_pins ${accName}_$j/managed_aresetn] [get_bd_pins $tidSubsetConv/aresetn]
 
@@ -886,13 +886,13 @@ foreach acc $accs {
             set outStreamAccPort [get_bd_intf_pins $tidSubsetConv/M_AXIS]
         } else {
             # If available, forward the outPort
-            if {[get_bd_pins -quiet ${accName}_$j/$accName_long/mcxx_outPort_*] ne ""} {
+            if {[get_bd_pins -quiet ${accName}_$j/$accName_long/mcxx_outPort*] ne ""} {
                 # Create and connect the hsToStreamAdapter
                 create_bd_cell -type module -reference hsToStreamAdapter ${accName}_$j/Adapter_outStream
                 set_property -dict [list CONFIG.TID_WIDTH [expr max(int(ceil(log($num_accs)/log(2))), 1)] CONFIG.ACCID $accID] [get_bd_cells ${accName}_$j/Adapter_outStream]
-                connect_bd_net [get_bd_pins ${accName}_$j/Adapter_outStream/in_hs_ap_vld] [get_bd_pins ${accName}_$j/$accName_long/mcxx_outPort_V_ap_vld]
-                connect_bd_net [get_bd_pins ${accName}_$j/Adapter_outStream/in_hs_ap_ack] [get_bd_pins ${accName}_$j/$accName_long/mcxx_outPort_V_ap_ack]
-                connect_bd_net [get_bd_pins ${accName}_$j/Adapter_outStream/in_hs] [get_bd_pins ${accName}_$j/$accName_long/mcxx_outPort_V]
+                connect_bd_net [get_bd_pins ${accName}_$j/Adapter_outStream/in_hs_ap_vld] [get_bd_pins ${accName}_$j/$accName_long/mcxx_outPort*_ap_vld]
+                connect_bd_net [get_bd_pins ${accName}_$j/Adapter_outStream/in_hs_ap_ack] [get_bd_pins ${accName}_$j/$accName_long/mcxx_outPort*_ap_ack]
+                connect_bd_net [get_bd_pins ${accName}_$j/Adapter_outStream/in_hs] [get_bd_pins -regexp ${accName}_$j/$accName_long/mcxx_outPort(_V)*?]
                 connect_bd_net [get_bd_pins ${accName}_$j/Adapter_outStream/aclk] [get_bd_pins ${accName}_$j/aclk]
                 connect_bd_net [get_bd_pins ${accName}_$j/Adapter_outStream/aresetn] [get_bd_pins ${accName}_$j/managed_aresetn]
             }
@@ -900,15 +900,15 @@ foreach acc $accs {
         }
 
         # If available, forward the inPort
-        if {[get_bd_intf_pins -quiet ${accName}_$j/$accName_long/mcxx_inPort_V_V] ne ""} {
-            set inStreamAccPort [get_bd_intf_pins ${accName}_$j/$accName_long/mcxx_inPort_V_V]
+        if {[get_bd_intf_pins -quiet ${accName}_$j/$accName_long/mcxx_inPort*] ne ""} {
+            set inStreamAccPort [get_bd_intf_pins ${accName}_$j/$accName_long/mcxx_inPort*]
         } else {
-            if {[get_bd_pins -quiet ${accName}_$j/$accName_long/mcxx_inPort_*] ne ""} {
+            if {[get_bd_pins -quiet ${accName}_$j/$accName_long/mcxx_inPort*] ne ""} {
                 # Create and connect the streamToHsAdapter
                 create_bd_cell -type module -reference streamToHsAdapter ${accName}_$j/Adapter_inStream
-                connect_bd_net [get_bd_pins ${accName}_$j/Adapter_inStream/out_hs_ap_vld] [get_bd_pins ${accName}_$j/$accName_long/mcxx_inPort_V_V_ap_vld]
-                connect_bd_net [get_bd_pins ${accName}_$j/Adapter_inStream/out_hs_ap_ack] [get_bd_pins ${accName}_$j/$accName_long/mcxx_inPort_V_V_ap_ack]
-                connect_bd_net [get_bd_pins ${accName}_$j/Adapter_inStream/out_hs] [get_bd_pins ${accName}_$j/$accName_long/mcxx_inPort_V_V]
+                connect_bd_net [get_bd_pins ${accName}_$j/Adapter_inStream/out_hs_ap_vld] [get_bd_pins ${accName}_$j/$accName_long/mcxx_inPort*_ap_vld]
+                connect_bd_net [get_bd_pins ${accName}_$j/Adapter_inStream/out_hs_ap_ack] [get_bd_pins ${accName}_$j/$accName_long/mcxx_inPort*_ap_ack]
+                connect_bd_net [get_bd_pins ${accName}_$j/Adapter_inStream/out_hs] [get_bd_pins -regexp ${accName}_$j/$accName_long/mcxx_inPort(_V)*?]
                 connect_bd_net [get_bd_pins ${accName}_$j/Adapter_inStream/aclk] [get_bd_pins ${accName}_$j/aclk]
                 connect_bd_net [get_bd_pins ${accName}_$j/Adapter_inStream/aresetn] [get_bd_pins ${accName}_$j/managed_aresetn]
             }

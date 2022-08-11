@@ -24,28 +24,50 @@ import distutils.spawn
 import os
 import subprocess
 
-from ait.backend.xilinx.info import MIN_VIVADO_HLS_VERSION, MIN_VIVADO_VERSION
+from ait.backend.xilinx.info import MIN_VITIS_HLS_VERSION, MIN_VIVADO_HLS_VERSION, MIN_VIVADO_VERSION
 from ait.frontend.utils import msg
 
 
 def check_vivado():
-    if not distutils.spawn.find_executable('vivado'):
+    if distutils.spawn.find_executable('vivado'):
+        vivado_version = str(subprocess.check_output(['vivado -version | head -n1 | sed "s/\(Vivado.\+v\)\(\([0-9]\|\.\)\+\).\+/\\2/"'], shell=True), 'utf-8').strip()
+        if vivado_version < MIN_VIVADO_VERSION:
+            msg.error('Installed Vivado version ({}) not supported (>= {})'.format(vivado_version, MIN_VIVADO_VERSION))
+    else:
         msg.error('vivado not found. Please set PATH correctly')
-
-    vivado_version = str(subprocess.check_output(['vivado -version | head -n1 | sed "s/\(Vivado.\+v\)\(\([0-9]\|\.\)\+\).\+/\\2/"'], shell=True), 'utf-8').strip()
-    if vivado_version < MIN_VIVADO_VERSION:
-        msg.error('Installed Vivado version ({}) not supported (>= {})'.format(vivado_version, MIN_VIVADO_VERSION))
 
     return True
 
 
-def check_vivado_hls():
-    if not distutils.spawn.find_executable('vivado_hls'):
-        msg.error('vivado_hls not found. Please set PATH correctly')
+def check_hls_tool():
+    if distutils.spawn.find_executable('vivado_hls'):
+        check_vivado_hls()
+        return 'vivado_hls'
+    elif distutils.spawn.find_executable('vitis_hls'):
+        check_vitis_hls()
+        return 'vitis_hls'
+    else:
+        msg.error('No HLS tool found. Please set PATH correctly')
 
-    vivado_hls_version = str(subprocess.check_output(['vivado_hls -version | head -n1 | sed "s/\(Vivado.\+v\)\(\([0-9]\|\.\)\+\).\+/\\2/"'], shell=True), 'utf-8').strip()
-    if vivado_hls_version < MIN_VIVADO_HLS_VERSION:
-        msg.error('Installed Vivado HLS version ({}) not supported (>= {})'.format(vivado_hls_version, MIN_VIVADO_HLS_VERSION))
+
+def check_vivado_hls():
+    if distutils.spawn.find_executable('vivado_hls'):
+        vivado_hls_version = str(subprocess.check_output(['vivado_hls -version | head -n1 | sed "s/\(Vivado.\+v\)\(\([0-9]\|\.\)\+\).\+/\\2/"'], shell=True), 'utf-8').strip()
+        if vivado_hls_version < MIN_VIVADO_HLS_VERSION:
+            msg.error('Installed Vivado HLS version ({}) not supported (>= {})'.format(vivado_hls_version, MIN_VIVADO_HLS_VERSION))
+    else:
+        msg.warning('vivado_hls not found. Please set PATH correctly')
+
+    return True
+
+
+def check_vitis_hls():
+    if distutils.spawn.find_executable('vitis_hls'):
+        vitis_hls_version = str(subprocess.check_output(['vitis_hls -version | head -n1 | sed "s/\(Vitis.\+v\)\(\([0-9]\|\.\)\+\).\+/\\2/"'], shell=True), 'utf-8').strip()
+        if vitis_hls_version < MIN_VITIS_HLS_VERSION:
+            msg.error('Installed Vitis HLS version ({}) not supported (>= {})'.format(vivado_hls_version, MIN_VITIS_HLS_VERSION))
+    else:
+        msg.error('vitis_hls not found. Please set PATH correctly')
 
     return True
 
