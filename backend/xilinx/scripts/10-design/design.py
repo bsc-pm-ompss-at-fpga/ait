@@ -196,6 +196,7 @@ def generate_Vivado_variables_tcl():
                                      + '[get_cells {'
                                      + f'*/{accBlock}/Adapter_outStream '
                                      + f'*/{accBlock}/Adapter_inStream '
+                                     + f'*/{accBlock}/Adapter_instr '
                                      + f'*/{accBlock}/accID '
                                      + f'*/{accBlock}/{acc.name}_ompss'
                                      + '}]\n')
@@ -311,7 +312,7 @@ def run_design_step(project_args):
     check_requirements()
 
     # Load accelerator placement info
-    load_acc_placement(accs, args)
+    load_acc_placement(accs[0:num_accs], args)
 
     # Remove old directories used on the design step
     shutil.rmtree(project_step_path, ignore_errors=True)

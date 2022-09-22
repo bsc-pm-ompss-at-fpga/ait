@@ -918,30 +918,8 @@ foreach acc $accs {
                         # Slice master ports will be connected later
                         lappend slicePorts [get_bd_intf_pins $axiRegSlice/M_AXI]
 
-                        # Create register slices for stream ports
-                        # slices are named axis_regSlice{in,out}_${orig_slr}_${dest_slr}
-                        # inStream slice
-                        set axis_regSlice_in [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_register_slice ${accName}_$j/axis_regSlice_in_${board_slr_master}_${slr}]
-                        set_property -dict [ list \
-                            CONFIG.REG_CONFIG {16} \
-                            ] $axis_regSlice_in
-                        connect_bd_intf_net $inStreamAccPort [get_bd_intf_pins $axis_regSlice_in/M_AXIS]
-                        connect_bd_net [get_bd_pins $axis_regSlice_in/aclk] [get_bd_pins ${accName}_$j/aclk]
-                        connect_bd_net [get_bd_pins $axis_regSlice_in/aresetn] [get_bd_pins ${accName}_$j/managed_aresetn]
-
-                        # outStream slice
-                        set axis_regSlice_out [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_register_slice ${accName}_$j/axis_regSlice_out_${slr}_${board_slr_master}]
-                        set_property -dict [ list \
-                            CONFIG.REG_CONFIG {16} \
-                            ] $axis_regSlice_out
-                        connect_bd_intf_net $outStreamAccPort [get_bd_intf_pins $axis_regSlice_out/S_AXIS]
-                        connect_bd_net [get_bd_pins $axis_regSlice_out/aclk] [get_bd_pins ${accName}_$j/aclk]
-                        connect_bd_net [get_bd_pins $axis_regSlice_out/aresetn] [get_bd_pins ${accName}_$j/managed_aresetn]
-
                         # Save ports to be connected with acc hierarchy
                         set listAccPorts $slicePorts
-                        set inStreamAccPort [get_bd_intf_pins $axis_regSlice_in/S_AXIS]
-                        set outStreamAccPort [get_bd_intf_pins $axis_regSlice_out/M_AXIS]
                         set hier_AXIPort $axiRegSlice/M_AXI
                     }
                 }
@@ -961,6 +939,40 @@ foreach acc $accs {
             connect_bd_intf_net [get_bd_intf_pins ${accName}_$j/$port_name] [get_bd_intf_pins $hier_AXIPort]
 
             lappend axi_ports ${accName}_$j/$port_name
+        }
+
+        if {($slr_slices eq "acc") || ($slr_slices eq "all")} {
+            if {!([dict exists $acc_placement $accHash] && ([llength [dict get $acc_placement $accHash]] > $j))} {
+                # No placement info is provided for this instance
+                aitWarning "No placement info provided for instance $j of ${accName}. Slices will not be created"
+            } else {
+                set slr [lindex [dict get $acc_placement $accHash] $j]
+
+                if {$slr != $board_slr_master} {
+                    # Create register slices for stream ports
+                    # slices are named axis_regSlice{in,out}_${orig_slr}_${dest_slr}
+                    # inStream slice
+                    set axis_regSlice_in [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_register_slice ${accName}_$j/axis_regSlice_in_${board_slr_master}_${slr}]
+                    set_property -dict [ list \
+                        CONFIG.REG_CONFIG {16} \
+                        ] $axis_regSlice_in
+                    connect_bd_intf_net $inStreamAccPort [get_bd_intf_pins $axis_regSlice_in/M_AXIS]
+                    connect_bd_net [get_bd_pins $axis_regSlice_in/aclk] [get_bd_pins ${accName}_$j/aclk]
+                    connect_bd_net [get_bd_pins $axis_regSlice_in/aresetn] [get_bd_pins ${accName}_$j/managed_aresetn]
+
+                    # outStream slice
+                    set axis_regSlice_out [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_register_slice ${accName}_$j/axis_regSlice_out_${slr}_${board_slr_master}]
+                    set_property -dict [ list \
+                        CONFIG.REG_CONFIG {16} \
+                        ] $axis_regSlice_out
+                    connect_bd_intf_net $outStreamAccPort [get_bd_intf_pins $axis_regSlice_out/S_AXIS]
+                    connect_bd_net [get_bd_pins $axis_regSlice_out/aclk] [get_bd_pins ${accName}_$j/aclk]
+                    connect_bd_net [get_bd_pins $axis_regSlice_out/aresetn] [get_bd_pins ${accName}_$j/managed_aresetn]
+
+                    set inStreamAccPort [get_bd_intf_pins $axis_regSlice_in/S_AXIS]
+                    set outStreamAccPort [get_bd_intf_pins $axis_regSlice_out/M_AXIS]
+                }
+            }
         }
 
         connect_bd_intf_net [get_bd_intf_pins ${accName}_$j/inStream] $inStreamAccPort
@@ -987,9 +999,43 @@ foreach acc $accs {
                 # Connect to hwcounter
                 connect_bd_net [get_bd_pins ${accName}_$j/hwinst_counter/Q] [get_bd_pins ${accName}_$j/Adapter_instr/hwcounter]
 
+                set instr_AXIPort [get_bd_intf_pins -quiet ${accName}_$j/Adapter_instr/m_axi* -filter {NAME =~ "*instr_buffer"}]
+
+                if {($slr_slices eq "acc") || ($slr_slices eq "all")} {
+                    if {!([dict exists $acc_placement $accHash] && ([llength [dict get $acc_placement $accHash]] > $j))} {
+                        # No placement info is provided for this instance
+                        aitWarning "No placement info provided for instance $j of ${accName}. Slices will not be created"
+                    } else {
+                        set slr [lindex [dict get $acc_placement $accHash] $j]
+
+                        if {$slr != $board_slr_master} {
+                            # If the acc is in a different SLR
+                            #   * Create register slices for instrumentation ports
+                            # Register slices are named instr_regSlice_slr_acc_${slr_orig}_${slr_dest}
+                            #   note that the slave side is close to the acc master axi port
+                            set axiRegSlice [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_register_slice ${accName}_$j/instr_regslice_slr_acc_${slr}_${board_slr_master}]
+                            set_property -dict [ list \
+                                CONFIG.REG_AR {15} \
+                                CONFIG.REG_AW {15} \
+                                CONFIG.REG_B {15} \
+                                CONFIG.REG_R {15} \
+                                CONFIG.REG_W {15} \
+                                CONFIG.USE_AUTOPIPELINING {1} \
+                                ] $axiRegSlice
+                            # Connect acc - slice
+                            connect_bd_intf_net [get_bd_intf_pins -quiet ${accName}_$j/Adapter_instr/m_axi* -filter {NAME =~ "*instr_buffer"}] [get_bd_intf_pins $axiRegSlice/S_AXI]
+                            connect_bd_net [get_bd_pins $axiRegSlice/aclk] [get_bd_pins ${accName}_$j/aclk]
+                            connect_bd_net [get_bd_pins $axiRegSlice/aresetn] [get_bd_pins ${accName}_$j/managed_aresetn]
+                            # Slice master ports will be connected later
+                            lappend slicePorts [get_bd_intf_pins $axiRegSlice/M_AXI]
+                            set instr_AXIPort $axiRegSlice/M_AXI
+                        }
+                    }
+                }
+
                 # Connect buffer port
                 create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 ${accName}_$j/instr_buffer
-                connect_bd_intf_net [get_bd_intf_pins -quiet ${accName}_$j/Adapter_instr/m_axi* -filter {NAME =~ "*instr_buffer"}] [get_bd_intf_pins ${accName}_$j/instr_buffer]
+                connect_bd_intf_net [get_bd_intf_pins $instr_AXIPort] [get_bd_intf_pins ${accName}_$j/instr_buffer]
                 lappend axi_ports ${accName}_$j/instr_buffer
             }
 
