@@ -25,9 +25,10 @@ MIN_WRAPPER_VERSION = 8
 BITINFO_VERSION = 9
 VERSION_MAJOR = 6
 VERSION_MINOR = 0
+VERSION_PATCH = 0
 
 # NOTE: The variable will be overwritten during installation, do not manually modify.
 VERSION_COMMIT = ''
 
-SHORT_VERSION = str('.'.join([str(VERSION_MAJOR), str(VERSION_MINOR)]))  # Short numerical version
+SHORT_VERSION = str('.'.join([str(VERSION_MAJOR), str(VERSION_MINOR), str(VERSION_PATCH)]))  # Short numerical version
 LONG_VERSION = str(SHORT_VERSION + ' (' + ', '.join(filter(None, [VERSION_COMMIT, 'bitinfo: ' + str(BITINFO_VERSION)])) + ')')  # Long version including commit hash/release tag and bitinfo version
