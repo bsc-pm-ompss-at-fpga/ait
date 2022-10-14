@@ -20,12 +20,12 @@
 #     License along with this code. If not, see <www.gnu.org/licenses/>.   #
 # ------------------------------------------------------------------------ #
 
-MIN_PYTHON_VERSION = (3, 5)
+MIN_PYTHON_VERSION = (3, 7)
 MIN_WRAPPER_VERSION = 8
 BITINFO_VERSION = 9
 VERSION_MAJOR = 6
 VERSION_MINOR = 0
-VERSION_PATCH = 0
+VERSION_PATCH = 1
 
 # NOTE: The variable will be overwritten during installation, do not manually modify.
 VERSION_COMMIT = ''
