@@ -143,7 +143,7 @@ proc comp_bd_addr_seg {a b} {
 }
 
 # Creates and connects a tree of interconnects that allows an arbitrary number of AXI-stream slaves to connect to up to 16 AXI-stream masters
-proc create_inStream_Inter_tree { stream_name nmasters nslaves } {
+proc create_inStream_Inter_tree { stream_name nmasters nslaves clk inter_rstn peri_rstn } {
     set ninter [expr int(ceil($nslaves/16.))]
     set prev_ninter $nslaves
     set inter_level 0
@@ -171,17 +171,17 @@ proc create_inStream_Inter_tree { stream_name nmasters nslaves } {
         lappend inter_conf CONFIG.NUM_MI $nmasters CONFIG.NUM_SI $num_si
         set_property -dict $inter_conf $inter
 
-        connectClock [get_bd_pins $inter_name/ACLK]
-        connectRst [get_bd_pins $inter_name/ARESETN] "interconnect"
+        connect_bd_net $clk [get_bd_pins $inter_name/ACLK]
+        connect_bd_net $inter_rstn [get_bd_pins $inter_name/ARESETN]
         for {set j 0} {$j < $num_si} {incr j} {
             set inf_num [format %02u $j]
-            connectClock [get_bd_pins $inter_name/S${inf_num}_AXIS_ACLK]
-            connectRst [get_bd_pins $inter_name/S${inf_num}_AXIS_ARESETN] "peripheral"
+            connect_bd_net $clk [get_bd_pins $inter_name/S${inf_num}_AXIS_ACLK]
+            connect_bd_net $peri_rstn [get_bd_pins $inter_name/S${inf_num}_AXIS_ARESETN]
         }
         for {set j 0} {$j < $nmasters} {incr j} {
             set inf_num [format %02u $j]
-            connectClock [get_bd_pins $inter_name/M${inf_num}_AXIS_ACLK]
-            connectRst [get_bd_pins $inter_name/M${inf_num}_AXIS_ARESETN] "peripheral"
+            connect_bd_net $clk [get_bd_pins $inter_name/M${inf_num}_AXIS_ACLK]
+            connect_bd_net $peri_rstn [get_bd_pins $inter_name/M${inf_num}_AXIS_ARESETN]
         }
     }
 
@@ -216,15 +216,15 @@ proc create_inStream_Inter_tree { stream_name nmasters nslaves } {
                     CONFIG.NUM_SI $num_si
                 set_property -dict $inter_conf $inter
 
-                connectClock [get_bd_pins $inter_name/ACLK]
-                connectRst [get_bd_pins $inter_name/ARESETN] "interconnect"
+                connect_bd_net $clk [get_bd_pins $inter_name/ACLK]
+                connect_bd_net $inter_rstn [get_bd_pins $inter_name/ARESETN]
                 for {set j 0} {$j < $num_si} {incr j} {
                     set inf_num [format %02u $j]
-                    connectClock [get_bd_pins $inter_name/S${inf_num}_AXIS_ACLK]
-                    connectRst [get_bd_pins $inter_name/S${inf_num}_AXIS_ARESETN] "peripheral"
+                    connect_bd_net $clk [get_bd_pins $inter_name/S${inf_num}_AXIS_ACLK]
+                    connect_bd_net $peri_rstn [get_bd_pins $inter_name/S${inf_num}_AXIS_ARESETN]
                 }
-                connectClock [get_bd_pins $inter_name/M00_AXIS_ACLK]
-                connectRst [get_bd_pins $inter_name/M00_AXIS_ARESETN] "peripheral"
+                connect_bd_net $clk [get_bd_pins $inter_name/M00_AXIS_ACLK]
+                connect_bd_net $peri_rstn [get_bd_pins $inter_name/M00_AXIS_ARESETN]
 
                 for {set j 0} {$j < $num_si} {incr j} {
                     set master_inter_num [expr $i*16 + $j]
@@ -249,7 +249,7 @@ proc create_inStream_Inter_tree { stream_name nmasters nslaves } {
 }
 
 # Creates and connects a tree of interconnects that allows up to 16 AXI-stream masters to connect with an arbitrary number of AXI-stream slaves
-proc create_outStream_Inter_tree { stream_name nslaves nmasters } {
+proc create_outStream_Inter_tree { stream_name nslaves nmasters clk inter_rstn peri_rstn } {
     set ninter [expr int(ceil($nmasters/16.))]
     set prev_ninter $nmasters
     set inter_level 0
@@ -286,17 +286,17 @@ proc create_outStream_Inter_tree { stream_name nslaves nmasters } {
 
         set_property -dict $inter_conf $inter
 
-        connectClock [get_bd_pins $inter_name/ACLK]
-        connectRst [get_bd_pins $inter_name/ARESETN] "interconnect"
+        connect_bd_net $clk [get_bd_pins $inter_name/ACLK]
+        connect_bd_net $inter_rstn [get_bd_pins $inter_name/ARESETN]
         for {set j 0} { $j < $num_mi} {incr j} {
             set inf_num [format %02u $j]
-            connectClock [get_bd_pins $inter_name/M${inf_num}_AXIS_ACLK]
-            connectRst [get_bd_pins $inter_name/M${inf_num}_AXIS_ARESETN] "peripheral"
+            connect_bd_net $clk [get_bd_pins $inter_name/M${inf_num}_AXIS_ACLK]
+            connect_bd_net $peri_rstn [get_bd_pins $inter_name/M${inf_num}_AXIS_ARESETN]
         }
         for {set j 0} {$j < $nslaves} {incr j} {
             set inf_num [format %02u $j]
-            connectClock [get_bd_pins $inter_name/S${inf_num}_AXIS_ACLK]
-            connectRst [get_bd_pins $inter_name/S${inf_num}_AXIS_ARESETN] "peripheral"
+            connect_bd_net $clk [get_bd_pins $inter_name/S${inf_num}_AXIS_ACLK]
+            connect_bd_net $peri_rstn [get_bd_pins $inter_name/S${inf_num}_AXIS_ARESETN]
         }
     }
 
@@ -333,15 +333,15 @@ proc create_outStream_Inter_tree { stream_name nslaves nmasters } {
 
                 set_property -dict $inter_conf $inter
 
-                connectClock [get_bd_pins $inter_name/ACLK]
-                connectRst [get_bd_pins $inter_name/ARESETN] "interconnect"
+                connect_bd_net $clk [get_bd_pins $inter_name/ACLK]
+                connect_bd_net $inter_rstn [get_bd_pins $inter_name/ARESETN]
                 for {set j 0} { $j < $num_mi} {incr j} {
                     set inf_num [format %02u $j]
-                    connectClock [get_bd_pins $inter_name/M${inf_num}_AXIS_ACLK]
-                    connectRst [get_bd_pins $inter_name/M${inf_num}_AXIS_ARESETN] "peripheral"
+                    connect_bd_net $clk [get_bd_pins $inter_name/M${inf_num}_AXIS_ACLK]
+                    connect_bd_net $peri_rstn [get_bd_pins $inter_name/M${inf_num}_AXIS_ARESETN]
                 }
-                connectClock [get_bd_pins $inter_name/S00_AXIS_ACLK]
-                connectRst [get_bd_pins $inter_name/S00_AXIS_ARESETN] "peripheral"
+                connect_bd_net $clk [get_bd_pins $inter_name/S00_AXIS_ACLK]
+                connect_bd_net $peri_rstn [get_bd_pins $inter_name/S00_AXIS_ARESETN]
 
                 for {set j 0} {$j < $num_mi} {incr j} {
                     set slave_inter_num [expr $i*16+$j]
@@ -797,6 +797,18 @@ for {set i 0} {$i < $num_accs} {incr i} {
 
 create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 $pi/cmdout_in
 create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 $po/cmdin_out
+create_bd_pin -dir I $pi/clk
+create_bd_pin -dir I $pi/interconnect_aresetn
+create_bd_pin -dir I $pi/peripheral_aresetn
+connectClock [get_bd_pins $pi/clk]
+connectRst [get_bd_pins $pi/interconnect_aresetn] "interconnect"
+connectRst [get_bd_pins $pi/peripheral_aresetn] "peripheral"
+create_bd_pin -dir I $po/clk
+create_bd_pin -dir I $po/interconnect_aresetn
+create_bd_pin -dir I $po/peripheral_aresetn
+connectClock [get_bd_pins $po/clk]
+connectRst [get_bd_pins $po/interconnect_aresetn] "interconnect"
+connectRst [get_bd_pins $po/peripheral_aresetn] "peripheral"
 if {$advanced_hwruntime} {
     create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 $pi/spawn_in
     create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 $pi/taskwait_in
@@ -824,17 +836,44 @@ if {[catch {source -notrace $hwruntime_interconnect_script}]} {
 move_bd_cells [get_bd_cells Hardware_Runtime] [get_bd_cells $pi]
 move_bd_cells [get_bd_cells Hardware_Runtime] [get_bd_cells $po]
 
+create_bd_cell -type ip -vlnv xilinx.com:ip:axis_subset_converter Hardware_Runtime/axis_subset_converter_cmdin
+set_property -dict [list CONFIG.M_TID_WIDTH.VALUE_SRC USER] [get_bd_cells Hardware_Runtime/axis_subset_converter_cmdin]
+set_property -dict [list CONFIG.M_TID_WIDTH {1}] [get_bd_cells Hardware_Runtime/axis_subset_converter_cmdin]
+connect_bd_net [get_bd_pins Hardware_Runtime/aclk] [get_bd_pins Hardware_Runtime/axis_subset_converter_cmdin/aclk]
+connect_bd_net [get_bd_pins Hardware_Runtime/$name_hwruntime/managed_aresetn] [get_bd_pins Hardware_Runtime/axis_subset_converter_cmdin/aresetn]
+
 connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/$name_hwruntime/cmdout_in] [get_bd_intf_pins Hardware_Runtime/$pi/cmdout_in]
-connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/$name_hwruntime/cmdin_out] [get_bd_intf_pins Hardware_Runtime/$po/cmdin_out]
+connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/$name_hwruntime/cmdin_out] [get_bd_intf_pins Hardware_Runtime/axis_subset_converter_cmdin/S_AXIS]
+connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/$po/cmdin_out] [get_bd_intf_pins Hardware_Runtime/axis_subset_converter_cmdin/M_AXIS]
 if {$advanced_hwruntime} {
+    create_bd_cell -type ip -vlnv xilinx.com:ip:axis_subset_converter Hardware_Runtime/axis_subset_converter_spawn
+    set_property -dict [list CONFIG.M_TID_WIDTH.VALUE_SRC USER] [get_bd_cells Hardware_Runtime/axis_subset_converter_spawn]
+    set_property -dict [list CONFIG.M_TID_WIDTH {1} CONFIG.TID_REMAP "1'b1"] [get_bd_cells Hardware_Runtime/axis_subset_converter_spawn]
+    connect_bd_net [get_bd_pins Hardware_Runtime/aclk] [get_bd_pins Hardware_Runtime/axis_subset_converter_spawn/aclk]
+    connect_bd_net [get_bd_pins Hardware_Runtime/$name_hwruntime/managed_aresetn] [get_bd_pins Hardware_Runtime/axis_subset_converter_spawn/aresetn]
+    create_bd_cell -type ip -vlnv xilinx.com:ip:axis_subset_converter Hardware_Runtime/axis_subset_converter_taskwait
+    set_property -dict [list CONFIG.M_TID_WIDTH.VALUE_SRC USER] [get_bd_cells Hardware_Runtime/axis_subset_converter_taskwait]
+    set_property -dict [list CONFIG.M_TID_WIDTH {1} CONFIG.TID_REMAP "1'b1"] [get_bd_cells Hardware_Runtime/axis_subset_converter_taskwait]
+    connect_bd_net [get_bd_pins Hardware_Runtime/aclk] [get_bd_pins Hardware_Runtime/axis_subset_converter_taskwait/aclk]
+    connect_bd_net [get_bd_pins Hardware_Runtime/$name_hwruntime/managed_aresetn] [get_bd_pins Hardware_Runtime/axis_subset_converter_taskwait/aresetn]
+
     connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/$name_hwruntime/spawn_in] [get_bd_intf_pins Hardware_Runtime/$pi/spawn_in]
-    connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/$name_hwruntime/spawn_out] [get_bd_intf_pins Hardware_Runtime/$po/spawn_out]
+    connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/$name_hwruntime/spawn_out]          [get_bd_intf_pins Hardware_Runtime/axis_subset_converter_spawn/S_AXIS]
+    connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/axis_subset_converter_spawn/M_AXIS] [get_bd_intf_pins Hardware_Runtime/$po/spawn_out]
     connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/$name_hwruntime/taskwait_in] [get_bd_intf_pins Hardware_Runtime/$pi/taskwait_in]
-    connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/$name_hwruntime/taskwait_out] [get_bd_intf_pins Hardware_Runtime/$po/taskwait_out]
+    connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/$name_hwruntime/taskwait_out]          [get_bd_intf_pins Hardware_Runtime/axis_subset_converter_taskwait/S_AXIS]
+    connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/axis_subset_converter_taskwait/M_AXIS] [get_bd_intf_pins Hardware_Runtime/$po/taskwait_out]
 }
 if {$lock_hwruntime} {
+    create_bd_cell -type ip -vlnv xilinx.com:ip:axis_subset_converter Hardware_Runtime/axis_subset_converter_lock
+    set_property -dict [list CONFIG.M_TID_WIDTH.VALUE_SRC USER] [get_bd_cells Hardware_Runtime/axis_subset_converter_lock]
+    set_property -dict [list CONFIG.M_TID_WIDTH {1}] [get_bd_cells Hardware_Runtime/axis_subset_converter_lock]
+    connect_bd_net [get_bd_pins Hardware_Runtime/aclk] [get_bd_pins Hardware_Runtime/axis_subset_converter_lock/aclk]
+    connect_bd_net [get_bd_pins Hardware_Runtime/$name_hwruntime/managed_aresetn] [get_bd_pins Hardware_Runtime/axis_subset_converter_lock/aresetn]
+
     connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/$name_hwruntime/lock_in] [get_bd_intf_pins Hardware_Runtime/$pi/lock_in]
-    connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/$name_hwruntime/lock_out] [get_bd_intf_pins Hardware_Runtime/$po/lock_out]
+    connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/$name_hwruntime/lock_out]         [get_bd_intf_pins Hardware_Runtime/axis_subset_converter_lock/S_AXIS]
+    connect_bd_intf_net get_bd_intf_pins Hardware_Runtime/axis_subset_converter_lock/M_AXIS] [get_bd_intf_pins Hardware_Runtime/$po/lock_out]
 }
 
 # Set and get the actual PS frequency
@@ -849,7 +888,7 @@ set accIDWidth [expr max(int(ceil(log($num_accs)/log(2))), 1)]
 set axi_ports []
 
 foreach acc $accs {
-    lassign [split $acc ":"] accHash accNumInstances accName instanceNr
+    lassign [split $acc ":"] accHash accNumInstances accName taskCreator
 
     set accName_long ${accName}_ompss
 
@@ -871,50 +910,92 @@ foreach acc $accs {
         connectClock [get_bd_pins ${accName}_$j/aclk]
         connect_bd_net [get_bd_pins ${accName}_$j/managed_aresetn] [get_bd_pins $name_ManagedRst]
 
+        # If available, forward the outPort
         # Check if acc has already stream ports instead of handshake
-        if {[get_bd_intf_pins -quiet ${accName}_$j/$accName_long/mcxx_outPort*] ne ""} {
-            # If no hsToStreamAdapter is used, we need to insert accID to the TID AXI-Stream signal
+        if {[get_bd_intf_pins -quiet -regexp ${accName}_$j/$accName_long/mcxx_outPort(_V)*?] ne ""} {
+            set hier_outStream [get_bd_intf_pins -regexp ${accName}_$j/$accName_long/mcxx_outPort(_V)*?]
+        } elseif {[get_bd_pins -quiet -regexp ${accName}_$j/$accName_long/mcxx_outPort(_V)*?] ne ""} {
+            # Create and connect the hsToStreamAdapter
+            set stream_adapter [create_bd_cell -type module -reference hsToStreamAdapter ${accName}_$j/Adapter_outStream]
+            set_property -dict [list CONFIG.TID_WIDTH [expr max(int(ceil(log($num_accs)/log(2))), 1)] CONFIG.ACCID $accID] $stream_adapter
+            connect_bd_net [get_bd_pins $stream_adapter/in_hs_ap_vld] [get_bd_pins -regexp ${accName}_$j/$accName_long/mcxx_outPort(_V)*?_ap_vld]
+            connect_bd_net [get_bd_pins $stream_adapter/in_hs_ap_ack] [get_bd_pins -regexp ${accName}_$j/$accName_long/mcxx_outPort(_V)*?_ap_ack]
+            connect_bd_net [get_bd_pins $stream_adapter/in_hs] [get_bd_pins -regexp ${accName}_$j/$accName_long/mcxx_outPort(_V)*?]
+            connect_bd_net [get_bd_pins $stream_adapter/aclk] [get_bd_pins ${accName}_$j/aclk]
+            connect_bd_net [get_bd_pins $stream_adapter/aresetn] [get_bd_pins ${accName}_$j/managed_aresetn]
+            set hier_outStream [get_bd_intf_pins $stream_adapter/outStream]
+        }
+
+        # If available, forward the inPort
+        if {[get_bd_intf_pins -quiet -regexp ${accName}_$j/$accName_long/mcxx_inPort(_V)*?] ne ""} {
+            set hier_inStream [get_bd_intf_pins -regexp ${accName}_$j/$accName_long/mcxx_inPort(_V)*?]
+        } elseif {[get_bd_pins -quiet -regexp ${accName}_$j/$accName_long/mcxx_inPort(_V)*?] ne ""} {
+            # Create and connect the streamToHsAdapter
+            set stream_adapter [create_bd_cell -type module -reference streamToHsAdapter ${accName}_$j/Adapter_inStream]
+            connect_bd_net [get_bd_pins $stream_adapter/out_hs_ap_vld] [get_bd_pins -regexp ${accName}_$j/$accName_long/mcxx_inPort(_V)*?_ap_vld]
+            connect_bd_net [get_bd_pins $stream_adapter/out_hs_ap_ack] [get_bd_pins -regexp ${accName}_$j/$accName_long/mcxx_inPort(_V)*?_ap_ack]
+            connect_bd_net [get_bd_pins $stream_adapter/out_hs] [get_bd_pins -regexp ${accName}_$j/$accName_long/mcxx_inPort(_V)*?]
+            connect_bd_net [get_bd_pins $stream_adapter/aclk] [get_bd_pins ${accName}_$j/aclk]
+            connect_bd_net [get_bd_pins $stream_adapter/aresetn] [get_bd_pins ${accName}_$j/managed_aresetn]
+            set hier_inStream [get_bd_intf_pins $stream_adapter/inStream]
+        }
+
+        # If this is a task creator, instantiate the newtask_spawner
+        if {$taskCreator} {
+            if {[get_bd_intf_pins -quiet -regexp ${accName}_$j/$accName_long/mcxx_spawnInPort(_V)*?] ne ""} {
+                set acc_spawnInStream [get_bd_intf_pins -quiet -regexp ${accName}_$j/$accName_long/mcxx_spawnInPort(_V)*?]
+            } elseif {[get_bd_pins -quiet -regexp ${accName}_$j/$accName_long/mcxx_spawnInPort(_V)*?] ne ""} {
+                # Create and connect the streamToHsAdapter
+                set stream_adapter [create_bd_cell -type module -reference streamToHsAdapter ${accName}_$j/Adapter_spawnInStream]
+                connect_bd_net [get_bd_pins $stream_adapter/out_hs_ap_vld] [get_bd_pins -regexp ${accName}_$j/$accName_long/mcxx_spawnInPort(_V)*?_ap_vld]
+                connect_bd_net [get_bd_pins $stream_adapter/out_hs_ap_ack] [get_bd_pins -regexp ${accName}_$j/$accName_long/mcxx_spawnInPort(_V)*?_ap_ack]
+                connect_bd_net [get_bd_pins $stream_adapter/out_hs] [get_bd_pins -regexp ${accName}_$j/$accName_long/mcxx_spawnInPort(_V)*?]
+                connect_bd_net [get_bd_pins $stream_adapter/aclk] [get_bd_pins ${accName}_$j/aclk]
+                connect_bd_net [get_bd_pins $stream_adapter/aresetn] [get_bd_pins ${accName}_$j/managed_aresetn]
+
+                set acc_spawnInStream [get_bd_intf_pins $stream_adapter/inStream]
+            }
+
+            set newtask_spawner [create_bd_cell -type ip -vlnv bsc:ompss:new_task_spawner_wrapper:1.0 ${accName}_${j}/new_task_spawner]
+            connect_bd_net [get_bd_pins $newtask_spawner/clk] [get_bd_pins ${accName}_$j/aclk]
+            connect_bd_net [get_bd_pins $newtask_spawner/rstn] [get_bd_pins ${accName}_$j/managed_aresetn]
+
+            connect_bd_intf_net [get_bd_intf_pins $newtask_spawner/stream_in] [get_bd_intf_pins $hier_outStream]
+            connect_bd_intf_net [get_bd_intf_pins $newtask_spawner/ack_out] [get_bd_intf_pins $acc_spawnInStream]
+
+            set tid_demux [create_bd_cell -quiet -type module -reference axis_tid_demux ${accName}_$j/axis_tid_demux]
+            connect_bd_net [get_bd_pins $tid_demux/clk] [get_bd_pins ${accName}_$j/aclk]
+            connect_bd_intf_net [get_bd_intf_pins $tid_demux/m0] [get_bd_intf_pins $hier_inStream]
+            connect_bd_intf_net [get_bd_intf_pins $tid_demux/m1] [get_bd_intf_pins $newtask_spawner/ack_in]
+
+            # We need to insert accID to the new_task_spawner TID AXI-Stream signal
             set tidSubsetConv [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_subset_converter ${accName}_${j}/TID_subset_converter]
-            connect_bd_intf [get_bd_intf_pins ${accName}_$j/$accName_long/mcxx_outPort*] [get_bd_intf_pins $tidSubsetConv/S_AXIS]
-            connect_bd_net [get_bd_pins ${accName}_$j/aclk] [get_bd_pins $tidSubsetConv/aclk]
-            connect_bd_net [get_bd_pins ${accName}_$j/managed_aresetn] [get_bd_pins $tidSubsetConv/aresetn]
+            connect_bd_net [get_bd_pins $tidSubsetConv/aclk] [get_bd_pins ${accName}_$j/aclk]
+            connect_bd_net [get_bd_pins $tidSubsetConv/aresetn] [get_bd_pins ${accName}_$j/managed_aresetn]
 
             # Format accID as a 4-bit value
             set_property -dict [list CONFIG.M_TID_WIDTH.VALUE_SRC USER] $tidSubsetConv
             set_property -dict [list CONFIG.M_TID_WIDTH $accIDWidth CONFIG.TID_REMAP "$accIDWidth'b[dec2bin $accID $accIDWidth]"] $tidSubsetConv
 
-            set outStreamAccPort [get_bd_intf_pins $tidSubsetConv/M_AXIS]
-        } else {
-            # If available, forward the outPort
-            if {[get_bd_pins -quiet ${accName}_$j/$accName_long/mcxx_outPort*] ne ""} {
-                # Create and connect the hsToStreamAdapter
-                create_bd_cell -type module -reference hsToStreamAdapter ${accName}_$j/Adapter_outStream
-                set_property -dict [list CONFIG.TID_WIDTH [expr max(int(ceil(log($num_accs)/log(2))), 1)] CONFIG.ACCID $accID] [get_bd_cells ${accName}_$j/Adapter_outStream]
-                connect_bd_net [get_bd_pins ${accName}_$j/Adapter_outStream/in_hs_ap_vld] [get_bd_pins ${accName}_$j/$accName_long/mcxx_outPort*_ap_vld]
-                connect_bd_net [get_bd_pins ${accName}_$j/Adapter_outStream/in_hs_ap_ack] [get_bd_pins ${accName}_$j/$accName_long/mcxx_outPort*_ap_ack]
-                connect_bd_net [get_bd_pins ${accName}_$j/Adapter_outStream/in_hs] [get_bd_pins -regexp ${accName}_$j/$accName_long/mcxx_outPort(_V)*?]
-                connect_bd_net [get_bd_pins ${accName}_$j/Adapter_outStream/aclk] [get_bd_pins ${accName}_$j/aclk]
-                connect_bd_net [get_bd_pins ${accName}_$j/Adapter_outStream/aresetn] [get_bd_pins ${accName}_$j/managed_aresetn]
-            }
-            set outStreamAccPort [get_bd_intf_pins ${accName}_$j/Adapter_outStream/outStream]
-        }
+            connect_bd_intf_net [get_bd_intf_pins $newtask_spawner/stream_out] [get_bd_intf_pins $tidSubsetConv/S_AXIS]
 
-        # If available, forward the inPort
-        if {[get_bd_intf_pins -quiet ${accName}_$j/$accName_long/mcxx_inPort*] ne ""} {
-            set inStreamAccPort [get_bd_intf_pins ${accName}_$j/$accName_long/mcxx_inPort*]
+            set hier_inStream [get_bd_intf_pins ${accName}_$j/axis_tid_demux/s]
+            set hier_outStream [get_bd_intf_pins $tidSubsetConv/M_AXIS]
         } else {
-            if {[get_bd_pins -quiet ${accName}_$j/$accName_long/mcxx_inPort*] ne ""} {
-                # Create and connect the streamToHsAdapter
-                create_bd_cell -type module -reference streamToHsAdapter ${accName}_$j/Adapter_inStream
-                connect_bd_net [get_bd_pins ${accName}_$j/Adapter_inStream/out_hs_ap_vld] [get_bd_pins ${accName}_$j/$accName_long/mcxx_inPort*_ap_vld]
-                connect_bd_net [get_bd_pins ${accName}_$j/Adapter_inStream/out_hs_ap_ack] [get_bd_pins ${accName}_$j/$accName_long/mcxx_inPort*_ap_ack]
-                connect_bd_net [get_bd_pins ${accName}_$j/Adapter_inStream/out_hs] [get_bd_pins -regexp ${accName}_$j/$accName_long/mcxx_inPort(_V)*?]
-                connect_bd_net [get_bd_pins ${accName}_$j/Adapter_inStream/aclk] [get_bd_pins ${accName}_$j/aclk]
-                connect_bd_net [get_bd_pins ${accName}_$j/Adapter_inStream/aresetn] [get_bd_pins ${accName}_$j/managed_aresetn]
-            }
-            set inStreamAccPort [get_bd_intf_pins ${accName}_$j/Adapter_inStream/inStream]
-        }
+            if {[get_bd_intf_pins -quiet -regexp ${accName}_$j/$accName_long/mcxx_outPort(_V)*?] ne ""} {
+                # We need to insert accID to the accelerator TID AXI-Stream signal
+                set tidSubsetConv [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_subset_converter ${accName}_${j}/TID_subset_converter]
+                connect_bd_net [get_bd_pins $tidSubsetConv/aclk] [get_bd_pins ${accName}_$j/aclk]
+                connect_bd_net [get_bd_pins $tidSubsetConv/aresetn] [get_bd_pins ${accName}_$j/managed_aresetn]
 
+                # Format accID as a 4-bit value
+                set_property -dict [list CONFIG.M_TID_WIDTH.VALUE_SRC USER] $tidSubsetConv
+                set_property -dict [list CONFIG.M_TID_WIDTH $accIDWidth CONFIG.TID_REMAP "$accIDWidth'b[dec2bin $accID $accIDWidth]"] $tidSubsetConv
+
+                connect_bd_intf_net [get_bd_intf_pins $hier_outStream] [get_bd_intf_pins $tidSubsetConv/S_AXIS]
+                set hier_outStream [get_bd_intf_pins $tidSubsetConv/M_AXIS]
+            }
+        }
 
         # Get list of M_AXI interfaces
         # NOTE: Only handle AXI interfaces generated by mcxx, which start with the "mcxx_" prefix
@@ -996,7 +1077,7 @@ foreach acc $accs {
                     set_property -dict [ list \
                         CONFIG.REG_CONFIG {16} \
                         ] $axis_regSlice_in
-                    connect_bd_intf_net $inStreamAccPort [get_bd_intf_pins $axis_regSlice_in/M_AXIS]
+                    connect_bd_intf_net $hier_inStream [get_bd_intf_pins $axis_regSlice_in/M_AXIS]
                     connect_bd_net [get_bd_pins $axis_regSlice_in/aclk] [get_bd_pins ${accName}_$j/aclk]
                     connect_bd_net [get_bd_pins $axis_regSlice_in/aresetn] [get_bd_pins ${accName}_$j/managed_aresetn]
 
@@ -1005,18 +1086,18 @@ foreach acc $accs {
                     set_property -dict [ list \
                         CONFIG.REG_CONFIG {16} \
                         ] $axis_regSlice_out
-                    connect_bd_intf_net $outStreamAccPort [get_bd_intf_pins $axis_regSlice_out/S_AXIS]
+                    connect_bd_intf_net $hier_outStream [get_bd_intf_pins $axis_regSlice_out/S_AXIS]
                     connect_bd_net [get_bd_pins $axis_regSlice_out/aclk] [get_bd_pins ${accName}_$j/aclk]
                     connect_bd_net [get_bd_pins $axis_regSlice_out/aresetn] [get_bd_pins ${accName}_$j/managed_aresetn]
 
-                    set inStreamAccPort [get_bd_intf_pins $axis_regSlice_in/S_AXIS]
-                    set outStreamAccPort [get_bd_intf_pins $axis_regSlice_out/M_AXIS]
+                    set hier_inStream [get_bd_intf_pins $axis_regSlice_in/S_AXIS]
+                    set hier_outStream [get_bd_intf_pins $axis_regSlice_out/M_AXIS]
                 }
             }
         }
 
-        connect_bd_intf_net [get_bd_intf_pins ${accName}_$j/inStream] $inStreamAccPort
-        connect_bd_intf_net [get_bd_intf_pins ${accName}_$j/outStream] $outStreamAccPort
+        connect_bd_intf_net [get_bd_intf_pins ${accName}_$j/inStream] $hier_inStream
+        connect_bd_intf_net [get_bd_intf_pins ${accName}_$j/outStream] $hier_outStream
 
         # If available, forward the instrumentation ports
         if {([get_bd_pins -quiet ${accName}_$j/$accName_long/mcxx_instr_*] ne "") || ([get_bd_pins -quiet ${accName}_$j/$accName_long/mcxx_hwcounterPort*] ne "")} {
@@ -1272,7 +1353,9 @@ if {$simplify_interconnection} {
     set bitmap_bitInfo [format 0x%08x [expr $bitmap_bitInfo | 0x1<<3]]
 }
 
-assign_bd_address [get_bd_addr_segs *bitInfo_BRAM_Ctrl*] -range 4K -offset $addr_bitInfo
+if {$arch_device ne "simulation"} {
+    assign_bd_address [get_bd_addr_segs *bitInfo_BRAM_Ctrl*] -range 4K -offset $addr_bitInfo
+}
 
 configureAddressMap $address_map
 

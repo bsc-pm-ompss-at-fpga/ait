@@ -18,25 +18,27 @@
 #    License along with this code. If not, see <www.gnu.org/licenses/>.  #
 #------------------------------------------------------------------------#
 
+set pi_clk [get_bd_pins $pi/clk]
+set pi_inter_rstn [get_bd_pins $pi/interconnect_aresetn]
+set pi_peri_rstn [get_bd_pins $pi/peripheral_aresetn]
+set po_clk [get_bd_pins $po/clk]
+set po_inter_rstn [get_bd_pins $po/interconnect_aresetn]
+set po_peri_rstn [get_bd_pins $po/peripheral_aresetn]
+
 # Create interconnect hierarchy to connect with accelerators
 if {$advanced_hwruntime} {
     # The extra masters redirect all cmdout_in and lock_in transfers from acc creators
-    create_inStream_Inter_tree $pi/inS_common_Inter $num_common_hwruntime_intf [expr $num_acc_no_creators+1]
+    create_inStream_Inter_tree $pi/inS_common_Inter $num_common_hwruntime_intf [expr $num_acc_no_creators+1] $pi_clk $pi_inter_rstn $pi_peri_rstn
     # spawn_out + taskwait_out + cmdin_out and lock_out which are collapsed in the same master
-    create_inStream_Inter_tree $pi/inS_ext_Inter 3 $num_acc_creators
+    create_inStream_Inter_tree $pi/inS_ext_Inter 3 $num_acc_creators $pi_clk $pi_inter_rstn $pi_peri_rstn
     # spawn_out + taskwait_out + outS_common_Inter_M00 (cmdin_out + lock_out if available)
-    set max_level_ext [create_outStream_Inter_tree $po/outS_ext_Inter 3 $num_acc_creators]
+    set max_level_ext [create_outStream_Inter_tree $po/outS_ext_Inter 3 $num_acc_creators $po_clk $po_inter_rstn $po_peri_rstn]
     # The extra master filters all transfers to acc creators
-    set max_level_common [create_outStream_Inter_tree $po/outS_common_Inter $num_common_hwruntime_intf [expr $num_acc_no_creators+1]]
+    set max_level_common [create_outStream_Inter_tree $po/outS_common_Inter $num_common_hwruntime_intf [expr $num_acc_no_creators+1] $po_clk $po_inter_rstn $po_peri_rstn]
 } else {
-    create_inStream_Inter_tree $pi/inS_common_Inter $num_common_hwruntime_intf $num_accs
-    set max_level_common [create_outStream_Inter_tree $po/outS_common_Inter $num_common_hwruntime_intf $num_accs]
+    create_inStream_Inter_tree $pi/inS_common_Inter $num_common_hwruntime_intf $num_accs $pi_clk $pi_inter_rstn $pi_peri_rstn
+    set max_level_common [create_outStream_Inter_tree $po/outS_common_Inter $num_common_hwruntime_intf $num_accs $po_clk $po_inter_rstn $po_peri_rstn]
 }
-
-set_property name interconnect_aresetn [get_bd_pins $pi/ARESETN]
-set_property name peripheral_aresetn [get_bd_pins $pi/S00_AXIS_ARESETN]
-set_property name interconnect_aresetn [get_bd_pins $po/ARESETN]
-set_property name peripheral_aresetn [get_bd_pins $po/M00_AXIS_ARESETN]
 
 set ninter [expr int(ceil($num_acc_no_creators/16.))]
 for {set i 0} {$i < $ninter} {incr i} {
@@ -63,9 +65,9 @@ if {$advanced_hwruntime} {
             CONFIG.M00_AXIS_BASETDEST {0x00000000} \
             CONFIG.M00_AXIS_HIGHTDEST {0x00000001} \
             CONFIG.M01_AXIS_BASETDEST {0x00000002} \
-            CONFIG.M01_AXIS_HIGHTDEST {0x00000003} \
-            CONFIG.M02_AXIS_BASETDEST {0x00000004} \
-            CONFIG.M02_AXIS_HIGHTDEST {0x00000004} \
+            CONFIG.M01_AXIS_HIGHTDEST {0x00000002} \
+            CONFIG.M02_AXIS_BASETDEST {0x00000003} \
+            CONFIG.M02_AXIS_HIGHTDEST {0x00000003} \
         ] [get_bd_cell $pi/inS_ext_Inter_lvl0_$i]
     }
 }

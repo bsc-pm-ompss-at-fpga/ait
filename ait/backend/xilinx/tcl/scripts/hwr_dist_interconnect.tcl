@@ -18,18 +18,20 @@
 #    License along with this code. If not, see <www.gnu.org/licenses/>.  #
 #------------------------------------------------------------------------#
 
-create_inStream_Inter_tree $pi/inS_common_Inter $num_common_hwruntime_intf $num_accs
-set max_level_common [create_outStream_Inter_tree $po/outS_common_Inter $num_common_hwruntime_intf $num_accs]
+set pi_clk [get_bd_pins $pi/clk]
+set pi_inter_rstn [get_bd_pins $pi/interconnect_aresetn]
+set pi_peri_rstn [get_bd_pins $pi/peripheral_aresetn]
+set po_clk [get_bd_pins $po/clk]
+set po_inter_rstn [get_bd_pins $po/interconnect_aresetn]
+set po_peri_rstn [get_bd_pins $po/peripheral_aresetn]
+
+create_inStream_Inter_tree $pi/inS_common_Inter $num_common_hwruntime_intf $num_accs $pi_clk $pi_inter_rstn $pi_peri_rstn
+set max_level_common [create_outStream_Inter_tree $po/outS_common_Inter $num_common_hwruntime_intf $num_accs $po_clk $po_inter_rstn $po_peri_rstn]
 if {$advanced_hwruntime} {
     # spawn + taskwait
-    create_inStream_Inter_tree $pi/inS_ext_Inter 2 $num_acc_creators
-    set max_level_ext [create_outStream_Inter_tree $po/outS_ext_Inter 2 $num_acc_creators]
+    create_inStream_Inter_tree $pi/inS_ext_Inter 2 $num_acc_creators $pi_clk $pi_inter_rstn $pi_peri_rstn
+    set max_level_ext [create_outStream_Inter_tree $po/outS_ext_Inter 2 $num_acc_creators $po_clk $po_inter_rstn $po_peri_rstn]
 }
-
-set_property name interconnect_aresetn [get_bd_pins $pi/ARESETN]
-set_property name peripheral_aresetn [get_bd_pins $pi/S00_AXIS_ARESETN]
-set_property name interconnect_aresetn [get_bd_pins $po/ARESETN]
-set_property name peripheral_aresetn [get_bd_pins $po/M00_AXIS_ARESETN]
 
 set ninter [expr int(ceil($num_accs/16.))]
 for {set i 0} {$i < $ninter} {incr i} {
@@ -55,9 +57,9 @@ if {$advanced_hwruntime} {
     for {set i 0} {$i < $ninter} {incr i} {
         set_property -dict [list \
             CONFIG.M00_AXIS_BASETDEST {0x00000002} \
-            CONFIG.M00_AXIS_HIGHTDEST {0x00000003} \
-            CONFIG.M01_AXIS_BASETDEST {0x00000004} \
-            CONFIG.M01_AXIS_HIGHTDEST {0x00000004} \
+            CONFIG.M00_AXIS_HIGHTDEST {0x00000002} \
+            CONFIG.M01_AXIS_BASETDEST {0x00000003} \
+            CONFIG.M01_AXIS_HIGHTDEST {0x00000003} \
         ] [get_bd_cell $pi/inS_ext_Inter_lvl0_$i]
     }
 }
@@ -77,14 +79,9 @@ for {set i 0} {$i < $num_accs} {incr i} {
             CONFIG.NUM_MI {1} \
             CONFIG.NUM_SI {2} \
         ] $inter
-        connectClock [get_bd_pins $inter_name/ACLK]
-        connectRst [get_bd_pins $inter_name/ARESETN] "interconnect"
-        connectClock [get_bd_pins $inter_name/S00_AXIS_ACLK]
-        connectRst [get_bd_pins $inter_name/S00_AXIS_ARESETN] "peripheral"
-        connectClock [get_bd_pins $inter_name/S01_AXIS_ACLK]
-        connectRst [get_bd_pins $inter_name/S01_AXIS_ARESETN] "peripheral"
-        connectClock [get_bd_pins $inter_name/M00_AXIS_ACLK]
-        connectRst [get_bd_pins $inter_name/M00_AXIS_ARESETN] "peripheral"
+        connect_bd_net $po_clk [get_bd_pins $inter_name/ACLK] [get_bd_pins $inter_name/S00_AXIS_ACLK] [get_bd_pins $inter_name/S01_AXIS_ACLK] [get_bd_pins $inter_name/M00_AXIS_ACLK]
+        connect_bd_net $po_inter_rstn [get_bd_pins $inter_name/ARESETN] "interconnect"
+        connect_bd_net $po_peri_rstn [get_bd_pins $inter_name/S00_AXIS_ARESETN] [get_bd_pins $inter_name/S01_AXIS_ARESETN] [get_bd_pins $inter_name/M00_AXIS_ARESETN]
 
         set inter_name $pi/inS_extacc_Inter_${i}
         set inter [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_interconnect $inter_name]
@@ -92,18 +89,13 @@ for {set i 0} {$i < $num_accs} {incr i} {
             CONFIG.M00_AXIS_BASETDEST {0x00000000} \
             CONFIG.M00_AXIS_HIGHTDEST {0x00000001} \
             CONFIG.M01_AXIS_BASETDEST {0x00000002} \
-            CONFIG.M01_AXIS_HIGHTDEST {0x00000004} \
+            CONFIG.M01_AXIS_HIGHTDEST {0x00000003} \
             CONFIG.NUM_MI {2} \
             CONFIG.NUM_SI {1} \
         ] $inter
-        connectClock [get_bd_pins $inter_name/ACLK]
-        connectRst [get_bd_pins $inter_name/ARESETN] "interconnect"
-        connectClock [get_bd_pins $inter_name/M00_AXIS_ACLK]
-        connectRst [get_bd_pins $inter_name/M00_AXIS_ARESETN] "peripheral"
-        connectClock [get_bd_pins $inter_name/M01_AXIS_ACLK]
-        connectRst [get_bd_pins $inter_name/M01_AXIS_ARESETN] "peripheral"
-        connectClock [get_bd_pins $inter_name/S00_AXIS_ACLK]
-        connectRst [get_bd_pins $inter_name/S00_AXIS_ARESETN] "peripheral"
+        connect_bd_net $pi_clk [get_bd_pins $inter_name/ACLK] [get_bd_pins $inter_name/M00_AXIS_ACLK] [get_bd_pins $inter_name/M01_AXIS_ACLK] [get_bd_pins $inter_name/S00_AXIS_ACLK]
+        connect_bd_net $pi_inter_rstn [get_bd_pins $inter_name/ARESETN]
+        connect_bd_net $pi_peri_rstn [get_bd_pins $inter_name/M00_AXIS_ARESETN] [get_bd_pins $inter_name/M01_AXIS_ARESETN] [get_bd_pins $inter_name/S00_AXIS_ARESETN]
 
         connect_bd_intf_net [get_bd_intf_pins $pi/inS_extacc_Inter_${i}/M00_AXIS] [get_bd_intf_pins $pi/inS_common_Inter_lvl0_${inter_i}/S${intf_i}_AXIS]
         connect_bd_intf_net [get_bd_intf_pins $pi/inS_extacc_Inter_${i}/M01_AXIS] [get_bd_intf_pins $pi/inS_ext_Inter_lvl0_${inter_i}/S${intf_i}_AXIS]

@@ -154,7 +154,7 @@ def generate_Vivado_variables_tcl():
                                 + 'set accs [list'
 
     for acc in accs[0:num_accs]:
-        acc_name = str(acc.type) + ':' + str(acc.num_instances) + ':' + acc.name
+        acc_name = str(acc.type) + ':' + str(acc.num_instances) + ':' + acc.name + ':' + ('1' if acc.task_creation else '0')
 
         vivado_project_variables += ' ' + acc_name
 
@@ -181,12 +181,18 @@ def generate_Vivado_variables_tcl():
                 accBlock = f'{acc.name}_{instanceNumber}'
                 accConstrFiles.write(f'add_cells_to_pblock [get_pblocks slr{acc.SLR[instanceNumber]}_pblock] '
                                      + '[get_cells {'
+                                     + f'*/{accBlock}/Adapter_instr '
                                      + f'*/{accBlock}/Adapter_outStream '
                                      + f'*/{accBlock}/Adapter_inStream '
-                                     + f'*/{accBlock}/Adapter_instr '
                                      + f'*/{accBlock}/TID_subset_converter '
                                      + f'*/{accBlock}/{acc.name}_ompss'
                                      + '}]\n')
+                if acc.task_creation:
+                    accConstrFiles.write(f'add_cells_to_pblock [get_pblocks slr{acc.SLR[instanceNumber]}_pblock] '
+                                         + '[get_cells {'
+                                         + f'*/{accBlock}/new_task_spawner '
+                                         + f'*/{accBlock}/axis_tid_demux '
+                                         + '}]\n')
         accConstrFiles.close()
 
     if args.hwruntime == 'pom':
