@@ -1,3 +1,9 @@
+[![PyPI version](https://img.shields.io/pypi/v/ait-bsc.svg?logo=pypi&logoColor=FFE873)](https://pypi.org/project/ait-bsc/)
+[![Licence](https://img.shields.io/github/license/bsc-pm-ompss-at-fpga/ait.svg)](LICENSE)
+[![PyPi Downloads](https://img.shields.io/pypi/dm/ait-bsc?label=PyPI%20Downloads)](https://pypistats.org/packages/ait-bsc)
+[![Total Downloads](https://static.pepy.tech/personalized-badge/ait-bsc?period=total&units=international_system&left_color=black&right_color=red&left_text=Total+Downloads)](https://pepy.tech/project/ait-bsc)
+[![Supported Python versions](https://img.shields.io/pypi/pyversions/ait-bsc.svg?logo=python&logoColor=FFE873)](https://pypi.org/project/ait-bsc/)
+
 # Accelerator Integration Tool (AIT)
 
 The Accelerator Integration Tool (AIT) automatically integrates OmpSs@FPGA accelerators into FPGA designs using different vendor backends.
@@ -9,7 +15,7 @@ Moreover, there are pre-built SD images for the current supported board families
 They are also available at [OmpSs@FPGA pre-built SD images](https://ompssatfpga.bsc.es/downloads/sd-images/).
 
 # Prerequisites
- - [Python 3.5 or later](https://www.python.org)
+ - [Python 3.7 or later](https://www.python.org)
  - [pip](https://pip.pypa.io)
  - Vendor backends:
    - [Xilinx Vivado 2018.3 or later](https://www.xilinx.com/support/download/index.html/content/xilinx/en/downloadNav/vivado-design-tools/archive.html)
@@ -72,9 +78,11 @@ You can use `pip` to easily install `ait` on your system:
 #### Style testing
 
 The python code follows pycodestyle which is verified using the `pycodestyle` tool (can be installed with `python3 -m pip install pycodestyle`).
+
 To check the current source code just execute `pycodestyle`.
 
 #### Unit testing
 
 The `test` folder contains some unitary tests for python sources.
+
 To run all tests the command `python3 -m unittest` can be executed in the root directory of the repository.
