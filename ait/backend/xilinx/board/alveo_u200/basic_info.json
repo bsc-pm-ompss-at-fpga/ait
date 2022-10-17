@@ -2,7 +2,7 @@
 	"name": "alveo_u200",
 	"chip_part": "xcu200-fsgd2104-2-e",
 	"es": "",
-	"board_part": ["xilinx.com:au200"],
+	"board_part": "xilinx.com:au200",
 
 	"arch": {
 		"device": "alveo",

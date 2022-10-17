@@ -2,7 +2,7 @@
 	"name": "zynq702",
 	"chip_part": "xc7z020clg484-1",
 	"es": "",
-	"board_part": ["xilinx.com:zc702"],
+	"board_part": "xilinx.com:zc702",
 
 	"arch": {
 		"device": "zynq"

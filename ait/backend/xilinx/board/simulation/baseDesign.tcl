@@ -11,7 +11,7 @@ set_property CONFIG.ASSOCIATED_RESET {rstn} [get_bd_ports /clk]
 set_property CONFIG.ASSOCIATED_BUSIF {hwruntime_m_axi} [get_bd_ports /clk]
 
 set axi_stub [create_bd_cell -type ip -vlnv bsc:ompss:axi_stub:1.0 axi_stub_0]
-set_property -dict [list CONFIG.AXI_ID_WIDTH [expr max(int(ceil(log($num_accs)/log(2))), 1)]] $axi_stub
+set_property -dict [list CONFIG.AXI_ID_WIDTH [expr max(int(ceil(log(${::AIT::num_accs})/log(2))), 1)]] $axi_stub
 
 connect_bd_net [get_bd_ports clk] [get_bd_pins axi_stub_0/aclk]
 connect_bd_net [get_bd_ports rstn] [get_bd_pins axi_stub_0/aresetn]
@@ -28,23 +28,6 @@ set_property -dict [list CONFIG.NUM_MI {1}] [get_bd_cells M_AXI_master_0_Inter]
 connect_bd_intf_net [get_bd_intf_ports hwruntime_m_axi] -boundary_type upper [get_bd_intf_pins M_AXI_master_0_Inter/S00_AXI]
 connect_bd_net [get_bd_ports clk] [get_bd_pins M_AXI_master_0_Inter/ACLK] [get_bd_pins M_AXI_master_0_Inter/S00_ACLK] [get_bd_pins M_AXI_master_0_Inter/M00_ACLK]
 connect_bd_net [get_bd_ports rstn] [get_bd_pins M_AXI_master_0_Inter/ARESETN] [get_bd_pins M_AXI_master_0_Inter/S00_ARESETN] [get_bd_pins M_AXI_master_0_Inter/M00_ARESETN]
-
-# Create instance: bitInfo, and set properties
-create_bd_cell -type ip -vlnv xilinx.com:ip:blk_mem_gen bitInfo
-set_property -dict [ list \
-  CONFIG.Byte_Size {8} \
-  CONFIG.EN_SAFETY_CKT {false} \
-  CONFIG.Enable_32bit_Address {true} \
-  CONFIG.Fill_Remaining_Memory_Locations {false} \
-  CONFIG.Load_Init_File {false} \
-  CONFIG.Memory_Type {Single_Port_RAM} \
-  CONFIG.Register_PortA_Output_of_Memory_Primitives {false} \
-  CONFIG.Remaining_Memory_Locations {0} \
-  CONFIG.Use_Byte_Write_Enable {true} \
-  CONFIG.Use_RSTA_Pin {false} \
-  CONFIG.Write_Depth_A {512} \
-  CONFIG.use_bram_block {Stand_Alone} \
-] [get_bd_cells bitInfo]
 
 add_files ./board/simulation/sources/sim_tb.sv ./board/simulation/sources/cmd_in_queue_driver.sv ./board/simulation/sources/acc_stub.v
 

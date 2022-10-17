@@ -110,6 +110,103 @@ if { $bCheckIPsPassed != 1 } {
 # DESIGN PROCs
 ##################################################################
 
+# Hierarchical cell: hwr_inStream
+proc create_hier_cell_hwr_inStream { parentCell nameHier } {
+
+  variable script_folder
+
+  if { $parentCell eq "" || $nameHier eq "" } {
+     catch {common::send_msg_id "BD_TCL-102" "ERROR" "create_hier_cell_hwr_inStream() - Empty argument(s)!"}
+     return
+  }
+
+  # Get object for parentCell
+  set parentObj [get_bd_cells $parentCell]
+  if { $parentObj == "" } {
+     catch {common::send_msg_id "BD_TCL-100" "ERROR" "Unable to find parent cell <$parentCell>!"}
+     return
+  }
+
+  # Make sure parentObj is hier blk
+  set parentType [get_property TYPE $parentObj]
+  if { $parentType ne "hier" } {
+     catch {common::send_msg_id "BD_TCL-101" "ERROR" "Parent <$parentObj> has TYPE = <$parentType>. Expected to be <hier>."}
+     return
+  }
+
+  # Save current instance; Restore later
+  set oldCurInst [current_bd_instance .]
+
+  # Set parent object as current
+  current_bd_instance $parentObj
+
+  # Create cell and set as current instance
+  set hier_obj [create_bd_cell -type hier $nameHier]
+  current_bd_instance $hier_obj
+
+  # Create interface pins
+  for {set i 0} {$i < ${::AIT::num_accs}} {incr i} {
+      create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 S${i}_AXIS
+  }
+  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 cmdout_in
+
+  # Create pins
+  create_bd_pin -dir I -type clk clk
+  create_bd_pin -dir I -type rst interconnect_aresetn
+  create_bd_pin -dir I -type rst peripheral_aresetn
+
+  # Restore current instance
+  current_bd_instance $oldCurInst
+}
+
+# Hierarchical cell: hwr_outStream
+proc create_hier_cell_hwr_outStream { parentCell nameHier } {
+
+  variable script_folder
+
+  if { $parentCell eq "" || $nameHier eq "" } {
+     catch {common::send_msg_id "BD_TCL-102" "ERROR" "create_hier_cell_hwr_outStream() - Empty argument(s)!"}
+     return
+  }
+
+  # Get object for parentCell
+  set parentObj [get_bd_cells $parentCell]
+  if { $parentObj == "" } {
+     catch {common::send_msg_id "BD_TCL-100" "ERROR" "Unable to find parent cell <$parentCell>!"}
+     return
+  }
+
+  # Make sure parentObj is hier blk
+  set parentType [get_property TYPE $parentObj]
+  if { $parentType ne "hier" } {
+     catch {common::send_msg_id "BD_TCL-101" "ERROR" "Parent <$parentObj> has TYPE = <$parentType>. Expected to be <hier>."}
+     return
+  }
+
+  # Save current instance; Restore later
+  set oldCurInst [current_bd_instance .]
+
+  # Set parent object as current
+  current_bd_instance $parentObj
+
+  # Create cell and set as current instance
+  set hier_obj [create_bd_cell -type hier $nameHier]
+  current_bd_instance $hier_obj
+
+  # Create interface pins
+  for {set i 0} {$i < ${::AIT::num_accs}} {incr i} {
+      create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 M${i}_AXIS
+  }
+  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 cmdin_out
+
+  # Create pins
+  create_bd_pin -dir I -type clk clk
+  create_bd_pin -dir I -type rst interconnect_aresetn
+  create_bd_pin -dir I -type rst peripheral_aresetn
+
+  # Restore current instance
+  current_bd_instance $oldCurInst
+}
 
 # Hierarchical cell: Hardware_Runtime
 proc create_hier_cell_Hardware_Runtime { parentCell nameHier } {
@@ -154,6 +251,12 @@ proc create_hier_cell_Hardware_Runtime { parentCell nameHier } {
   create_bd_pin -dir O managed_aresetn
   create_bd_pin -dir I -type rst peripheral_aresetn
 
+  # Create instance: hwr_inStream
+  create_hier_cell_hwr_inStream [current_bd_instance .] hwr_inStream
+
+  # Create instance: hwr_outStream
+  create_hier_cell_hwr_outStream [current_bd_instance .] hwr_outStream
+
   # Create instance: GP_Inter, and set properties
   set GP_Inter [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect GP_Inter ]
   set_property -dict [ list \
@@ -165,8 +268,22 @@ proc create_hier_cell_Hardware_Runtime { parentCell nameHier } {
    CONFIG.STRATEGY {1} \
  ] $GP_Inter
 
+  # Create instance: axis_cmdin_TID, and set properties
+  set axis_cmdin_TID [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_subset_converter axis_cmdin_TID]
+  set_property -dict [ list \
+   CONFIG.M_TID_WIDTH.VALUE_SRC USER \
+   CONFIG.M_TID_WIDTH {1} \
+   #CONFIG.TID_REMAP "1'b1"
+  ] $axis_cmdin_TID
+
   # Create instance: Fast_OmpSs_Manager, and set properties
   set Fast_OmpSs_Manager [ create_bd_cell -type ip -vlnv bsc:ompss:fastompssmanager Fast_OmpSs_Manager ]
+  set_property -dict [ list \
+   CONFIG.MAX_ACCS [expr max(${::AIT::num_accs}, 2)] \
+   CONFIG.MAX_ACC_TYPES [expr max([llength ${::AIT::accs}], 2)] \
+   CONFIG.CMDIN_SUBQUEUE_LEN ${::AIT::cmdInSubqueue_len} \
+   CONFIG.CMDOUT_SUBQUEUE_LEN ${::AIT::cmdOutSubqueue_len} \
+  ] $Fast_OmpSs_Manager
 
   # Create instance: cmdInQueue, and set properties
   set cmdInQueue [ create_bd_cell -type ip -vlnv xilinx.com:ip:blk_mem_gen cmdInQueue ]
@@ -189,7 +306,7 @@ proc create_hier_cell_Hardware_Runtime { parentCell nameHier } {
    CONFIG.Use_Byte_Write_Enable {true} \
    CONFIG.Use_RSTA_Pin {false} \
    CONFIG.Use_RSTB_Pin {true} \
-   CONFIG.Write_Depth_A {1024} \
+   CONFIG.Write_Depth_A [expr ${::AIT::cmdInSubqueue_len}*max(${::AIT::num_accs}, 2)] \
    CONFIG.Write_Width_A {64} \
    CONFIG.Write_Width_B {32} \
    CONFIG.use_bram_block {Stand_Alone} \
@@ -222,7 +339,7 @@ proc create_hier_cell_Hardware_Runtime { parentCell nameHier } {
    CONFIG.Use_Byte_Write_Enable {true} \
    CONFIG.Use_RSTA_Pin {false} \
    CONFIG.Use_RSTB_Pin {true} \
-   CONFIG.Write_Depth_A {1024} \
+   CONFIG.Write_Depth_A [expr ${::AIT::cmdOutSubqueue_len}*max(${::AIT::num_accs}, 2)] \
    CONFIG.Write_Width_A {64} \
    CONFIG.Write_Width_B {32} \
    CONFIG.use_bram_block {Stand_Alone} \
@@ -243,6 +360,9 @@ proc create_hier_cell_Hardware_Runtime { parentCell nameHier } {
  ] $hwruntime_rst
 
   # Create interface connections
+  connect_bd_intf_net [get_bd_intf_pins Fast_OmpSs_Manager/cmdout_in] [get_bd_intf_pins hwr_inStream/cmdout_in]
+  connect_bd_intf_net [get_bd_intf_pins Fast_OmpSs_Manager/cmdin_out] [get_bd_intf_pins axis_cmdin_TID/S_AXIS]
+  connect_bd_intf_net [get_bd_intf_pins hwr_outStream/cmdin_out] [get_bd_intf_pins axis_cmdin_TID/M_AXIS]
   connect_bd_intf_net -intf_net GP_Inter_M00_AXI [get_bd_intf_pins GP_Inter/M00_AXI] [get_bd_intf_pins cmdInQueue_BRAM_Ctrl/S_AXI]
   connect_bd_intf_net -intf_net GP_Inter_M01_AXI [get_bd_intf_pins GP_Inter/M01_AXI] [get_bd_intf_pins cmdOutQueue_BRAM_Ctrl/S_AXI]
   connect_bd_intf_net -intf_net GP_Inter_M02_AXI [get_bd_intf_pins GP_Inter/M02_AXI] [get_bd_intf_pins hwruntime_rst/S_AXI]
@@ -253,11 +373,11 @@ proc create_hier_cell_Hardware_Runtime { parentCell nameHier } {
   connect_bd_intf_net -intf_net cmdOutQueue_BRAM_Ctrl_BRAM_PORTA [get_bd_intf_pins cmdOutQueue/BRAM_PORTB] [get_bd_intf_pins cmdOutQueue_BRAM_Ctrl/BRAM_PORTA]
 
   # Create port connections
-  connect_bd_net -net Fast_OmpSs_Manager_managed_aresetn [get_bd_pins managed_aresetn] [get_bd_pins Fast_OmpSs_Manager/managed_aresetn]
-  connect_bd_net -net aclk_1 [get_bd_pins aclk] [get_bd_pins GP_Inter/ACLK] [get_bd_pins GP_Inter/M00_ACLK] [get_bd_pins GP_Inter/M01_ACLK] [get_bd_pins GP_Inter/M02_ACLK] [get_bd_pins GP_Inter/S00_ACLK] [get_bd_pins Fast_OmpSs_Manager/aclk] [get_bd_pins cmdInQueue_BRAM_Ctrl/s_axi_aclk] [get_bd_pins cmdOutQueue_BRAM_Ctrl/s_axi_aclk] [get_bd_pins hwruntime_rst/s_axi_aclk]
+  connect_bd_net -net Fast_OmpSs_Manager_managed_aresetn [get_bd_pins managed_aresetn] [get_bd_pins Fast_OmpSs_Manager/managed_aresetn] [get_bd_pins axis_cmdin_TID/aresetn]
+  connect_bd_net -net aclk_1 [get_bd_pins aclk] [get_bd_pins GP_Inter/ACLK] [get_bd_pins GP_Inter/M00_ACLK] [get_bd_pins GP_Inter/M01_ACLK] [get_bd_pins GP_Inter/M02_ACLK] [get_bd_pins GP_Inter/S00_ACLK] [get_bd_pins Fast_OmpSs_Manager/aclk] [get_bd_pins cmdInQueue_BRAM_Ctrl/s_axi_aclk] [get_bd_pins cmdOutQueue_BRAM_Ctrl/s_axi_aclk] [get_bd_pins hwruntime_rst/s_axi_aclk] [get_bd_pins axis_cmdin_TID/aclk] [get_bd_pins hwr_inStream/clk] [get_bd_pins hwr_outStream/clk]
   connect_bd_net -net hwruntime_rst_gpio_io_o [get_bd_pins Fast_OmpSs_Manager/ps_rst] [get_bd_pins hwruntime_rst/gpio_io_o]
-  connect_bd_net -net interconnect_aresetn_1 [get_bd_pins interconnect_aresetn] [get_bd_pins GP_Inter/ARESETN] [get_bd_pins Fast_OmpSs_Manager/interconnect_aresetn]
-  connect_bd_net -net peripheral_aresetn_1 [get_bd_pins peripheral_aresetn] [get_bd_pins GP_Inter/M00_ARESETN] [get_bd_pins GP_Inter/M01_ARESETN] [get_bd_pins GP_Inter/M02_ARESETN] [get_bd_pins GP_Inter/S00_ARESETN] [get_bd_pins Fast_OmpSs_Manager/peripheral_aresetn] [get_bd_pins cmdInQueue_BRAM_Ctrl/s_axi_aresetn] [get_bd_pins cmdOutQueue_BRAM_Ctrl/s_axi_aresetn] [get_bd_pins hwruntime_rst/s_axi_aresetn]
+  connect_bd_net -net interconnect_aresetn_1 [get_bd_pins interconnect_aresetn] [get_bd_pins GP_Inter/ARESETN] [get_bd_pins Fast_OmpSs_Manager/interconnect_aresetn] [get_bd_pins hwr_inStream/interconnect_aresetn] [get_bd_pins hwr_outStream/interconnect_aresetn]
+  connect_bd_net -net peripheral_aresetn_1 [get_bd_pins peripheral_aresetn] [get_bd_pins GP_Inter/M00_ARESETN] [get_bd_pins GP_Inter/M01_ARESETN] [get_bd_pins GP_Inter/M02_ARESETN] [get_bd_pins GP_Inter/S00_ARESETN] [get_bd_pins Fast_OmpSs_Manager/peripheral_aresetn] [get_bd_pins cmdInQueue_BRAM_Ctrl/s_axi_aresetn] [get_bd_pins cmdOutQueue_BRAM_Ctrl/s_axi_aresetn] [get_bd_pins hwruntime_rst/s_axi_aresetn] [get_bd_pins hwr_inStream/peripheral_aresetn] [get_bd_pins hwr_outStream/peripheral_aresetn]
 
   # Restore current instance
   current_bd_instance $oldCurInst

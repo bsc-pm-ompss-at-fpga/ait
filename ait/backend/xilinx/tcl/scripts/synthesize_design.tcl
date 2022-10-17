@@ -18,39 +18,43 @@
 #    License along with this code. If not, see <www.gnu.org/licenses/>.  #
 #------------------------------------------------------------------------#
 
-# Configuration variables
-set script_path [file dirname [file normalize [info script]]]
-if {[catch {source -notrace $script_path/../projectVariables.tcl}]} {
-    puts "\[AIT\] ERROR: Failed sourcing project variables"
+# Load auxiliary procedures
+if {[catch {source -notrace tcl/scripts/utils.tcl}]} {
+    puts "\[AIT\] ERROR: Failed loading auxiliary procedures"
     exit 1
 }
 
+# Project variables
+if {[catch {source -notrace tcl/projectVariables.tcl}]} {
+    AIT::error_msg "Failed sourcing project variables"
+}
+
 # Open Vivado project
-open_project ./$name_Project/${name_Project}.xpr
+open_project ${::AIT::name_Project}/${::AIT::name_Project}.xpr
 
 # Open Block Design
-open_bd_design ./$name_Project/$name_Project.srcs/sources_1/bd/$name_Design/$name_Design.bd
+open_bd_design ${::AIT::name_Project}/${::AIT::name_Project}.srcs/sources_1/bd/${::AIT::name_Design}/${::AIT::name_Design}.bd
 
 # Generate output products
-generate_target all [get_files ./$name_Project/$name_Project.srcs/sources_1/bd/$name_Design/$name_Design.bd]
+generate_target all [get_files ${::AIT::name_Project}/${::AIT::name_Project}.srcs/sources_1/bd/${::AIT::name_Design}/${::AIT::name_Design}.bd]
 
 # Launch synthesis
 reset_run synth_1
-reset_target all [get_files ./$name_Project/$name_Project.srcs/sources_1/bd/$name_Design/$name_Design.bd]
-export_ip_user_files -of_objects [get_files ./$name_Project/$name_Project.srcs/sources_1/bd/$name_Design/$name_Design.bd] -sync -no_script -force -quiet
-delete_ip_run [get_files -of_objects [get_fileset sources_1] ./$name_Project/$name_Project.srcs/sources_1/bd/$name_Design/$name_Design.bd]
-launch_runs synth_1 -jobs $num_jobs
+reset_target all [get_files ${::AIT::name_Project}/${::AIT::name_Project}.srcs/sources_1/bd/${::AIT::name_Design}/${::AIT::name_Design}.bd]
+export_ip_user_files -of_objects [get_files ${::AIT::name_Project}/${::AIT::name_Project}.srcs/sources_1/bd/${::AIT::name_Design}/${::AIT::name_Design}.bd] -sync -no_script -force -quiet
+delete_ip_run [get_files -of_objects [get_fileset sources_1] ${::AIT::name_Project}/${::AIT::name_Project}.srcs/sources_1/bd/${::AIT::name_Design}/${::AIT::name_Design}.bd]
+launch_runs synth_1 -jobs ${::AIT::num_jobs}
 
 wait_on_run synth_1
 
 # Check if synthesis finished correctly
 if {[string match "*ERROR*" [get_property STATUS [get_runs *synth_1]]]} {
     foreach {index} [lsearch -all [get_property STATUS [get_runs *synth_1]] *ERROR*] {
-        if {[catch {exec grep ERROR ./$name_Project/$name_Project.runs/[lindex [get_runs *synth_1] $index]/runme.log}]} {
-            aitInfo "Failed OOC synthesis [lindex [get_runs *synth_1] $index]"
+        if {[catch {exec grep ERROR ${::AIT::name_Project}/${::AIT::name_Project}.runs/[lindex [get_runs *synth_1] $index]/runme.log}]} {
+            AIT::info_msg "Failed OOC synthesis [lindex [get_runs *synth_1] $index]"
         } else {
-            aitInfo "Failed OOC synthesis [lindex [get_runs *synth_1] $index]: [exec grep ERROR ./$name_Project/$name_Project.runs/[lindex [get_runs *synth_1] $index]/runme.log]"
+            AIT::info_msg "Failed OOC synthesis [lindex [get_runs *synth_1] $index]: [exec grep ERROR ${::AIT::name_Project}/${::AIT::name_Project}.runs/[lindex [get_runs *synth_1] $index]/runme.log]"
         }
     }
-    aitError "Hardware synthesis failed."
+    AIT::error_msg "Hardware synthesis failed."
 }

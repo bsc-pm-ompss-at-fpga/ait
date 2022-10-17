@@ -18,36 +18,40 @@
 #    License along with this code. If not, see <www.gnu.org/licenses/>.  #
 #------------------------------------------------------------------------#
 
-# Configuration variables
-set script_path [file dirname [file normalize [info script]]]
-if {[catch {source -notrace $script_path/../projectVariables.tcl}]} {
-    puts "\[AIT\] ERROR: Failed sourcing project variables"
+# Load auxiliary procedures
+if {[catch {source -notrace tcl/scripts/utils.tcl}]} {
+    puts "\[AIT\] ERROR: Failed loading auxiliary procedures"
     exit 1
 }
 
+# Project variables
+if {[catch {source -notrace tcl/projectVariables.tcl}]} {
+    AIT::error_msg "Failed sourcing project variables"
+}
+
 # Open Vivado project
-open_project ./$name_Project/${name_Project}.xpr
+open_project ${::AIT::name_Project}/${::AIT::name_Project}.xpr
 
 # Check if previous step finished correctly
 if {[string match "*ERROR*" [get_property STATUS [get_runs *synth_1]]]} {
-    aitError "Synthesis step did not finished correctly. Cannot start implementation step."
+    AIT::error_msg "Synthesis step did not finished correctly. Cannot start implementation step."
 }
 
 # Open Block Design
-open_bd_design ./$name_Project/$name_Project.srcs/sources_1/bd/$name_Design/$name_Design.bd
+open_bd_design ${::AIT::name_Project}/${::AIT::name_Project}.srcs/sources_1/bd/${::AIT::name_Design}/${::AIT::name_Design}.bd
 
 # Generate .bin file
 set_property STEPS.WRITE_BITSTREAM.ARGS.BIN_FILE true [get_runs impl_1]
 
 # Launch implementation
 reset_run impl_1
-launch_runs impl_1 -jobs $num_jobs
+launch_runs impl_1 -jobs ${::AIT::num_jobs}
 
 wait_on_run impl_1
 
 # Check if implementation finished correctly
 if {[string match "*ERROR*" [get_property STATUS [get_runs *impl_1]]]} {
-    aitInfo "Failed impl_1 implementation: [exec grep ERROR ./$name_Project/$name_Project.runs/impl_1/runme.log]"
-    aitError "Hardware implementation failed."
+    AIT::info_msg "Failed impl_1 implementation: [exec grep ERROR ${::AIT::name_Project}/${::AIT::name_Project}.runs/impl_1/runme.log]"
+    AIT::error_msg "Hardware implementation failed."
 }
 

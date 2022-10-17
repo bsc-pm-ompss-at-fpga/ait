@@ -1188,29 +1188,15 @@ proc create_root_design { parentCell } {
 
   # Create instance: M_AXI_master_Inter, and set properties
   set M_AXI_master_Inter [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect M_AXI_master_Inter ]
+  set_property -dict [ list \
+   CONFIG.NUM_MI {1} \
+ ] $M_AXI_master_Inter
 
   # Create instance: S_AXI_data_control_coherent_Inter, and set properties
   set S_AXI_data_control_coherent_Inter [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect S_AXI_data_control_coherent_Inter ]
   set_property -dict [ list \
    CONFIG.NUM_MI {1} \
  ] $S_AXI_data_control_coherent_Inter
-
-  # Create instance: bitInfo, and set properties
-  set bitInfo [ create_bd_cell -type ip -vlnv xilinx.com:ip:blk_mem_gen bitInfo ]
-  set_property -dict [ list \
-   CONFIG.EN_SAFETY_CKT {false} \
-   CONFIG.Enable_32bit_Address {true} \
-   CONFIG.Register_PortA_Output_of_Memory_Primitives {false} \
-   CONFIG.Use_RSTA_Pin {false} \
-   CONFIG.Write_Depth_A {73} \
-   CONFIG.use_bram_block {Stand_Alone} \
- ] $bitInfo
-
-  # Create instance: bitInfo_BRAM_Ctrl, and set properties
-  set bitInfo_BRAM_Ctrl [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl bitInfo_BRAM_Ctrl ]
-  set_property -dict [ list \
-   CONFIG.SINGLE_PORT_BRAM {1} \
- ] $bitInfo_BRAM_Ctrl
 
   # Create instance: bridge_to_host
   create_hier_cell_bridge_to_host [current_bd_instance .] bridge_to_host
@@ -1274,10 +1260,8 @@ proc create_root_design { parentCell } {
   connect_bd_intf_net -intf_net DDR_uDIMM_DDR4_C1 [get_bd_intf_ports uDIMM_DDR4_C1] [get_bd_intf_pins bridge_to_host/DDR_1_uDIMM]
   connect_bd_intf_net -intf_net DDR_uDIMM_DDR4_C2 [get_bd_intf_ports uDIMM_DDR4_C2] [get_bd_intf_pins bridge_to_host/DDR_2_uDIMM]
   connect_bd_intf_net -intf_net DDR_uDIMM_DDR4_C3 [get_bd_intf_ports uDIMM_DDR4_C3] [get_bd_intf_pins bridge_to_host/DDR_3_uDIMM]
-  connect_bd_intf_net -intf_net M_AXI_master_Inter_M00_AXI [get_bd_intf_pins M_AXI_master_Inter/M00_AXI] [get_bd_intf_pins bitInfo_BRAM_Ctrl/S_AXI]
   connect_bd_intf_net -intf_net S00_AXI_1 [get_bd_intf_pins M_AXI_master_Inter/S00_AXI] [get_bd_intf_pins bridge_to_host/M_AXI]
   connect_bd_intf_net -intf_net S_AXI_data_control_coherent_Inter_M00_AXI [get_bd_intf_pins S_AXI_data_control_coherent_Inter/M00_AXI] [get_bd_intf_pins bridge_to_host/S_AXI]
-  connect_bd_intf_net -intf_net bitInfo_BRAM_Ctrl_BRAM_PORTA [get_bd_intf_pins bitInfo/BRAM_PORTA] [get_bd_intf_pins bitInfo_BRAM_Ctrl/BRAM_PORTA]
   connect_bd_intf_net -intf_net bridge_to_host_JTAG_M_AXI [get_bd_intf_pins bridge_to_host/JTAG_M_AXI] [get_bd_intf_pins clock_generator/s_axi_lite]
   connect_bd_intf_net -intf_net uDIMM_DDR4_C1_REFCLK_1 [get_bd_intf_ports uDIMM_DDR4_C1_REFCLK] [get_bd_intf_pins bridge_to_host/DDR_1_SYS_CLK]
   connect_bd_intf_net -intf_net uDIMM_DDR4_C2_REFCLK_1 [get_bd_intf_ports uDIMM_DDR4_C2_REFCLK] [get_bd_intf_pins bridge_to_host/DDR_2_SYS_CLK]
@@ -1294,14 +1278,14 @@ proc create_root_design { parentCell } {
   connect_bd_net -net clock_generator_clk_300 [get_bd_pins bridge_to_host/clk_300] [get_bd_pins clock_generator/clk_300]
   connect_bd_net -net clock_generator_clk_glitch [get_bd_pins bridge_to_host/clk_glitch] [get_bd_pins clock_generator/clk_glitch]
   connect_bd_net -net clock_generator_clk_oor [get_bd_pins bridge_to_host/clk_oor] [get_bd_pins clock_generator/clk_oor]
-  connect_bd_net -net clock_generator_clk_out1 [get_bd_pins M_AXI_master_Inter/ACLK] [get_bd_pins M_AXI_master_Inter/M00_ACLK] [get_bd_pins M_AXI_master_Inter/M01_ACLK] [get_bd_pins M_AXI_master_Inter/S00_ACLK] [get_bd_pins S_AXI_data_control_coherent_Inter/ACLK] [get_bd_pins S_AXI_data_control_coherent_Inter/M00_ACLK] [get_bd_pins S_AXI_data_control_coherent_Inter/S00_ACLK] [get_bd_pins bitInfo_BRAM_Ctrl/s_axi_aclk] [get_bd_pins bridge_to_host/aclk] [get_bd_pins clock_generator/clk_out1] [get_bd_pins processor_system_reset/slowest_sync_clk]
+  connect_bd_net -net clock_generator_clk_out1 [get_bd_pins M_AXI_master_Inter/ACLK] [get_bd_pins M_AXI_master_Inter/S00_ACLK] [get_bd_pins S_AXI_data_control_coherent_Inter/ACLK] [get_bd_pins S_AXI_data_control_coherent_Inter/M00_ACLK] [get_bd_pins bridge_to_host/aclk] [get_bd_pins clock_generator/clk_out1] [get_bd_pins processor_system_reset/slowest_sync_clk]
   connect_bd_net -net clock_generator_clk_stop [get_bd_pins bridge_to_host/clk_stop] [get_bd_pins clock_generator/clk_stop]
   connect_bd_net -net clock_generator_locked [get_bd_pins bridge_to_host/dcm_locked] [get_bd_pins clock_generator/locked] [get_bd_pins processor_system_reset/dcm_locked]
   connect_bd_net -net gtyrxn_in_0_1 [get_bd_ports gtyrxn_in_0] [get_bd_pins bridge_to_host/gtyrxn_in_0]
   connect_bd_net -net gtyrxp_in_0_1 [get_bd_ports gtyrxp_in_0] [get_bd_pins bridge_to_host/gtyrxp_in_0]
   connect_bd_net -net maxilink_xilinx_axi_0_gtytxn_out [get_bd_ports gtytxn_out_0] [get_bd_pins bridge_to_host/gtytxn_out_0]
   connect_bd_net -net maxilink_xilinx_axi_0_gtytxp_out [get_bd_ports gtytxp_out_0] [get_bd_pins bridge_to_host/gtytxp_out_0]
-  connect_bd_net -net processor_system_reset_peripheral_aresetn [get_bd_pins M_AXI_master_Inter/M00_ARESETN] [get_bd_pins M_AXI_master_Inter/M01_ARESETN] [get_bd_pins M_AXI_master_Inter/S00_ARESETN] [get_bd_pins S_AXI_data_control_coherent_Inter/M00_ARESETN] [get_bd_pins S_AXI_data_control_coherent_Inter/S00_ARESETN] [get_bd_pins bitInfo_BRAM_Ctrl/s_axi_aresetn] [get_bd_pins bridge_to_host/peripheral_aresetn] [get_bd_pins processor_system_reset/peripheral_aresetn]
+  connect_bd_net -net processor_system_reset_peripheral_aresetn [get_bd_pins M_AXI_master_Inter/S00_ARESETN] [get_bd_pins S_AXI_data_control_coherent_Inter/M00_ARESETN] [get_bd_pins bridge_to_host/peripheral_aresetn] [get_bd_pins processor_system_reset/peripheral_aresetn]
   connect_bd_net -net vu9_board_rst_1 [get_bd_ports vu9_board_rst] [get_bd_pins bridge_to_host/vu9_board_rst] [get_bd_pins processor_system_reset/ext_reset_in]
 
   # Create address segments
@@ -1314,7 +1298,6 @@ proc create_root_design { parentCell } {
   assign_bd_address -offset 0x003000400000 -range 0x00010000 -target_address_space [get_bd_addr_spaces bridge_to_host/maxilink/maxilink/maxi_zu9m] [get_bd_addr_segs bridge_to_host/DDR/DDR_aux_rst_gpio/S_AXI/Reg] -force
   assign_bd_address -offset 0xC0000000 -range 0x00004000 -target_address_space [get_bd_addr_spaces bridge_to_host/maxilink/maxilink/maxi_zu9m] [get_bd_addr_segs bridge_to_host/peripherals/axi_bram_ctrl_0/S_AXI/Mem0] -force
   assign_bd_address -offset 0x40000000 -range 0x00010000 -target_address_space [get_bd_addr_spaces bridge_to_host/maxilink/maxilink/maxi_zu9m] [get_bd_addr_segs bridge_to_host/peripherals/axi_gpio_0/S_AXI/Reg] -force
-  assign_bd_address -offset 0x003000020000 -range 0x00001000 -target_address_space [get_bd_addr_spaces bridge_to_host/maxilink/maxilink/maxi_zu9m] [get_bd_addr_segs bitInfo_BRAM_Ctrl/S_AXI/Mem0] -force
   assign_bd_address -offset 0x44A00000 -range 0x00010000 -target_address_space [get_bd_addr_spaces bridge_to_host/peripherals/jtag_axi_0/Data] [get_bd_addr_segs clock_generator/s_axi_lite/Reg] -force
 
 

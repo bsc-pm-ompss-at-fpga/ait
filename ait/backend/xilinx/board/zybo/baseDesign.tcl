@@ -216,7 +216,7 @@ proc create_root_design { parentCell } {
   # Create instance: M_AXI_master_1_Inter, and set properties
   set M_AXI_master_1_Inter [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect M_AXI_master_1_Inter ]
   set_property -dict [ list \
-   CONFIG.NUM_MI {2} \
+   CONFIG.NUM_MI {1} \
  ] $M_AXI_master_1_Inter
 
   # Create instance: S_AXI_coherent_Inter, and set properties
@@ -260,33 +260,6 @@ proc create_root_design { parentCell } {
   set_property -dict [ list \
    CONFIG.NUM_MI {1} \
  ] $S_AXI_data_3_Inter
-
-  # Create instance: bitInfo, and set properties
-  set bitInfo [ create_bd_cell -type ip -vlnv xilinx.com:ip:blk_mem_gen bitInfo ]
-  set_property -dict [ list \
-   CONFIG.Byte_Size {8} \
-   CONFIG.Enable_32bit_Address {true} \
-   CONFIG.Enable_B {Always_Enabled} \
-   CONFIG.Fill_Remaining_Memory_Locations {false} \
-   CONFIG.Memory_Type {Single_Port_RAM} \
-   CONFIG.Port_A_Write_Rate {50} \
-   CONFIG.Port_B_Clock {0} \
-   CONFIG.Port_B_Enable_Rate {0} \
-   CONFIG.Register_PortA_Output_of_Memory_Primitives {false} \
-   CONFIG.Register_PortB_Output_of_Memory_Primitives {false} \
-   CONFIG.Remaining_Memory_Locations {0} \
-   CONFIG.Use_Byte_Write_Enable {true} \
-   CONFIG.Use_RSTA_Pin {false} \
-   CONFIG.Use_RSTB_Pin {false} \
-   CONFIG.Write_Depth_A {512} \
-   CONFIG.use_bram_block {Stand_Alone} \
- ] $bitInfo
-
-  # Create instance: bitInfo_BRAM_Ctrl, and set properties
-  set bitInfo_BRAM_Ctrl [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl bitInfo_BRAM_Ctrl ]
-  set_property -dict [ list \
-   CONFIG.SINGLE_PORT_BRAM {1} \
- ] $bitInfo_BRAM_Ctrl
 
   # Create instance: bridge_to_host, and set properties
   set bridge_to_host [ create_bd_cell -type ip -vlnv xilinx.com:ip:processing_system7 bridge_to_host ]
@@ -1131,7 +1104,6 @@ proc create_root_design { parentCell } {
  ] $xlconstant_0
 
   # Create interface connections
-  connect_bd_intf_net -intf_net M_AXI_master_1_Inter_M00_AXI [get_bd_intf_pins M_AXI_master_1_Inter/M00_AXI] [get_bd_intf_pins bitInfo_BRAM_Ctrl/S_AXI]
   connect_bd_intf_net -intf_net S_AXI_coherent_Inter_M00_AXI [get_bd_intf_pins S_AXI_coherent_Inter/M00_AXI] [get_bd_intf_pins bridge_to_host/S_AXI_ACP]
   connect_bd_intf_net -intf_net S_AXI_control_0_Inter_M00_AXI [get_bd_intf_pins S_AXI_control_0_Inter/M00_AXI] [get_bd_intf_pins bridge_to_host/S_AXI_GP0]
   connect_bd_intf_net -intf_net S_AXI_control_1_Inter_M00_AXI [get_bd_intf_pins S_AXI_control_1_Inter/M00_AXI] [get_bd_intf_pins bridge_to_host/S_AXI_GP1]
@@ -1139,7 +1111,6 @@ proc create_root_design { parentCell } {
   connect_bd_intf_net -intf_net S_AXI_data_1_Inter_M00_AXI [get_bd_intf_pins S_AXI_data_1_Inter/M00_AXI] [get_bd_intf_pins bridge_to_host/S_AXI_HP1]
   connect_bd_intf_net -intf_net S_AXI_data_2_Inter_M00_AXI [get_bd_intf_pins S_AXI_data_2_Inter/M00_AXI] [get_bd_intf_pins bridge_to_host/S_AXI_HP2]
   connect_bd_intf_net -intf_net S_AXI_data_3_Inter_M00_AXI [get_bd_intf_pins S_AXI_data_3_Inter/M00_AXI] [get_bd_intf_pins bridge_to_host/S_AXI_HP3]
-  connect_bd_intf_net -intf_net bitInfo_BRAM_Ctrl_BRAM_PORTA [get_bd_intf_pins bitInfo/BRAM_PORTA] [get_bd_intf_pins bitInfo_BRAM_Ctrl/BRAM_PORTA]
   connect_bd_intf_net -intf_net bridge_to_host_DDR [get_bd_intf_ports DDR] [get_bd_intf_pins bridge_to_host/DDR]
   connect_bd_intf_net -intf_net bridge_to_host_FIXED_IO [get_bd_intf_ports FIXED_IO] [get_bd_intf_pins bridge_to_host/FIXED_IO]
   connect_bd_intf_net -intf_net bridge_to_host_IIC_0 [get_bd_intf_ports IIC_0] [get_bd_intf_pins bridge_to_host/IIC_0]
@@ -1153,15 +1124,11 @@ proc create_root_design { parentCell } {
   connect_bd_net -net bridge_to_host_FCLK_RESET0_N [get_bd_pins bridge_to_host/FCLK_RESET0_N] [get_bd_pins clock_generator/resetn] [get_bd_pins processor_system_reset/ext_reset_in]
   connect_bd_net -net clk_wiz_0_clk_out1 [get_bd_ports ac_mclk] [get_bd_pins clk_wiz_0/clk_out1]
   connect_bd_net -net clock_generator_locked [get_bd_pins clock_generator/locked] [get_bd_pins processor_system_reset/dcm_locked]
-  connect_bd_net -net processingSystem7_FCLK_CLK0 [get_bd_pins M_AXI_master_0_Inter/ACLK] [get_bd_pins M_AXI_master_0_Inter/M00_ACLK] [get_bd_pins M_AXI_master_0_Inter/S00_ACLK] [get_bd_pins M_AXI_master_1_Inter/ACLK] [get_bd_pins M_AXI_master_1_Inter/M00_ACLK] [get_bd_pins M_AXI_master_1_Inter/M01_ACLK] [get_bd_pins M_AXI_master_1_Inter/S00_ACLK] [get_bd_pins S_AXI_coherent_Inter/ACLK] [get_bd_pins S_AXI_coherent_Inter/M00_ACLK] [get_bd_pins S_AXI_coherent_Inter/S00_ACLK] [get_bd_pins S_AXI_control_0_Inter/ACLK] [get_bd_pins S_AXI_control_0_Inter/M00_ACLK] [get_bd_pins S_AXI_control_0_Inter/S00_ACLK] [get_bd_pins S_AXI_control_1_Inter/ACLK] [get_bd_pins S_AXI_control_1_Inter/M00_ACLK] [get_bd_pins S_AXI_control_1_Inter/S00_ACLK] [get_bd_pins S_AXI_data_0_Inter/ACLK] [get_bd_pins S_AXI_data_0_Inter/M00_ACLK] [get_bd_pins S_AXI_data_0_Inter/S00_ACLK] [get_bd_pins S_AXI_data_1_Inter/ACLK] [get_bd_pins S_AXI_data_1_Inter/M00_ACLK] [get_bd_pins S_AXI_data_1_Inter/S00_ACLK] [get_bd_pins S_AXI_data_2_Inter/ACLK] [get_bd_pins S_AXI_data_2_Inter/M00_ACLK] [get_bd_pins S_AXI_data_2_Inter/S00_ACLK] [get_bd_pins S_AXI_data_3_Inter/ACLK] [get_bd_pins S_AXI_data_3_Inter/M00_ACLK] [get_bd_pins S_AXI_data_3_Inter/S00_ACLK] [get_bd_pins bitInfo_BRAM_Ctrl/s_axi_aclk] [get_bd_pins bridge_to_host/M_AXI_GP0_ACLK] [get_bd_pins bridge_to_host/M_AXI_GP1_ACLK] [get_bd_pins bridge_to_host/S_AXI_ACP_ACLK] [get_bd_pins bridge_to_host/S_AXI_GP0_ACLK] [get_bd_pins bridge_to_host/S_AXI_GP1_ACLK] [get_bd_pins bridge_to_host/S_AXI_HP0_ACLK] [get_bd_pins bridge_to_host/S_AXI_HP1_ACLK] [get_bd_pins bridge_to_host/S_AXI_HP2_ACLK] [get_bd_pins bridge_to_host/S_AXI_HP3_ACLK] [get_bd_pins clock_generator/clk_out1] [get_bd_pins processor_system_reset/slowest_sync_clk]
+  connect_bd_net -net processingSystem7_FCLK_CLK0 [get_bd_pins M_AXI_master_0_Inter/ACLK] [get_bd_pins M_AXI_master_0_Inter/S00_ACLK] [get_bd_pins M_AXI_master_1_Inter/ACLK] [get_bd_pins M_AXI_master_1_Inter/S00_ACLK] [get_bd_pins S_AXI_coherent_Inter/ACLK] [get_bd_pins S_AXI_coherent_Inter/M00_ACLK] [get_bd_pins S_AXI_coherent_Inter/S00_ACLK] [get_bd_pins S_AXI_control_0_Inter/ACLK] [get_bd_pins S_AXI_control_0_Inter/M00_ACLK] [get_bd_pins S_AXI_control_0_Inter/S00_ACLK] [get_bd_pins S_AXI_control_1_Inter/ACLK] [get_bd_pins S_AXI_control_1_Inter/M00_ACLK] [get_bd_pins S_AXI_control_1_Inter/S00_ACLK] [get_bd_pins S_AXI_data_0_Inter/ACLK] [get_bd_pins S_AXI_data_0_Inter/M00_ACLK] [get_bd_pins S_AXI_data_1_Inter/ACLK] [get_bd_pins S_AXI_data_1_Inter/M00_ACLK] [get_bd_pins S_AXI_data_2_Inter/ACLK] [get_bd_pins S_AXI_data_2_Inter/M00_ACLK] [get_bd_pins S_AXI_data_3_Inter/ACLK] [get_bd_pins S_AXI_data_3_Inter/M00_ACLK] [get_bd_pins bridge_to_host/M_AXI_GP0_ACLK] [get_bd_pins bridge_to_host/M_AXI_GP1_ACLK] [get_bd_pins bridge_to_host/S_AXI_ACP_ACLK] [get_bd_pins bridge_to_host/S_AXI_GP0_ACLK] [get_bd_pins bridge_to_host/S_AXI_GP1_ACLK] [get_bd_pins bridge_to_host/S_AXI_HP0_ACLK] [get_bd_pins bridge_to_host/S_AXI_HP1_ACLK] [get_bd_pins bridge_to_host/S_AXI_HP2_ACLK] [get_bd_pins bridge_to_host/S_AXI_HP3_ACLK] [get_bd_pins clock_generator/clk_out1] [get_bd_pins processor_system_reset/slowest_sync_clk]
   connect_bd_net -net processor_system_reset_interconnect_aresetn [get_bd_pins M_AXI_master_0_Inter/ARESETN] [get_bd_pins M_AXI_master_1_Inter/ARESETN] [get_bd_pins S_AXI_coherent_Inter/ARESETN] [get_bd_pins S_AXI_control_0_Inter/ARESETN] [get_bd_pins S_AXI_control_1_Inter/ARESETN] [get_bd_pins S_AXI_data_0_Inter/ARESETN] [get_bd_pins S_AXI_data_1_Inter/ARESETN] [get_bd_pins S_AXI_data_2_Inter/ARESETN] [get_bd_pins S_AXI_data_3_Inter/ARESETN] [get_bd_pins processor_system_reset/interconnect_aresetn]
-  connect_bd_net -net processor_system_reset_peripheral_aresetn [get_bd_pins M_AXI_master_0_Inter/M00_ARESETN] [get_bd_pins M_AXI_master_0_Inter/S00_ARESETN] [get_bd_pins M_AXI_master_1_Inter/M00_ARESETN] [get_bd_pins M_AXI_master_1_Inter/M01_ARESETN] [get_bd_pins M_AXI_master_1_Inter/S00_ARESETN] [get_bd_pins S_AXI_coherent_Inter/M00_ARESETN] [get_bd_pins S_AXI_coherent_Inter/S00_ARESETN] [get_bd_pins S_AXI_control_0_Inter/M00_ARESETN] [get_bd_pins S_AXI_control_0_Inter/S00_ARESETN] [get_bd_pins S_AXI_control_1_Inter/M00_ARESETN] [get_bd_pins S_AXI_control_1_Inter/S00_ARESETN] [get_bd_pins S_AXI_data_0_Inter/M00_ARESETN] [get_bd_pins S_AXI_data_0_Inter/S00_ARESETN] [get_bd_pins S_AXI_data_1_Inter/M00_ARESETN] [get_bd_pins S_AXI_data_1_Inter/S00_ARESETN] [get_bd_pins S_AXI_data_2_Inter/M00_ARESETN] [get_bd_pins S_AXI_data_2_Inter/S00_ARESETN] [get_bd_pins S_AXI_data_3_Inter/M00_ARESETN] [get_bd_pins S_AXI_data_3_Inter/S00_ARESETN] [get_bd_pins bitInfo_BRAM_Ctrl/s_axi_aresetn] [get_bd_pins processor_system_reset/peripheral_aresetn]
+  connect_bd_net -net processor_system_reset_peripheral_aresetn [get_bd_pins M_AXI_master_0_Inter/S00_ARESETN] [get_bd_pins M_AXI_master_1_Inter/S00_ARESETN] [get_bd_pins S_AXI_coherent_Inter/M00_ARESETN] [get_bd_pins S_AXI_coherent_Inter/S00_ARESETN] [get_bd_pins S_AXI_control_0_Inter/M00_ARESETN] [get_bd_pins S_AXI_control_0_Inter/S00_ARESETN] [get_bd_pins S_AXI_control_1_Inter/M00_ARESETN] [get_bd_pins S_AXI_control_1_Inter/S00_ARESETN] [get_bd_pins S_AXI_data_0_Inter/M00_ARESETN] [get_bd_pins S_AXI_data_1_Inter/M00_ARESETN] [get_bd_pins S_AXI_data_2_Inter/M00_ARESETN] [get_bd_pins S_AXI_data_3_Inter/M00_ARESETN] [get_bd_pins processor_system_reset/peripheral_aresetn]
   connect_bd_net -net util_ds_buf_0_BUFG_O [get_bd_pins clk_wiz_0/clk_in1] [get_bd_pins util_ds_buf_0/BUFG_O]
   connect_bd_net -net xlconstant_0_dout [get_bd_ports HDMI_OEN] [get_bd_ports ac_muten] [get_bd_pins xlconstant_0/dout]
-
-  # Create address segments
-  create_bd_addr_seg -range 0x00001000 -offset 0x80020000 [get_bd_addr_spaces bridge_to_host/Data] [get_bd_addr_segs bitInfo_BRAM_Ctrl/S_AXI/Mem0] SEG_bitInfo_BRAM_Ctrl_Mem0
-
 
   # Restore current instance
   current_bd_instance $oldCurInst

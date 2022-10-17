@@ -2,7 +2,7 @@
 	"name": "simulation",
 	"chip_part": "xczu9eg-ffvb1156-2-e",
 	"es": "",
-	"board_part": ["xilinx.com:zcu102"],
+	"board_part": "xilinx.com:zcu102",
 
 	"arch": {
 		"device": "simulation"
@@ -15,6 +15,7 @@
 
 	"mem": {
 		"type": "ddr",
+		"num_banks": 1,
 		"bank_size": "16G"
 	},
 
