@@ -65,7 +65,7 @@ def check_vitis_hls():
     if distutils.spawn.find_executable('vitis_hls'):
         vitis_hls_version = str(subprocess.check_output(['vitis_hls -version | head -n1 | sed "s/\(Vitis.\+v\)\(\([0-9]\|\.\)\+\).\+/\\2/"'], shell=True), 'utf-8').strip()
         if vitis_hls_version < MIN_VITIS_HLS_VERSION:
-            msg.error('Installed Vitis HLS version ({}) not supported (>= {})'.format(vivado_hls_version, MIN_VITIS_HLS_VERSION))
+            msg.error('Installed Vitis HLS version ({}) not supported (>= {})'.format(vitis_hls_version, MIN_VITIS_HLS_VERSION))
     else:
         msg.error('vitis_hls not found. Please set PATH correctly')
 
