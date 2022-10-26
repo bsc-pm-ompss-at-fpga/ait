@@ -75,11 +75,16 @@ You can use `pip` to easily install `ait` on your system:
 
 # Tests
 
+#### Prerequisites
+
+ * python3-flake8
+ * python3-unittest
+
 #### Style testing
 
-The python code follows pycodestyle which is verified using the `pycodestyle` tool (can be installed with `python3 -m pip install pycodestyle`).
+The python code follows pycodestyle which is verified using the `flake8` tool.
 
-To check the current source code just execute `pycodestyle`.
+To check the current source code just execute `python3 -m flake8`.
 
 #### Unit testing
 
