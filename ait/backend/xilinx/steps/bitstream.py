@@ -244,9 +244,10 @@ def run_step(project_args):
             shutil.copy2(glob.glob(project_backend_path + '/' + args.name + '/' + args.name
                          + '.runs/impl_1/' + args.name + '*.bit')[0],
                          project_path + '/' + args.name + '.bit')
-            shutil.copy2(glob.glob(project_backend_path + '/' + args.name + '/' + args.name
-                         + '.runs/impl_1/' + args.name + '*.bin')[0],
-                         project_path + '/' + args.name + '.bin')
+            if board.arch.device == 'zynq' or board.arch.device == 'zynqmp':
+                shutil.copy2(glob.glob(project_backend_path + '/' + args.name + '/' + args.name
+                             + '.runs/impl_1/' + args.name + '*.bin')[0],
+                             project_path + '/' + args.name + '.bin')
             gen_utilization_report(project_path + '/' + args.name + '.resources-impl.txt')
             gen_wns_report(project_path + '/' + args.name + '.timing-impl.txt')
             msg.success('Bitstream generated')

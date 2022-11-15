@@ -41,6 +41,13 @@ if {[string match "*ERROR*" [get_property STATUS [get_runs *impl_1]]]} {
 open_bd_design ${::AIT::name_Project}/${::AIT::name_Project}.srcs/sources_1/bd/${::AIT::name_Design}/${::AIT::name_Design}.bd
 validate_bd_design
 
+# Generate .bin file for Zynq and ZynqMP boards
+if {(${::AIT::arch_device} eq "zynq") || (${::AIT::arch_device} eq "zynqmp")} {
+    set_property STEPS.WRITE_BITSTREAM.ARGS.BIN_FILE true [get_runs impl_1]
+} else {
+    set_property STEPS.WRITE_BITSTREAM.ARGS.BIN_FILE false [get_runs impl_1]
+}
+
 # Write bitstream
 reset_run impl_1 -from_step write_bitstream
 launch_runs impl_1 -to_step write_bitstream -jobs ${::AIT::num_jobs}

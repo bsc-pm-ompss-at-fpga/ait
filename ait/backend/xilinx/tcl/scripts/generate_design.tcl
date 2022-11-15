@@ -148,9 +148,6 @@ if {[info exists {::AIT::boardPart}]} {
    }
 }
 
-# Generate .bin file
-set_property STEPS.WRITE_BITSTREAM.ARGS.BIN_FILE true [get_runs impl_1]
-
 # Set repository path
 set_property ip_repo_paths HLS [current_project]
 
