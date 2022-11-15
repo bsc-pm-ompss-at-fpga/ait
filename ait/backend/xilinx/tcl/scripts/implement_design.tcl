@@ -55,7 +55,11 @@ wait_on_run impl_1
 
 # Check if implementation finished correctly
 if {[string match "*ERROR*" [get_property STATUS [get_runs *impl_1]]]} {
-    AIT::info_msg "Failed impl_1 implementation: [exec grep ERROR ${::AIT::name_Project}/${::AIT::name_Project}.runs/impl_1/runme.log]"
+    if {[catch {exec exec grep ^ERROR ${::AIT::name_Project}/${::AIT::name_Project}.runs/impl_1/runme.log}]} {
+        AIT::info_msg "Failed impl_1 implementation"
+    } else {
+        AIT::info_msg "Failed impl_1 implementation: [exec grep ^ERROR ${::AIT::name_Project}/${::AIT::name_Project}.runs/impl_1/runme.log]"
+    }
     AIT::error_msg "Hardware implementation failed."
 }
 

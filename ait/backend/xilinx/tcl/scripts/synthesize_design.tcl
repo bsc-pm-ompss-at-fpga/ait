@@ -50,10 +50,10 @@ wait_on_run synth_1
 # Check if synthesis finished correctly
 if {[string match "*ERROR*" [get_property STATUS [get_runs *synth_1]]]} {
     foreach {index} [lsearch -all [get_property STATUS [get_runs *synth_1]] *ERROR*] {
-        if {[catch {exec grep ERROR ${::AIT::name_Project}/${::AIT::name_Project}.runs/[lindex [get_runs *synth_1] $index]/runme.log}]} {
+        if {[catch {exec grep ^ERROR ${::AIT::name_Project}/${::AIT::name_Project}.runs/[lindex [get_runs *synth_1] $index]/runme.log}]} {
             AIT::info_msg "Failed OOC synthesis [lindex [get_runs *synth_1] $index]"
         } else {
-            AIT::info_msg "Failed OOC synthesis [lindex [get_runs *synth_1] $index]: [exec grep ERROR ${::AIT::name_Project}/${::AIT::name_Project}.runs/[lindex [get_runs *synth_1] $index]/runme.log]"
+            AIT::info_msg "Failed OOC synthesis [lindex [get_runs *synth_1] $index]: [exec grep ^ERROR ${::AIT::name_Project}/${::AIT::name_Project}.runs/[lindex [get_runs *synth_1] $index]/runme.log]"
         }
     }
     AIT::error_msg "Hardware synthesis failed."
