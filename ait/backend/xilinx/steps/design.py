@@ -147,10 +147,11 @@ def generate_Vivado_variables_tcl():
     if (args.slr_slices == 'acc') or (args.slr_slices == 'all'):
         acc_pl_dict = 'set acc_placement [dict create '
         for acc in accs[0:num_accs]:
-            acc_pl_dict += ' ' + str(acc.name) + ' [list'
-            for slrnum in acc.SLR:
-                acc_pl_dict += ' ' + str(slrnum)
-            acc_pl_dict += ']'
+            if hasattr(acc, 'SLR'):
+                acc_pl_dict += ' ' + str(acc.name) + ' [list'
+                for slrnum in acc.SLR:
+                    acc_pl_dict += ' ' + str(slrnum)
+                acc_pl_dict += ']'
         acc_pl_dict += ']'
         vivado_project_variables += '\t' + acc_pl_dict + '\n'
 
@@ -158,23 +159,29 @@ def generate_Vivado_variables_tcl():
     if (args.floorplanning_constr == 'acc') or (args.floorplanning_constr == 'all'):
         accConstrFiles = open(f'{project_backend_path}/board/{board.name}/constraints/acc_floorplan.xdc', 'w')
         for acc in accs[0:num_accs]:
-            # Instantiate each accelerator with a single instance and placement info
-            for instanceNumber in range(acc.num_instances):
-                accBlock = f'{acc.name}_{instanceNumber}'
-                accConstrFiles.write(f'add_cells_to_pblock [get_pblocks slr{acc.SLR[instanceNumber]}_pblock] '
-                                     + '[get_cells {'
-                                     + f'*/{accBlock}/Adapter_instr '
-                                     + f'*/{accBlock}/Adapter_outStream '
-                                     + f'*/{accBlock}/Adapter_inStream '
-                                     + f'*/{accBlock}/TID_subset_converter '
-                                     + f'*/{accBlock}/{acc.name}_ompss'
-                                     + '}]\n')
-                if acc.task_creation:
+            if hasattr(acc, 'SLR'):
+                instancesToPlace = len(acc.SLR)
+                if len(acc.SLR) > acc.num_instances:
+                    instancesToPlace = acc.num_instances
+                    msg.warning('Placement list for accelerator {} has more instances than expected ({} > {}). Placing instances 0-{}'.format(acc.name, len(acc.SLR), acc.num_instances, instancesToPlace - 1))
+                elif len(acc.SLR) < acc.num_instances:
+                    instancesToPlace = len(acc.SLR)
+                    msg.warning('Placement list for accelerator {} has less instances than expected ({} < {}). Placing instances 0-{}'.format(acc.name, len(acc.SLR), acc.num_instances, instancesToPlace - 1))
+                # Instantiate each accelerator with a single instance and placement info
+                for instanceNumber in range(instancesToPlace):
+                    accBlock = f'{acc.name}_{instanceNumber}'
                     accConstrFiles.write(f'add_cells_to_pblock [get_pblocks slr{acc.SLR[instanceNumber]}_pblock] '
                                          + '[get_cells {'
-                                         + f'*/{accBlock}/new_task_spawner '
-                                         + f'*/{accBlock}/axis_tid_demux '
+                                         + f'*/{accBlock}/Adapter_* '
+                                         + f'*/{accBlock}/TID_subset_converter '
+                                         + f'*/{accBlock}/{acc.name}_ompss'
                                          + '}]\n')
+                    if acc.task_creation:
+                        accConstrFiles.write(f'add_cells_to_pblock [get_pblocks slr{acc.SLR[instanceNumber]}_pblock] '
+                                             + '[get_cells {'
+                                             + f'*/{accBlock}/new_task_spawner '
+                                             + f'*/{accBlock}/axis_tid_demux '
+                                             + '}]\n')
         accConstrFiles.close()
 
     if args.hwruntime == 'pom':
@@ -250,10 +257,7 @@ def load_acc_placement(accList, args):
             if acc.name not in usrPlacement:
                 msg.warning('No placement given for acc ' + acc.name)
             else:
-                placeList = usrPlacement[acc.name]
-                if len(placeList) != acc.num_instances:
-                    msg.warning('Placement list does not match number instances, placing only matching instances')
-                acc.SLR = placeList
+                acc.SLR = usrPlacement[acc.name]
 
     elif args.placement_file:
         msg.error('Placement file not found: ' + args.user_constraints)
