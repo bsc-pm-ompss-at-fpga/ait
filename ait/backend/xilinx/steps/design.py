@@ -58,6 +58,7 @@ def generate_Vivado_variables_tcl():
                                + '\tvariable version_patch_ait ' + str(VERSION_PATCH) + '\n' \
                                + '\tvariable version_bitInfo ' + str(BITINFO_VERSION).lower() + '\n' \
                                + '\tvariable version_wrapper ' + (str(args.wrapper_version).lower() if args.wrapper_version else '0') + '\n' \
+                               + '\tvariable memory_bonding ' + (str(args.enable_memory_bonding)) + '\n' \
                                + '\n' \
                                + '\t# IP caching variables\n' \
                                + '\tvariable IP_caching ' + str(not args.disable_IP_caching).lower() + '\n'

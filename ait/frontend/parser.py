@@ -224,9 +224,13 @@ class ArgParser:
         bitstream_args.add_argument('--hwruntime', help='add a hardware runtime. Available hardware runtimes by vendor:\n' + '\n'.join(backend + ': ' + ', '.join(hwr for hwr in backends[backend]['hwruntimes']) + "\n(def: '{}')".format(backends[backend]['def_hwr']) for backend in backends), choices=[hwr for hwr in backends[backend]['hwruntimes'] for backend in backends], metavar='HWRUNTIME', default='som')
         bitstream_args.add_argument('--hwcounter', help='add a hardware counter to the bitstream', action='store_true', default=False)
         bitstream_args.add_argument('--wrapper_version', help='version of accelerator wrapper shell. This information will be placed in the bitstream information', type=int)
-        bitstream_args.add_argument('--datainterfaces_map', help='path of mappings file for the data interfaces', type=FileType())
-        bitstream_args.add_argument('--memory_interleaving_stride', help='size in bytes of the stride of the memory interleaving. By default there is no interleaving', metavar='MEM_INTERLEAVING_STRIDE', type=HumanReadableType(vmin='4K'))
         bitstream_args.add_argument('--bitinfo_note', help='custom note to add to the bitInfo', type=ascii, default='')
+
+        # Data path arguments
+        datapath_args = self.parser.add_argument_group('Data path')
+        datapath_args.add_argument('--datainterfaces_map', help='path of mappings file for the data interfaces', type=FileType())
+        datapath_args.add_argument('--memory_interleaving_stride', help='size in bytes of the stride of the memory interleaving. By default there is no interleaving', metavar='MEM_INTERLEAVING_STRIDE', type=HumanReadableType(vmin='4K'))
+        datapath_args.add_argument('--enable_memory_bonding', help='bond memory channels to increase data throughput. By default there is no bonding', action='store_true', default=False)
 
         # Hardware Runtime arguments
         hwruntime_args = self.parser.add_argument_group('Hardware Runtime')
