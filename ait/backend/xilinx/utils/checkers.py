@@ -27,8 +27,13 @@ import subprocess
 from ait.backend.xilinx.info import MIN_VITIS_HLS_VERSION, MIN_VIVADO_HLS_VERSION, MIN_VIVADO_VERSION
 from ait.frontend.utils import msg
 
+vivado_version = None
+hls_version = None
+
 
 def check_vivado():
+    global vivado_version
+
     if distutils.spawn.find_executable('vivado'):
         vivado_version = str(subprocess.check_output(['vivado -version | head -n1 | sed "s/\(Vivado.\+v\)\(\([0-9]\|\.\)\+\).\+/\\2/"'], shell=True), 'utf-8').strip()
         if vivado_version < MIN_VIVADO_VERSION:
@@ -51,10 +56,12 @@ def check_hls_tool():
 
 
 def check_vivado_hls():
+    global hls_version
+
     if distutils.spawn.find_executable('vivado_hls'):
-        vivado_hls_version = str(subprocess.check_output(['vivado_hls -version | head -n1 | sed "s/\(Vivado.\+v\)\(\([0-9]\|\.\)\+\).\+/\\2/"'], shell=True), 'utf-8').strip()
-        if vivado_hls_version < MIN_VIVADO_HLS_VERSION:
-            msg.error('Installed Vivado HLS version ({}) not supported (>= {})'.format(vivado_hls_version, MIN_VIVADO_HLS_VERSION))
+        hls_version = str(subprocess.check_output(['vivado_hls -version | head -n1 | sed "s/\(Vivado.\+v\)\(\([0-9]\|\.\)\+\).\+/\\2/"'], shell=True), 'utf-8').strip()
+        if hls_version < MIN_VIVADO_HLS_VERSION:
+            msg.error('Installed Vivado HLS version ({}) not supported (>= {})'.format(hls_version, MIN_VIVADO_HLS_VERSION))
     else:
         msg.warning('vivado_hls not found. Please set PATH correctly')
 
@@ -62,10 +69,12 @@ def check_vivado_hls():
 
 
 def check_vitis_hls():
+    global hls_version
+
     if distutils.spawn.find_executable('vitis_hls'):
-        vitis_hls_version = str(subprocess.check_output(['vitis_hls -version | head -n1 | sed "s/\(Vitis.\+v\)\(\([0-9]\|\.\)\+\).\+/\\2/"'], shell=True), 'utf-8').strip()
-        if vitis_hls_version < MIN_VITIS_HLS_VERSION:
-            msg.error('Installed Vitis HLS version ({}) not supported (>= {})'.format(vitis_hls_version, MIN_VITIS_HLS_VERSION))
+        hls_version = str(subprocess.check_output(['vitis_hls -version | head -n1 | sed "s/\(Vitis.\+v\)\(\([0-9]\|\.\)\+\).\+/\\2/"'], shell=True), 'utf-8').strip()
+        if hls_version < MIN_VITIS_HLS_VERSION:
+            msg.error('Installed Vitis HLS version ({}) not supported (>= {})'.format(hls_version, MIN_VITIS_HLS_VERSION))
     else:
         msg.error('vitis_hls not found. Please set PATH correctly')
 
