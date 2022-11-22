@@ -20,8 +20,8 @@
 #     License along with this code. If not, see <www.gnu.org/licenses/>.   #
 # ------------------------------------------------------------------------ #
 
-import distutils.spawn
 import os
+import shutil
 import subprocess
 
 from ait.backend.xilinx.info import MIN_VITIS_HLS_VERSION, MIN_VIVADO_HLS_VERSION, MIN_VIVADO_VERSION
@@ -34,7 +34,7 @@ hls_version = None
 def check_vivado():
     global vivado_version
 
-    if distutils.spawn.find_executable('vivado'):
+    if shutil.which('vivado'):
         vivado_version = str(subprocess.check_output(['vivado -version | head -n1 | sed "s/\(Vivado.\+v\)\(\([0-9]\|\.\)\+\).\+/\\2/"'], shell=True), 'utf-8').strip()
         if vivado_version < MIN_VIVADO_VERSION:
             msg.error('Installed Vivado version ({}) not supported (>= {})'.format(vivado_version, MIN_VIVADO_VERSION))
@@ -45,10 +45,10 @@ def check_vivado():
 
 
 def check_hls_tool():
-    if distutils.spawn.find_executable('vivado_hls'):
+    if shutil.which('vivado_hls'):
         check_vivado_hls()
         return 'vivado_hls'
-    elif distutils.spawn.find_executable('vitis_hls'):
+    elif shutil.which('vitis_hls'):
         check_vitis_hls()
         return 'vitis_hls'
     else:
@@ -58,7 +58,7 @@ def check_hls_tool():
 def check_vivado_hls():
     global hls_version
 
-    if distutils.spawn.find_executable('vivado_hls'):
+    if shutil.which('vivado_hls'):
         hls_version = str(subprocess.check_output(['vivado_hls -version | head -n1 | sed "s/\(Vivado.\+v\)\(\([0-9]\|\.\)\+\).\+/\\2/"'], shell=True), 'utf-8').strip()
         if hls_version < MIN_VIVADO_HLS_VERSION:
             msg.error('Installed Vivado HLS version ({}) not supported (>= {})'.format(hls_version, MIN_VIVADO_HLS_VERSION))
@@ -71,7 +71,7 @@ def check_vivado_hls():
 def check_vitis_hls():
     global hls_version
 
-    if distutils.spawn.find_executable('vitis_hls'):
+    if shutil.which('vitis_hls'):
         hls_version = str(subprocess.check_output(['vitis_hls -version | head -n1 | sed "s/\(Vitis.\+v\)\(\([0-9]\|\.\)\+\).\+/\\2/"'], shell=True), 'utf-8').strip()
         if hls_version < MIN_VITIS_HLS_VERSION:
             msg.error('Installed Vitis HLS version ({}) not supported (>= {})'.format(hls_version, MIN_VITIS_HLS_VERSION))
@@ -82,7 +82,7 @@ def check_vitis_hls():
 
 
 def check_bootgen():
-    if distutils.spawn.find_executable('bootgen'):
+    if shutil.which('bootgen'):
         msg.warning('bootgen not found. .bit.bin file will not be generated')
         return False
 
@@ -106,7 +106,7 @@ def check_petalinux(petalinux_build_path, petalinux_install_path):
         if splitted[0] == 'PATH' or splitted[0].find('PETALINUX') != -1:
             os.environ.update(dict([line.split('=', 1)]))
 
-    if not distutils.spawn.find_executable('petalinux-config'):
+    if not shutil.which('petalinux-config'):
         msg.error('petalinux commands not found. Please check PETALINUX_INSTALL environment variable')
 
     return True
