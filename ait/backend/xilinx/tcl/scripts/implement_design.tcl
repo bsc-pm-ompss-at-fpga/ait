@@ -47,6 +47,8 @@ if {(${::AIT::arch_device} eq "zynq") || (${::AIT::arch_device} eq "zynqmp")} {
     set_property STEPS.WRITE_BITSTREAM.ARGS.BIN_FILE false [get_runs impl_1]
 }
 
+AIT::info_msg "Launching implementation run with ${::AIT::num_jobs} jobs"
+
 # Launch implementation
 reset_run impl_1
 launch_runs impl_1 -jobs ${::AIT::num_jobs}

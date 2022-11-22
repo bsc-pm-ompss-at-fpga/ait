@@ -38,6 +38,8 @@ open_bd_design ${::AIT::name_Project}/${::AIT::name_Project}.srcs/sources_1/bd/$
 # Generate output products
 generate_target all [get_files ${::AIT::name_Project}/${::AIT::name_Project}.srcs/sources_1/bd/${::AIT::name_Design}/${::AIT::name_Design}.bd]
 
+AIT::info_msg "Launching synthesis run with ${::AIT::num_jobs} jobs"
+
 # Launch synthesis
 reset_run synth_1
 reset_target all [get_files ${::AIT::name_Project}/${::AIT::name_Project}.srcs/sources_1/bd/${::AIT::name_Design}/${::AIT::name_Design}.bd]
