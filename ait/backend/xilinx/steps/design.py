@@ -174,6 +174,7 @@ def generate_Vivado_variables_tcl():
                     accConstrFiles.write(f'add_cells_to_pblock [get_pblocks slr{acc.SLR[instanceNumber]}_pblock] '
                                          + '[get_cells {'
                                          + f'*/{accBlock}/Adapter_* '
+                                         + f'*/{accBlock}/*_addrInterleaver '
                                          + f'*/{accBlock}/TID_subset_converter '
                                          + f'*/{accBlock}/{acc.name}_ompss'
                                          + '}]\n')
