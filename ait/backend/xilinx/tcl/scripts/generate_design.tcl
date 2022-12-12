@@ -305,12 +305,12 @@ foreach acc ${::AIT::accs} {
 
             # Add register slice to AXI port
             if {(${::AIT::slr_slices} eq "acc") || (${::AIT::slr_slices} eq "all")} {
-                set hier_AXI_port [AIT::AXI::add_reg_slice $hier_AXI_port $accName $instanceNum]
+                set hier_AXI_port [AIT::AXI::add_reg_slice $hier_AXI_port $port_name $accName $instanceNum]
             }
 
             # Add address interleaver to AXI port
             if {${::AIT::interleaving_stride} ne "None"} {
-                AIT::AXI::add_addrInterleaver $hier_AXI_port $accName $instanceNum
+                AIT::AXI::add_addrInterleaver $hier_AXI_port $port_name $accName $instanceNum
             }
 
             create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 ${accName}_${instanceNum}/$port_name

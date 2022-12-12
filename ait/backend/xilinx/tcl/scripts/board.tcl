@@ -11,6 +11,19 @@ namespace eval AIT {
                 bond_QDMA_channels
             }
 
+            # If interconnect priorities are enabled, set PCIe master as max priority
+            if {${::AIT::interconPriority}} {
+                set_property -dict [list CONFIG.ENABLE_ADVANCED_OPTIONS {1} CONFIG.XBAR_DATA_WIDTH.VALUE_SRC PROPAGATED] [get_bd_cells bridge_to_host/DDR_S_AXI_Inter]
+                set_property -dict [list CONFIG.S00_ARB_PRIORITY 15] [get_bd_cells bridge_to_host/DDR_S_AXI_Inter]
+            }
+
+            # If enabled, simplify interconnection to memory
+            if {${::AIT::simplify_interconnection}} {
+                move_bd_cells [get_bd_cells /] [get_bd_cells bridge_to_host/DDR_S_AXI_Inter]
+                delete_bd_objs [get_bd_cells S_AXI_data_control_coherent_Inter]
+                set_property name S_AXI_data_control_coherent_Inter [get_bd_cells DDR_S_AXI_Inter]
+            }
+
             get_bd_axi_interfaces
 
             # Create instance: bitInfo, and set properties
@@ -50,19 +63,6 @@ namespace eval AIT {
             connect_bd_intf_net [get_bd_intf_pins bitInfo/BRAM_PORTA] [get_bd_intf_pins bitInfo_BRAM_Ctrl/BRAM_PORTA]
             connect_clock [get_bd_pins bitInfo_BRAM_Ctrl/s_axi_aclk]
             connect_reset [get_bd_pins bitInfo_BRAM_Ctrl/s_axi_aresetn] "peripheral"
-
-            # If interconnect priorities are enabled, set PCIe master as max priority
-            if {${::AIT::interconPriority}} {
-                set_property -dict [list CONFIG.ENABLE_ADVANCED_OPTIONS {1} CONFIG.XBAR_DATA_WIDTH.VALUE_SRC PROPAGATED] [get_bd_cells bridge_to_host/DDR_S_AXI_Inter]
-                set_property -dict [list CONFIG.S00_ARB_PRIORITY 15] [get_bd_cells bridge_to_host/DDR_S_AXI_Inter]
-            }
-
-            # If enabled, simplify interconnection to memory
-            if {${::AIT::simplify_interconnection}} {
-                move_bd_cells [get_bd_cells /] [get_bd_cells bridge_to_host/DDR_S_AXI_Inter]
-                delete_bd_objs [get_bd_cells S_AXI_data_control_coherent_Inter]
-                set_property name S_AXI_data_control_coherent_Inter [get_bd_cells DDR_S_AXI_Inter]
-            }
         }
 
         proc bond_QDMA_channels {} {
@@ -483,12 +483,16 @@ namespace eval AIT {
 
         # Connects source clock pin to the output of the clock generator IP
         proc connect_clock {src_clk} {
-            connect_bd_net $src_clk [get_bd_pins clock_generator/clk_out1]
+            if {!([llength [get_bd_nets -quiet -of_objects $src_clk]])} {
+                connect_bd_net $src_clk [get_bd_pins clock_generator/clk_out1]
+            }
         }
 
         # Connects source reset to either interconnect or peripheral reset
         proc connect_reset {src_rst dst_rst} {
-            connect_bd_net $src_rst [get_bd_pins processor_system_reset/${dst_rst}_aresetn]
+            if {!([llength [get_bd_nets -quiet -of_objects $src_rst]])} {
+                connect_bd_net $src_rst [get_bd_pins processor_system_reset/${dst_rst}_aresetn]
+            }
         }
 
         # Sets target frequency, retrieves actual achieved frequency and returns it

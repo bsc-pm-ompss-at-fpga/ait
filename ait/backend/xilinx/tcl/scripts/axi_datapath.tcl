@@ -1,7 +1,6 @@
 namespace eval AIT {
     namespace eval AXI {
-        proc add_reg_slice {AXI_port accName instanceNum} {
-            set port_name [string replace [string range $AXI_port [expr [string last / $AXI_port] + 1] end] 0 [expr [string length "m_axi_"] - 1]]
+        proc add_reg_slice {AXI_port port_name accName instanceNum} {
             if {!([dict exists ${::AIT::acc_placement} $accName] && ([llength [dict get ${::AIT::acc_placement} $accName]] > ${instanceNum}))} {
                 # No placement info is provided for this instance
                 AIT::warning_msg "No placement info provided for instance ${instanceNum} of ${accName}. Slices for AXI ports will not be created"
@@ -35,8 +34,7 @@ namespace eval AIT {
             return $AXI_port
         }
 
-        proc add_addrInterleaver {AXI_port accName instanceNum} {
-            set port_name [string replace [string range $AXI_port [expr [string last / $AXI_port] + 1] end] 0 [expr [string length "m_axi_"] - 1]]
+        proc add_addrInterleaver {AXI_port port_name accName instanceNum} {
             set addrInterleaver [create_bd_cell -type module -reference addrInterleaver ${accName}_${instanceNum}/${port_name}_addrInterleaver]
             create_bd_pin -dir O -from 63 -to 0 ${accName}_${instanceNum}/${port_name}_awaddr
             create_bd_pin -dir O -from 63 -to 0 ${accName}_${instanceNum}/${port_name}_araddr

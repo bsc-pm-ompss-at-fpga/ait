@@ -64,7 +64,7 @@ namespace eval AIT {
                 connect_bd_net [get_bd_pins $stream_adapter/in_hs] ${AXIS_port}
                 connect_bd_net [get_bd_pins $stream_adapter/aclk] [get_bd_pins ${accName}_${instanceNum}/aclk]
                 connect_bd_net [get_bd_pins $stream_adapter/aresetn] [get_bd_pins ${accName}_${instanceNum}/managed_aresetn]
-                return $stream_adapter/outStream
+                return [get_bd_intf_pins $stream_adapter/outStream]
             } elseif {$dir eq "I"} {
                 set stream_adapter [create_bd_cell -type module -reference streamToHsAdapter ${accName}_${instanceNum}/Adapter_${port_name}]
                 connect_bd_net [get_bd_pins $stream_adapter/out_hs_ap_vld] [get_bd_pins -regexp ${AXIS_port}_ap_vld]
@@ -72,7 +72,7 @@ namespace eval AIT {
                 connect_bd_net [get_bd_pins $stream_adapter/out_hs] ${AXIS_port}
                 connect_bd_net [get_bd_pins $stream_adapter/aclk] [get_bd_pins ${accName}_${instanceNum}/aclk]
                 connect_bd_net [get_bd_pins $stream_adapter/aresetn] [get_bd_pins ${accName}_${instanceNum}/managed_aresetn]
-                return $stream_adapter/inStream
+                return [get_bd_intf_pins $stream_adapter/inStream]
             }
         }
 
