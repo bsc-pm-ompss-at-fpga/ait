@@ -119,6 +119,8 @@ def get_accelerators(project_path):
             # Check if the acc needs lock support
             if acc.lock:
                 args.lock_hwruntime = True
+                if args.hwruntime == 'fom':
+                    msg.error('Using advanced hwruntime features not present in FOM')
 
     if num_accs == 0:
         msg.error('No accelerators found')

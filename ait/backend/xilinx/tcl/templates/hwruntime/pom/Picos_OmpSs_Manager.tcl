@@ -535,6 +535,11 @@ if {$::AIT::enable_spawn_queues} {
   connect_bd_net -net interconnect_aresetn_1 [get_bd_pins interconnect_aresetn] [get_bd_pins GP_Inter/ARESETN] [get_bd_pins Picos_OmpSs_Manager/interconnect_aresetn] [get_bd_pins hwr_inStream/interconnect_aresetn] [get_bd_pins hwr_outStream/interconnect_aresetn]
   connect_bd_net -net peripheral_aresetn_1 [get_bd_pins peripheral_aresetn] [get_bd_pins GP_Inter/M00_ARESETN] [get_bd_pins GP_Inter/M01_ARESETN] [get_bd_pins GP_Inter/M02_ARESETN] [get_bd_pins GP_Inter/M03_ARESETN] [get_bd_pins GP_Inter/M04_ARESETN] [get_bd_pins GP_Inter/S00_ARESETN] [get_bd_pins Picos_OmpSs_Manager/peripheral_aresetn] [get_bd_pins cmdInQueue_BRAM_Ctrl/s_axi_aresetn] [get_bd_pins cmdOutQueue_BRAM_Ctrl/s_axi_aresetn] [get_bd_pins hwruntime_rst/s_axi_aresetn] [get_bd_pins hwr_inStream/peripheral_aresetn] [get_bd_pins hwr_outStream/peripheral_aresetn]
 
+  if {$::AIT::lock_hwruntime} {
+      connect_bd_net [get_bd_pins managed_aresetn] [get_bd_pins axis_lock_TID/aresetn]
+      connect_bd_net [get_bd_pins aclk] [get_bd_pins axis_lock_TID/aclk]
+  }
+
   # Restore current instance
   current_bd_instance $oldCurInst
 }

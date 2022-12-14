@@ -329,14 +329,14 @@ def run_step(project_args):
     elif args.user_post_design:
         msg.error('User POST design TCL script not found: ' + args.user_post_design)
 
-    if not args.advanced_hwruntime and (args.hwruntime == 'som' or args.hwruntime == 'pom'):
+    if not args.advanced_hwruntime and not args.lock_hwruntime and (args.hwruntime == 'som' or args.hwruntime == 'pom'):
         msg.info('No use of hardware runtime advanced features detected. Defaulting to FOM')
         args.hwruntime = 'fom'
-        args.advanced_hwruntime = False
 
     if args.disable_spawn_queues or not args.advanced_hwruntime:
         args.spawnin_queue_len = 0
         args.spawnout_queue_len = 0
+        args.disable_spawn_queues = True
 
     # Generate tcl file with project variables
     generate_Vivado_variables_tcl()
