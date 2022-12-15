@@ -20,7 +20,6 @@
 #     License along with this code. If not, see <www.gnu.org/licenses/>.   #
 # ------------------------------------------------------------------------ #
 
-import glob
 import json
 import os
 import re
@@ -48,8 +47,8 @@ def generate_Vivado_variables_tcl():
                                + '\tvariable name_Project ' + args.name + '\n' \
                                + '\tvariable name_Design ' + args.name + '_design\n' \
                                + '\tvariable target_lang ' + args.target_language + '\n' \
-                               + '\tvariable num_accs ' + str(num_instances) + '\n' \
-                               + '\tvariable num_acc_creators ' + str(num_acc_creators) + '\n' \
+                               + '\tvariable num_accs ' + str(args.num_instances) + '\n' \
+                               + '\tvariable num_acc_creators ' + str(args.num_acc_creators) + '\n' \
                                + '\tvariable num_jobs ' + str(args.jobs) + '\n' \
                                + '\tvariable ait_call "' + str(re.escape(os.path.basename(sys.argv[0]) + ' ' + ' '.join(sys.argv[1:]))) + '"\n' \
                                + '\tvariable bitInfo_note ' + str(re.escape(args.bitinfo_note)) + '\n' \
@@ -122,23 +121,35 @@ def generate_Vivado_variables_tcl():
 
     vivado_project_variables += '\n' \
                                 + '\t# HW runtime variables\n' \
-                                + '\tvariable hwruntime ' + str(args.hwruntime) + '\n' \
-                                + '\tvariable advanced_hwruntime ' + str(args.advanced_hwruntime) + '\n' \
+                                + '\tvariable deps_hwruntime ' + str(args.deps_hwruntime) + '\n' \
+                                + '\tvariable task_creation ' + str(args.task_creation) + '\n' \
                                 + '\tvariable lock_hwruntime ' + str(args.lock_hwruntime) + '\n' \
                                 + '\tvariable cmdInSubqueue_len ' + str(args.cmdin_subqueue_len) + '\n' \
                                 + '\tvariable cmdOutSubqueue_len ' + str(args.cmdout_subqueue_len) + '\n' \
                                 + '\tvariable spawnInQueue_len ' + str(args.spawnin_queue_len) + '\n' \
                                 + '\tvariable spawnOutQueue_len ' + str(args.spawnout_queue_len) + '\n' \
                                 + '\tvariable hwruntime_interconnect ' + str(args.hwruntime_interconnect) + '\n' \
-                                + '\tvariable enable_spawn_queues ' + str(not args.disable_spawn_queues) + '\n'
+                                + '\tvariable enable_spawn_queues ' + str(not args.disable_spawn_queues) + '\n' \
+                                + '\tvariable max_args_per_task ' + str(args.max_args_per_task) + '\n' \
+                                + '\tvariable max_deps_per_task ' + str(args.max_deps_per_task) + '\n' \
+                                + '\tvariable max_copies_per_task ' + str(args.max_copies_per_task) + '\n'
+    if args.deps_hwruntime:
+        vivado_project_variables += '\n' \
+                                    + '\t# Picos parameters\n' \
+                                    + '\tvariable picos_num_dcts ' + str(args.picos_num_dcts) + '\n' \
+                                    + '\tvariable picos_tm_size ' + str(args.picos_tm_size) + '\n' \
+                                    + '\tvariable picos_dm_size ' + str(args.picos_dm_size) + '\n' \
+                                    + '\tvariable picos_vm_size ' + str(args.picos_vm_size) + '\n' \
+                                    + '\tvariable picos_dm_ds ' + args.picos_dm_ds + '\n' \
+                                    + '\tvariable picos_dm_hash ' + args.picos_dm_hash + '\n' \
+                                    + '\tvariable picos_hash_t_size ' + str(args.picos_hash_t_size) + '\n'
 
     vivado_project_variables += '\n' \
                                 + '\t# List of accelerators\n' \
                                 + '\tset accs [list'
 
-    for acc in accs[0:num_accs]:
-        acc_name = str(acc.type) + ':' + str(acc.num_instances) + ':' + acc.name + ':' + ('1' if acc.task_creation else '0')
-
+    for acc in accs[0:args.num_accs]:
+        acc_name = str(acc.type) + ':' + str(acc.num_instances) + ':' + acc.name + ':' + str(acc.task_creation)
         vivado_project_variables += ' ' + acc_name
 
     vivado_project_variables += '\t]\n'
@@ -147,7 +158,7 @@ def generate_Vivado_variables_tcl():
     # Placement info is only needed for registers, constraints are dumped into constraint file
     if (args.slr_slices == 'acc') or (args.slr_slices == 'all'):
         acc_pl_dict = 'set acc_placement [dict create '
-        for acc in accs[0:num_accs]:
+        for acc in accs[0:args.num_accs]:
             if hasattr(acc, 'SLR'):
                 acc_pl_dict += ' ' + str(acc.name) + ' [list'
                 for slrnum in acc.SLR:
@@ -159,7 +170,7 @@ def generate_Vivado_variables_tcl():
     # Generate acc constraint file
     if (args.floorplanning_constr == 'acc') or (args.floorplanning_constr == 'all'):
         accConstrFiles = open(f'{project_backend_path}/board/{board.name}/constraints/acc_floorplan.xdc', 'w')
-        for acc in accs[0:num_accs]:
+        for acc in accs[0:args.num_accs]:
             if hasattr(acc, 'SLR'):
                 instancesToPlace = len(acc.SLR)
                 if len(acc.SLR) > acc.num_instances:
@@ -185,22 +196,6 @@ def generate_Vivado_variables_tcl():
                                              + f'*/{accBlock}/axis_tid_demux '
                                              + '}]\n')
         accConstrFiles.close()
-
-    if args.hwruntime == 'pom':
-        picos_args_hash = '{}-{}-{}-{}-{}-{}-{}-{}-{}-{}'.format(
-                          args.picos_max_args_per_task,
-                          args.picos_max_deps_per_task,
-                          args.picos_max_copies_per_task,
-                          args.picos_num_dcts,
-                          args.picos_tm_size,
-                          args.picos_dm_size,
-                          args.picos_vm_size,
-                          args.picos_dm_ds,
-                          args.picos_dm_hash,
-                          args.picos_hash_t_size)
-        vivado_project_variables += '\n' \
-                                    + '\t# Picos parameter hash\n' \
-                                    + '\tvariable picos_args_hash {}'.format(picos_args_hash)
 
     if args.datainterfaces_map and os.path.exists(args.datainterfaces_map):
         if args.verbose_info:
@@ -271,9 +266,6 @@ def run_step(project_args):
     global accs
     global chip_part
     global start_time
-    global num_accs
-    global num_instances
-    global num_acc_creators
     global ait_backend_path
     global project_backend_path
 
@@ -281,9 +273,6 @@ def run_step(project_args):
     board = project_args['board']
     accs = project_args['accs']
     start_time = project_args['start_time']
-    num_accs = project_args['num_accs']
-    num_instances = project_args['num_instances']
-    num_acc_creators = project_args['num_acc_creators']
     project_path = project_args['path']
 
     chip_part = board.chip_part + ('-' + board.es if (board.es and not args.ignore_eng_sample) else '')
@@ -294,7 +283,7 @@ def run_step(project_args):
     checkers.check_vivado()
 
     # Load accelerator placement info
-    load_acc_placement(accs[0:num_accs], args)
+    load_acc_placement(accs[0:args.num_accs], args)
 
     if args.memory_interleaving_stride is not None:
         subprocess.check_output(['sed -i "s/\`undef __ENABLE__/\`define __ENABLE__/" ' + project_backend_path + '/IPs/addrInterleaver.v'], shell=True)
@@ -329,15 +318,6 @@ def run_step(project_args):
     elif args.user_post_design:
         msg.error('User POST design TCL script not found: ' + args.user_post_design)
 
-    if not args.advanced_hwruntime and not args.lock_hwruntime and (args.hwruntime == 'som' or args.hwruntime == 'pom'):
-        msg.info('No use of hardware runtime advanced features detected. Defaulting to FOM')
-        args.hwruntime = 'fom'
-
-    if args.disable_spawn_queues or not args.advanced_hwruntime:
-        args.spawnin_queue_len = 0
-        args.spawnout_queue_len = 0
-        args.disable_spawn_queues = True
-
     # Generate tcl file with project variables
     generate_Vivado_variables_tcl()
 
@@ -366,25 +346,3 @@ def run_step(project_args):
         msg.error('Block Design generation failed', start_time, False)
     else:
         msg.success('Block Design generated')
-
-    if (args.hwruntime == 'pom'):
-        regex_strings = [
-            (r'MAX_ARGS_PER_TASK = [0-9]*', 'MAX_ARGS_PER_TASK = {}'.format(args.picos_max_args_per_task)),
-            (r'MAX_DEPS_PER_TASK = [0-9]*', 'MAX_DEPS_PER_TASK = {}'.format(args.picos_max_deps_per_task)),
-            (r'MAX_COPIES_PER_TASK = [0-9]*', 'MAX_COPIES_PER_TASK = {}'.format(args.picos_max_copies_per_task)),
-            (r'NUM_DCTS = [0-9]*', 'NUM_DCTS = {}'.format(args.picos_num_dcts)),
-            (r'TM_SIZE = [0-9]*', 'TM_SIZE = {}'.format(args.picos_tm_size)),
-            (r'DM_SIZE = [0-9]*', 'DM_SIZE = {}'.format(args.picos_dm_size)),
-            (r'VM_SIZE = [0-9]*', 'VM_SIZE = {}'.format(args.picos_vm_size)),
-            (r'DM_DS = "[a-zA-Z_]*"', 'DM_DS = "{}"'.format(args.picos_dm_ds)),
-            (r'DM_HASH = "[a-zA-Z_]*"', 'DM_HASH = "{}"'.format(args.picos_dm_hash)),
-            (r'HASH_T_SIZE = [0-9]*', 'HASH_T_SIZE = {}'.format(args.picos_hash_t_size))]
-
-        config_file_path = glob.glob(project_backend_path + '/IPs/bsc_ompss_picosompssmanager_*/')[0] + 'src/config.sv'
-
-        with open(config_file_path, 'r') as config_file:
-            config_str = config_file.read()
-        for regex_str in regex_strings:
-            config_str = re.sub(regex_str[0], regex_str[1], config_str, count=1)
-        with open(config_file_path, 'w') as config_file:
-            config_file.write(config_str)

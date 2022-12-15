@@ -53,16 +53,39 @@ namespace eval AIT {
                 CONFIG.SINGLE_PORT_BRAM {1} \
              ] $bitInfo_BRAM_Ctrl
 
+            # Create instance: managed_reset, and set properties
+            set managed_reset [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_gpio managed_reset ]
+            set_property -dict [ list \
+                CONFIG.C_ALL_OUTPUTS {1} \
+                CONFIG.C_DOUT_DEFAULT {0x00000001} \
+                CONFIG.C_GPIO_WIDTH {1} \
+             ] $managed_reset
+
+            # Create instance: reset_AND, and set properties
+            set reset_AND [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic reset_AND ]
+            set_property -dict [ list \
+                CONFIG.C_SIZE {1} \
+                CONFIG.C_OPERATION {and} \
+             ] $reset_AND
+
+            connect_bd_net [get_bd_pins managed_reset/gpio_io_o] [get_bd_pins reset_AND/Op1]
+            connect_reset [get_bd_pins reset_AND/Op2] "peripheral"
+
             if {${::AIT::arch_device} eq "zynq"} {
                 connect_to_master_interface [get_bd_intf_pins bitInfo_BRAM_Ctrl/S_AXI] 1
+                connect_to_master_interface [get_bd_intf_pins managed_reset/S_AXI] 1
             } elseif {${::AIT::arch_device} eq "zynqmp"} {
                 connect_to_interface [get_bd_intf_pins bitInfo_BRAM_Ctrl/S_AXI] HPM_LPD M
+                connect_to_interface [get_bd_intf_pins managed_reset/S_AXI] HPM_LPD M
             } else {
                 connect_to_master_interface [get_bd_intf_pins bitInfo_BRAM_Ctrl/S_AXI]
+                connect_to_master_interface [get_bd_intf_pins managed_reset/S_AXI]
             }
             connect_bd_intf_net [get_bd_intf_pins bitInfo/BRAM_PORTA] [get_bd_intf_pins bitInfo_BRAM_Ctrl/BRAM_PORTA]
             connect_clock [get_bd_pins bitInfo_BRAM_Ctrl/s_axi_aclk]
             connect_reset [get_bd_pins bitInfo_BRAM_Ctrl/s_axi_aresetn] "peripheral"
+            connect_clock [get_bd_pins managed_reset/s_axi_aclk]
+            connect_reset [get_bd_pins managed_reset/s_axi_aresetn] "peripheral"
         }
 
         proc bond_QDMA_channels {} {

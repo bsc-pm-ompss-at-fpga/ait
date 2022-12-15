@@ -65,9 +65,6 @@ def check_board_support(board):
 
 def get_accelerators(project_path):
     global accs
-    global num_accs
-    global num_instances
-    global num_acc_creators
 
     if args.verbose_info:
         msg.log('Searching accelerators in folder: ' + os.getcwd())
@@ -75,11 +72,9 @@ def get_accelerators(project_path):
     accs = []
     acc_types = []
     acc_names = []
-    num_accs = 0
-    num_instances = 0
-    num_acc_creators = 0
-    args.advanced_hwruntime = False  # Can't be enabled if no accelerator requires it
-    args.lock_hwruntime = False  # Will not be enabled if no accelerator requires it
+    args.num_accs = 0
+    args.num_instances = 0
+    args.num_acc_creators = 0
 
     for file_ in sorted(glob.glob(os.getcwd() + '/ait_*.json')):
         acc_config_json = json.load(open(file_))
@@ -91,8 +86,8 @@ def get_accelerators(project_path):
 
             msg.info('Found accelerator \'' + acc.name + '\'')
 
-            num_accs += 1
-            num_instances += acc.num_instances
+            args.num_accs += 1
+            args.num_instances += acc.num_instances
 
             if acc.type in acc_types:
                 msg.error('Two accelerators use the same type: \'' + str(acc.type) + '\' (maybe you should use the onto clause)')
@@ -103,11 +98,8 @@ def get_accelerators(project_path):
 
             # Check if the acc is a task creator
             if acc.task_creation:
-                if args.hwruntime == 'fom':
-                    msg.error('Using advanced hwruntime features not present in FOM')
-
-                args.advanced_hwruntime = True
-                num_acc_creators += acc.num_instances
+                args.task_creation = True
+                args.num_acc_creators += acc.num_instances
                 accs.insert(0, acc)
             else:
                 accs.append(acc)
@@ -119,11 +111,17 @@ def get_accelerators(project_path):
             # Check if the acc needs lock support
             if acc.lock:
                 args.lock_hwruntime = True
-                if args.hwruntime == 'fom':
-                    msg.error('Using advanced hwruntime features not present in FOM')
 
-    if num_accs == 0:
+            # Check if the acc needs dependencies
+            if acc.deps:
+                args.deps_hwruntime = True
+
+    if args.num_accs == 0:
         msg.error('No accelerators found')
+    elif args.num_acc_creators == 0:
+        args.disable_spawn_queues = True
+        args.spawnin_queue_len = 0
+        args.spawnout_queue_len = 0
 
     # Generate the .xtasks.config file
     xtasks_config_file = open(project_path + '/' + args.name + '.xtasks.config', 'w')
@@ -165,13 +163,12 @@ def main():
 
     get_accelerators(project_path)
 
-    parser.check_hardware_runtime_args(args, max(2, num_instances))
+    parser.check_hardware_runtime_args(args, max(2, args.num_instances))
+    if args.deps_hwruntime:
+        parser.check_picos_args(args)
 
     project_args = {
         'path': os.path.normpath(os.path.realpath(args.dir) + '/' + args.name + '_ait'),
-        'num_accs': num_accs,
-        'num_instances': num_instances,
-        'num_acc_creators': num_acc_creators,
         'accs': accs,
         'board': board,
         'args': args

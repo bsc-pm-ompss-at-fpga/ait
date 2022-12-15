@@ -221,7 +221,7 @@ class ArgParser:
         # Bitstream configuration arguments
         bitstream_args = self.parser.add_argument_group('Bitstream configuration')
         bitstream_args.add_argument('-c', '--clock', help='FPGA clock frequency in MHz\n(def: \'100\')', type=int, default='100')
-        bitstream_args.add_argument('--hwruntime', help='add a hardware runtime. Available hardware runtimes by vendor:\n' + '\n'.join(backend + ': ' + ', '.join(hwr for hwr in backends[backend]['hwruntimes']) + "\n(def: '{}')".format(backends[backend]['def_hwr']) for backend in backends), choices=[hwr for hwr in backends[backend]['hwruntimes'] for backend in backends], metavar='HWRUNTIME', default='som')
+        bitstream_args.add_argument('--hwruntime', help=argparse.SUPPRESS, action=RemovedArg)
         bitstream_args.add_argument('--hwcounter', help='add a hardware counter to the bitstream', action='store_true', default=False)
         bitstream_args.add_argument('--wrapper_version', help='version of accelerator wrapper shell. This information will be placed in the bitstream information', type=int)
         bitstream_args.add_argument('--bitinfo_note', help='custom note to add to the bitInfo', type=ascii, default='')
@@ -242,12 +242,12 @@ class ArgParser:
         hwruntime_args.add_argument('--spawnin_queue_len', help='length (64-bit words) of the hwruntime spawn in queue. Must be power of 2\n(def: \'1024\')', type=IntPowerType(imin=4), default=1024)
         hwruntime_args.add_argument('--spawnout_queue_len', help='length (64-bit words) of the hwruntime spawn out queue. Must be power of 2\n(def: \'1024\')', type=IntPowerType(imin=4), default=1024)
         hwruntime_args.add_argument('--hwruntime_interconnect', help='type of hardware runtime interconnection with accelerators\ncentralized\ndistributed\n(def: \'centralized\')', choices=['centralized', 'distributed'], metavar='HWR_INTERCONNECT', default='centralized')  # TODO: Explain what does each option do
+        hwruntime_args.add_argument('--max_args_per_task', help='maximum number of arguments for any task in the bitstream\n(def: \'15\')', type=IntRangeType(imin=1), default=15)
+        hwruntime_args.add_argument('--max_deps_per_task', help='maximum number of dependencies for any task in the bitstream\n(def: \'8\')', type=IntRangeType(imin=2), default=8)
+        hwruntime_args.add_argument('--max_copies_per_task', help='maximum number of copies for any task in the bitstream\n(def: \'15\')', type=IntRangeType(imin=1), default=15)
 
         # Picos arguments
         picos_args = self.parser.add_argument_group('Picos')
-        picos_args.add_argument('--picos_max_args_per_task', help='maximum number of arguments for any task in the bitstream\n(def: \'15\')', type=IntRangeType(imin=1), default=15)
-        picos_args.add_argument('--picos_max_deps_per_task', help='maximum number of dependencies for any task in the bitstream\n(def: \'8\')', type=IntRangeType(imin=2), default=8)
-        picos_args.add_argument('--picos_max_copies_per_task', help='maximum number of copies for any task in the bitstream\n(def: \'15\')', type=IntRangeType(imin=1), default=15)
         picos_args.add_argument('--picos_num_dcts', help='number of DCTs instantiated\n(def: \'1\')', choices=['1', '2', '4'], metavar='NUM_DCTS', default=1)
         picos_args.add_argument('--picos_tm_size', help='size of the TM memory\n(def: \'128\')', type=IntRangeType(imin=2), default=128)
         picos_args.add_argument('--picos_dm_size', help='size of the DM memory\n(def: \'512\')', type=IntRangeType(imin=2), default=512)
@@ -270,6 +270,12 @@ class ArgParser:
         misc_args.add_argument('-k', '--keep_files', help='keep files on error', action='store_true', default=False)
         misc_args.add_argument('-v', '--verbose', help='print vendor backend messages', action='store_true', default=False)
         misc_args.add_argument('--version', help='print AIT version and exits', action='version', version=str(LONG_VERSION))
+
+        # Hidden arguments
+        hidden_args = self.parser.add_argument_group('Hidden')
+        hidden_args.add_argument('--task_creation', help=argparse.SUPPRESS, action='store_true', default=False)
+        hidden_args.add_argument('--deps_hwruntime', help=argparse.SUPPRESS, action='store_true', default=False)
+        hidden_args.add_argument('--lock_hwruntime', help=argparse.SUPPRESS, action='store_true', default=False)
 
     def parse_args(self):
         # Check if configuration file exists and parse its values
@@ -314,8 +320,6 @@ class ArgParser:
         self.check_flow_args(args)
         self.check_bitstream_args(args)
         self.check_misc_args(args)
-        if args.hwruntime == "pom":
-            self.check_picos_args(args)
 
     def check_required_args(self, args):
         # Validate required args
@@ -380,7 +384,7 @@ class ArgParser:
         # The subqueue length has to be checked here in the case the user provides the cmdin queue length
         if args.cmdin_subqueue_len < 34:
             msg.warning('Value of --cmdin_subqueue_len={} is less than 34, which is the length of the longest command possible. This design might not work with tasks with enough arguments.'.format(args.cmdin_subqueue_len))
-        if args.spawnout_queue_len < 79:
+        if not args.disable_spawn_queues and args.spawnout_queue_len < 79:
             msg.warning('Value of --spawnout_queue_len={} is less than 79, which is the length of the longest task possible. This design might not work if an accelerator creates SMP tasks with enough copies, dependencies and/or arguments.'.format(args.spawnout_queue_len))
 
     def check_picos_args(self, args):

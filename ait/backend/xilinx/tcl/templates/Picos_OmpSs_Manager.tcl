@@ -149,9 +149,11 @@ proc create_hier_cell_hwr_inStream { parentCell nameHier } {
       create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 S${i}_AXIS
   }
   create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 cmdout_in
-  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 spawn_in
-  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 taskwait_in
-  if {${::AIT::lock_hwruntime}} {
+  if ${::AIT::task_creation} {
+      create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 spawn_in
+      create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 taskwait_in
+  }
+  if ${::AIT::lock_hwruntime} {
       create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 lock_in
   }
 
@@ -203,9 +205,11 @@ proc create_hier_cell_hwr_outStream { parentCell nameHier } {
       create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 M${i}_AXIS
   }
   create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 cmdin_out
-  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 spawn_out
-  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 taskwait_out
-  if {${::AIT::lock_hwruntime}} {
+  if ${::AIT::task_creation} {
+      create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 spawn_out
+      create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 taskwait_out
+  }
+  if ${::AIT::lock_hwruntime} {
       create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 lock_out
   }
 
@@ -254,12 +258,14 @@ proc create_hier_cell_Hardware_Runtime { parentCell nameHier } {
 
   # Create interface pins
   create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S_AXI_GP
-  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:bram_rtl:1.0 bitInfo
+  if ${::AIT::task_creation} {
+      create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:bram_rtl:1.0 bitInfo
+  }
 
   # Create pins
   create_bd_pin -dir I -type clk aclk
+  create_bd_pin -dir I -type rst managed_aresetn
   create_bd_pin -dir I -type rst interconnect_aresetn
-  create_bd_pin -dir O managed_aresetn
   create_bd_pin -dir I -type rst peripheral_aresetn
 
   # Create instance: hwr_inStream
@@ -270,14 +276,13 @@ proc create_hier_cell_Hardware_Runtime { parentCell nameHier } {
 
   # Create instance: GP_Inter, and set properties
   set GP_Inter [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect GP_Inter ]
-  if {$::AIT::enable_spawn_queues} {
+  if $::AIT::enable_spawn_queues {
     set_property -dict [ list \
      CONFIG.M00_HAS_REGSLICE {4} \
      CONFIG.M01_HAS_REGSLICE {4} \
      CONFIG.M02_HAS_REGSLICE {4} \
      CONFIG.M03_HAS_REGSLICE {4} \
-     CONFIG.M04_HAS_REGSLICE {4} \
-     CONFIG.NUM_MI {5} \
+     CONFIG.NUM_MI {4} \
      CONFIG.S00_HAS_REGSLICE {4} \
      CONFIG.STRATEGY {1} \
     ] $GP_Inter
@@ -285,8 +290,7 @@ proc create_hier_cell_Hardware_Runtime { parentCell nameHier } {
     set_property -dict [ list \
      CONFIG.M00_HAS_REGSLICE {4} \
      CONFIG.M01_HAS_REGSLICE {4} \
-     CONFIG.M02_HAS_REGSLICE {4} \
-     CONFIG.NUM_MI {3} \
+     CONFIG.NUM_MI {2} \
      CONFIG.S00_HAS_REGSLICE {4} \
      CONFIG.STRATEGY {1} \
     ] $GP_Inter
@@ -297,57 +301,67 @@ proc create_hier_cell_Hardware_Runtime { parentCell nameHier } {
   set_property -dict [ list \
    CONFIG.M_TID_WIDTH.VALUE_SRC USER \
    CONFIG.M_TID_WIDTH {1} \
-   #CONFIG.TID_REMAP "1'b1"
+   CONFIG.TID_REMAP "1'b0"
   ] $axis_cmdin_TID
 
-  # Create instance: axis_spawn_TID, and set properties
-  set axis_spawn_TID [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_subset_converter axis_spawn_TID]
-  set_property -dict [ list \
-   CONFIG.M_TID_WIDTH.VALUE_SRC USER \
-   CONFIG.M_TID_WIDTH {1} \
-   CONFIG.TID_REMAP "1'b1" \
-  ] $axis_spawn_TID
+  if ${::AIT::task_creation} {
+    # Create instance: axis_spawn_TID, and set properties
+    set axis_spawn_TID [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_subset_converter axis_spawn_TID]
+    set_property -dict [ list \
+     CONFIG.M_TID_WIDTH.VALUE_SRC USER \
+     CONFIG.M_TID_WIDTH {1} \
+     CONFIG.TID_REMAP "1'b1" \
+    ] $axis_spawn_TID
 
-  # Create instance: axis_taskwait_TID, and set properties
-  set axis_taskwait_TID [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_subset_converter axis_taskwait_TID]
-  set_property -dict [ list \
-   CONFIG.M_TID_WIDTH.VALUE_SRC USER \
-   CONFIG.M_TID_WIDTH {1} \
-   CONFIG.TID_REMAP "1'b1" \
-  ] $axis_taskwait_TID
+    # Create instance: axis_taskwait_TID, and set properties
+    set axis_taskwait_TID [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_subset_converter axis_taskwait_TID]
+    set_property -dict [ list \
+     CONFIG.M_TID_WIDTH.VALUE_SRC USER \
+     CONFIG.M_TID_WIDTH {1} \
+     CONFIG.TID_REMAP "1'b1" \
+    ] $axis_taskwait_TID
+  }
 
-  if {${::AIT::lock_hwruntime}} {
+  if ${::AIT::lock_hwruntime} {
     # Create instance: axis_lock_TID, and set properties
     set axis_lock_TID [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_subset_converter axis_lock_TID]
     set_property -dict [ list \
      CONFIG.M_TID_WIDTH.VALUE_SRC USER \
      CONFIG.M_TID_WIDTH {1} \
-     #CONFIG.TID_REMAP "1'b1"
+     CONFIG.TID_REMAP "1'b0"
     ] $axis_lock_TID
   }
 
   # Create instance: Picos_OmpSs_Manager, and set properties
   set Picos_OmpSs_Manager [ create_bd_cell -type ip -vlnv bsc:ompss:picosompssmanager Picos_OmpSs_Manager ]
   set_property -dict [ list \
-   CONFIG.PICOS_ARGS ${::AIT::picos_args_hash} \
    CONFIG.MAX_ACCS [expr max(${::AIT::num_accs}, 2)] \
    CONFIG.MAX_ACC_TYPES [expr max([llength ${::AIT::accs}], 2)] \
    CONFIG.MAX_ACC_CREATORS [expr max(${::AIT::num_acc_creators}, 2)] \
    CONFIG.CMDIN_SUBQUEUE_LEN ${::AIT::cmdInSubqueue_len} \
    CONFIG.CMDOUT_SUBQUEUE_LEN ${::AIT::cmdOutSubqueue_len} \
    CONFIG.ENABLE_SPAWN_QUEUES ${::AIT::enable_spawn_queues} \
+   CONFIG.ENABLE_TASK_CREATION ${::AIT::task_creation} \
+   CONFIG.LOCK_SUPPORT ${::AIT::lock_hwruntime} \
   ] $Picos_OmpSs_Manager
 
-  if {${::AIT::enable_spawn_queues}} {
+  if ${::AIT::enable_spawn_queues} {
     set_property -dict [list \
       CONFIG.SPAWNIN_QUEUE_LEN ${::AIT::spawnInQueue_len} \
       CONFIG.SPAWNOUT_QUEUE_LEN ${::AIT::spawnOutQueue_len} \
     ] $Picos_OmpSs_Manager
   }
 
-  if {${::AIT::lock_hwruntime}} {
+  if {${::AIT::task_creation} && ${::AIT::deps_hwruntime}} {
     set_property -dict [list \
-      CONFIG.LOCK_SUPPORT {1} \
+      CONFIG.ENABLE_DEPS ${::AIT::deps_hwruntime} \
+      CONFIG.NUM_DCTS ${::AIT::picos_num_dcts} \
+      CONFIG.TM_SIZE ${::AIT::picos_tm_size} \
+      CONFIG.DM_SIZE ${::AIT::picos_dm_size} \
+      CONFIG.VM_SIZE ${::AIT::picos_vm_size} \
+      CONFIG.DM_DS ${::AIT::picos_dm_ds} \
+      CONFIG.DM_HASH ${::AIT::picos_dm_hash} \
+      CONFIG.HASH_T_SIZE ${::AIT::picos_hash_t_size} \
     ] $Picos_OmpSs_Manager
   }
 
@@ -417,15 +431,7 @@ proc create_hier_cell_Hardware_Runtime { parentCell nameHier } {
    CONFIG.SINGLE_PORT_BRAM {1} \
  ] $cmdOutQueue_BRAM_Ctrl
 
-  # Create instance: hwruntime_rst, and set properties
-  set hwruntime_rst [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_gpio hwruntime_rst ]
-  set_property -dict [ list \
-   CONFIG.C_ALL_OUTPUTS {1} \
-   CONFIG.C_DOUT_DEFAULT {0x00000000} \
-   CONFIG.C_GPIO_WIDTH {1} \
- ] $hwruntime_rst
-
-if {$::AIT::enable_spawn_queues} {
+if $::AIT::enable_spawn_queues {
     # Create instance: spawnInQueue, and set properties
     set spawnInQueue [ create_bd_cell -type ip -vlnv xilinx.com:ip:blk_mem_gen spawnInQueue ]
     set_property -dict [ list \
@@ -497,47 +503,55 @@ if {$::AIT::enable_spawn_queues} {
   connect_bd_intf_net [get_bd_intf_pins Picos_OmpSs_Manager/cmdout_in] [get_bd_intf_pins hwr_inStream/cmdout_in]
   connect_bd_intf_net [get_bd_intf_pins Picos_OmpSs_Manager/cmdin_out] [get_bd_intf_pins axis_cmdin_TID/S_AXIS]
   connect_bd_intf_net [get_bd_intf_pins hwr_outStream/cmdin_out] [get_bd_intf_pins axis_cmdin_TID/M_AXIS]
-  connect_bd_intf_net [get_bd_intf_pins Picos_OmpSs_Manager/spawn_in] [get_bd_intf_pins hwr_inStream/spawn_in]
-  connect_bd_intf_net [get_bd_intf_pins Picos_OmpSs_Manager/spawn_out] [get_bd_intf_pins axis_spawn_TID/S_AXIS]
-  connect_bd_intf_net [get_bd_intf_pins hwr_outStream/spawn_out] [get_bd_intf_pins axis_spawn_TID/M_AXIS]
-  connect_bd_intf_net [get_bd_intf_pins Picos_OmpSs_Manager/taskwait_in] [get_bd_intf_pins hwr_inStream/taskwait_in]
-  connect_bd_intf_net [get_bd_intf_pins Picos_OmpSs_Manager/taskwait_out] [get_bd_intf_pins axis_taskwait_TID/S_AXIS]
-  connect_bd_intf_net [get_bd_intf_pins hwr_outStream/taskwait_out] [get_bd_intf_pins axis_taskwait_TID/M_AXIS]
-  if {${::AIT::lock_hwruntime}} {
+  if ${::AIT::task_creation} {
+    connect_bd_intf_net [get_bd_intf_pins Picos_OmpSs_Manager/spawn_in] [get_bd_intf_pins hwr_inStream/spawn_in]
+    connect_bd_intf_net [get_bd_intf_pins Picos_OmpSs_Manager/spawn_out] [get_bd_intf_pins axis_spawn_TID/S_AXIS]
+    connect_bd_intf_net [get_bd_intf_pins hwr_outStream/spawn_out] [get_bd_intf_pins axis_spawn_TID/M_AXIS]
+    connect_bd_intf_net [get_bd_intf_pins Picos_OmpSs_Manager/taskwait_in] [get_bd_intf_pins hwr_inStream/taskwait_in]
+    connect_bd_intf_net [get_bd_intf_pins Picos_OmpSs_Manager/taskwait_out] [get_bd_intf_pins axis_taskwait_TID/S_AXIS]
+    connect_bd_intf_net [get_bd_intf_pins hwr_outStream/taskwait_out] [get_bd_intf_pins axis_taskwait_TID/M_AXIS]
+    connect_bd_intf_net -intf_net Picos_OmpSs_Manager_bitInfo [get_bd_intf_pins bitInfo] [get_bd_intf_pins Picos_OmpSs_Manager/bitInfo]
+  }
+  if ${::AIT::lock_hwruntime} {
     connect_bd_intf_net [get_bd_intf_pins Picos_OmpSs_Manager/lock_in] [get_bd_intf_pins hwr_inStream/lock_in]
     connect_bd_intf_net [get_bd_intf_pins Picos_OmpSs_Manager/lock_out] [get_bd_intf_pins axis_lock_TID/S_AXIS]
     connect_bd_intf_net [get_bd_intf_pins hwr_outStream/lock_out] [get_bd_intf_pins axis_lock_TID/M_AXIS]
   }
   connect_bd_intf_net -intf_net GP_Inter_M00_AXI [get_bd_intf_pins GP_Inter/M00_AXI] [get_bd_intf_pins cmdInQueue_BRAM_Ctrl/S_AXI]
   connect_bd_intf_net -intf_net GP_Inter_M01_AXI [get_bd_intf_pins GP_Inter/M01_AXI] [get_bd_intf_pins cmdOutQueue_BRAM_Ctrl/S_AXI]
-  connect_bd_intf_net -intf_net GP_Inter_M02_AXI [get_bd_intf_pins GP_Inter/M02_AXI] [get_bd_intf_pins hwruntime_rst/S_AXI]
-  connect_bd_intf_net -intf_net Picos_OmpSs_Manager_bitInfo [get_bd_intf_pins bitInfo] [get_bd_intf_pins Picos_OmpSs_Manager/bitInfo]
   connect_bd_intf_net -intf_net Picos_OmpSs_Manager_cmdInQueue [get_bd_intf_pins Picos_OmpSs_Manager/cmdin_queue] [get_bd_intf_pins cmdInQueue/BRAM_PORTA]
   connect_bd_intf_net -intf_net Picos_OmpSs_Manager_cmdOutQueue [get_bd_intf_pins Picos_OmpSs_Manager/cmdout_queue] [get_bd_intf_pins cmdOutQueue/BRAM_PORTA]
   connect_bd_intf_net -intf_net S_AXI_GP_1 [get_bd_intf_pins S_AXI_GP] [get_bd_intf_pins GP_Inter/S00_AXI]
   connect_bd_intf_net -intf_net cmdInQueue_BRAM_Ctrl_BRAM_PORTA [get_bd_intf_pins cmdInQueue/BRAM_PORTB] [get_bd_intf_pins cmdInQueue_BRAM_Ctrl/BRAM_PORTA]
   connect_bd_intf_net -intf_net cmdOutQueue_BRAM_Ctrl_BRAM_PORTA [get_bd_intf_pins cmdOutQueue/BRAM_PORTB] [get_bd_intf_pins cmdOutQueue_BRAM_Ctrl/BRAM_PORTA]
-  if {$::AIT::enable_spawn_queues} {
+  if ${::AIT::enable_spawn_queues} {
     connect_bd_intf_net -intf_net Picos_OmpSs_Manager_spawnInQueue [get_bd_intf_pins Picos_OmpSs_Manager/spawnin_queue] [get_bd_intf_pins spawnInQueue/BRAM_PORTA]
     connect_bd_intf_net -intf_net Picos_OmpSs_Manager_spawnOutQueue [get_bd_intf_pins Picos_OmpSs_Manager/spawnout_queue] [get_bd_intf_pins spawnOutQueue/BRAM_PORTA]
     connect_bd_intf_net -intf_net spawnInQueue_BRAM_Ctrl_BRAM_PORTA [get_bd_intf_pins spawnInQueue/BRAM_PORTB] [get_bd_intf_pins spawnInQueue_BRAM_Ctrl/BRAM_PORTA]
     connect_bd_intf_net -intf_net spawnOutQueue_BRAM_Ctrl_BRAM_PORTA [get_bd_intf_pins spawnOutQueue/BRAM_PORTB] [get_bd_intf_pins spawnOutQueue_BRAM_Ctrl/BRAM_PORTA]
-    connect_bd_intf_net -intf_net GP_Inter_M03_AXI [get_bd_intf_pins GP_Inter/M03_AXI] [get_bd_intf_pins spawnOutQueue_BRAM_Ctrl/S_AXI]
-    connect_bd_intf_net -intf_net GP_Inter_M04_AXI [get_bd_intf_pins GP_Inter/M04_AXI] [get_bd_intf_pins spawnInQueue_BRAM_Ctrl/S_AXI]
+    connect_bd_intf_net -intf_net GP_Inter_M02_AXI [get_bd_intf_pins GP_Inter/M02_AXI] [get_bd_intf_pins spawnOutQueue_BRAM_Ctrl/S_AXI]
+    connect_bd_intf_net -intf_net GP_Inter_M03_AXI [get_bd_intf_pins GP_Inter/M03_AXI] [get_bd_intf_pins spawnInQueue_BRAM_Ctrl/S_AXI]
     connect_bd_net [get_bd_pins aclk] [get_bd_pins spawnInQueue_BRAM_Ctrl/s_axi_aclk] [get_bd_pins spawnOutQueue_BRAM_Ctrl/s_axi_aclk]
     connect_bd_net [get_bd_pins peripheral_aresetn] [get_bd_pins spawnInQueue_BRAM_Ctrl/s_axi_aresetn] [get_bd_pins spawnOutQueue_BRAM_Ctrl/s_axi_aresetn]
   }
 
   # Create port connections
-  connect_bd_net -net Picos_OmpSs_Manager_managed_aresetn [get_bd_pins managed_aresetn] [get_bd_pins Picos_OmpSs_Manager/managed_aresetn] [get_bd_pins axis_spawn_TID/aresetn] [get_bd_pins axis_taskwait_TID/aresetn] [get_bd_pins axis_cmdin_TID/aresetn]
-  connect_bd_net -net aclk_1 [get_bd_pins aclk] [get_bd_pins GP_Inter/ACLK] [get_bd_pins GP_Inter/M00_ACLK] [get_bd_pins GP_Inter/M01_ACLK] [get_bd_pins GP_Inter/M02_ACLK] [get_bd_pins GP_Inter/M03_ACLK] [get_bd_pins GP_Inter/M04_ACLK] [get_bd_pins GP_Inter/S00_ACLK] [get_bd_pins Picos_OmpSs_Manager/aclk] [get_bd_pins cmdInQueue_BRAM_Ctrl/s_axi_aclk] [get_bd_pins cmdOutQueue_BRAM_Ctrl/s_axi_aclk] [get_bd_pins hwruntime_rst/s_axi_aclk] [get_bd_pins hwr_inStream/clk] [get_bd_pins hwr_outStream/clk] [get_bd_pins axis_spawn_TID/aclk] [get_bd_pins axis_taskwait_TID/aclk] [get_bd_pins axis_cmdin_TID/aclk]
-  connect_bd_net -net hwruntime_rst_gpio_io_o [get_bd_pins Picos_OmpSs_Manager/ps_rst] [get_bd_pins hwruntime_rst/gpio_io_o]
-  connect_bd_net -net interconnect_aresetn_1 [get_bd_pins interconnect_aresetn] [get_bd_pins GP_Inter/ARESETN] [get_bd_pins Picos_OmpSs_Manager/interconnect_aresetn] [get_bd_pins hwr_inStream/interconnect_aresetn] [get_bd_pins hwr_outStream/interconnect_aresetn]
-  connect_bd_net -net peripheral_aresetn_1 [get_bd_pins peripheral_aresetn] [get_bd_pins GP_Inter/M00_ARESETN] [get_bd_pins GP_Inter/M01_ARESETN] [get_bd_pins GP_Inter/M02_ARESETN] [get_bd_pins GP_Inter/M03_ARESETN] [get_bd_pins GP_Inter/M04_ARESETN] [get_bd_pins GP_Inter/S00_ARESETN] [get_bd_pins Picos_OmpSs_Manager/peripheral_aresetn] [get_bd_pins cmdInQueue_BRAM_Ctrl/s_axi_aresetn] [get_bd_pins cmdOutQueue_BRAM_Ctrl/s_axi_aresetn] [get_bd_pins hwruntime_rst/s_axi_aresetn] [get_bd_pins hwr_inStream/peripheral_aresetn] [get_bd_pins hwr_outStream/peripheral_aresetn]
+  connect_bd_net -net aclk_1 [get_bd_pins aclk] [get_bd_pins GP_Inter/ACLK] [get_bd_pins GP_Inter/M00_ACLK] [get_bd_pins GP_Inter/M01_ACLK] [get_bd_pins GP_Inter/S00_ACLK] [get_bd_pins Picos_OmpSs_Manager/clk] [get_bd_pins cmdInQueue_BRAM_Ctrl/s_axi_aclk] [get_bd_pins cmdOutQueue_BRAM_Ctrl/s_axi_aclk] [get_bd_pins hwr_inStream/clk] [get_bd_pins hwr_outStream/clk] [get_bd_pins axis_cmdin_TID/aclk]
+  connect_bd_net -net interconnect_aresetn_1 [get_bd_pins interconnect_aresetn] [get_bd_pins GP_Inter/ARESETN] [get_bd_pins hwr_inStream/interconnect_aresetn] [get_bd_pins hwr_outStream/interconnect_aresetn]
+  connect_bd_net -net peripheral_aresetn_1 [get_bd_pins peripheral_aresetn] [get_bd_pins GP_Inter/M00_ARESETN] [get_bd_pins GP_Inter/M01_ARESETN] [get_bd_pins GP_Inter/S00_ARESETN] [get_bd_pins cmdInQueue_BRAM_Ctrl/s_axi_aresetn] [get_bd_pins cmdOutQueue_BRAM_Ctrl/s_axi_aresetn] [get_bd_pins hwr_inStream/peripheral_aresetn] [get_bd_pins hwr_outStream/peripheral_aresetn]
+  connect_bd_net [get_bd_pins managed_aresetn] [get_bd_pins Picos_OmpSs_Manager/rstn] [get_bd_pins axis_cmdin_TID/aresetn]
 
-  if {$::AIT::lock_hwruntime} {
-      connect_bd_net [get_bd_pins managed_aresetn] [get_bd_pins axis_lock_TID/aresetn]
-      connect_bd_net [get_bd_pins aclk] [get_bd_pins axis_lock_TID/aclk]
+  if ${::AIT::task_creation} {
+    connect_bd_net [get_bd_pins aclk] [get_bd_pins axis_spawn_TID/aclk] [get_bd_pins axis_taskwait_TID/aclk]
+    connect_bd_net [get_bd_pins managed_aresetn] [get_bd_pins axis_spawn_TID/aresetn] [get_bd_pins axis_taskwait_TID/aresetn]
+  }
+  if ${::AIT::enable_spawn_queues} {
+    connect_bd_net [get_bd_pins aclk] [get_bd_pins GP_Inter/M02_ACLK] [get_bd_pins GP_Inter/M03_ACLK]
+    connect_bd_net [get_bd_pins peripheral_aresetn] [get_bd_pins GP_Inter/M02_ARESETN] [get_bd_pins GP_Inter/M03_ARESETN]
+  }
+  if ${::AIT::lock_hwruntime} {
+    connect_bd_net [get_bd_pins aclk] [get_bd_pins axis_lock_TID/aclk]
+    connect_bd_net [get_bd_pins managed_aresetn] [get_bd_pins axis_lock_TID/aresetn]
   }
 
   # Restore current instance

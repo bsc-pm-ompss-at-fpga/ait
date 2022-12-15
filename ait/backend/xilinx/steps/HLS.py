@@ -20,7 +20,6 @@
 #     License along with this code. If not, see <www.gnu.org/licenses/>.   #
 # ------------------------------------------------------------------------ #
 
-import json
 import os
 import shutil
 import subprocess
@@ -139,7 +138,6 @@ def run_step(project_args):
     global board
     global chip_part
     global start_time
-    global num_accs
     global ait_backend_path
     global project_backend_path
     global used_resources
@@ -149,7 +147,6 @@ def run_step(project_args):
     args = project_args['args']
     board = project_args['board']
     start_time = project_args['start_time']
-    num_accs = project_args['num_accs']
     project_path = project_args['path']
     accs = project_args['accs']
 
@@ -164,19 +161,19 @@ def run_step(project_args):
     shutil.rmtree(project_backend_path + '/HLS', ignore_errors=True)
     os.makedirs(project_backend_path + '/HLS')
 
-    msg.info('Synthesizing ' + str(num_accs) + ' accelerator' + ('s' if num_accs > 1 else ''))
+    msg.info('Synthesizing ' + str(args.num_accs) + ' accelerator' + ('s' if args.num_accs > 1 else ''))
 
     # Load used resources by hwruntime
-    used_resources = json.load(open(ait_backend_path + '/IPs/hwruntime/' + args.hwruntime + '/' + args.hwruntime + '_resource_utilization.json'))
+    used_resources = dict()
     available_resources = dict()
 
-    for acc in range(0, num_accs):
+    for acc in range(0, args.num_accs):
         synthesize_accelerator(accs[acc])
 
-    if len(accs) > num_accs:
-        msg.info('Synthesizing ' + str(len(accs) - num_accs) + ' additional auxiliary IP' + ('s' if len(accs) - num_accs > 1 else ''))
+    if len(accs) > args.num_accs:
+        msg.info('Synthesizing ' + str(len(accs) - args.num_accs) + ' additional auxiliary IP' + ('s' if len(accs) - args.num_accs > 1 else ''))
 
-        for acc in range(num_accs, len(accs)):
+        for acc in range(args.num_accs, len(accs)):
             synthesize_accelerator(accs[acc])
 
     resources_file = open(project_path + '/' + args.name + '.resources-hls.txt', 'w')
