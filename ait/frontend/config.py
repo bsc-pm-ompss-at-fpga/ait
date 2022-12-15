@@ -24,8 +24,8 @@ MIN_PYTHON_VERSION = (3, 7)
 MIN_WRAPPER_VERSION = 8
 BITINFO_VERSION = 9
 VERSION_MAJOR = 6
-VERSION_MINOR = 3
-VERSION_PATCH = 1
+VERSION_MINOR = 4
+VERSION_PATCH = 0
 
 # NOTE: The variable will be overwritten during installation, do not manually modify.
 VERSION_COMMIT = ''
