@@ -13,7 +13,16 @@ namespace eval AIT {
 
             # If interconnect priorities are enabled, set PCIe master as max priority
             if {${::AIT::interconPriority}} {
-                set_property -dict [list CONFIG.ENABLE_ADVANCED_OPTIONS {1} CONFIG.XBAR_DATA_WIDTH.VALUE_SRC PROPAGATED] [get_bd_cells bridge_to_host/DDR_S_AXI_Inter]
+                set data_width 32
+                if {$::AIT::arch_device eq "alveo"} {
+                    set data_width 512
+                } elseif {$::AIT::arch_device eq "zynqmp"} {
+                    set data_width 128
+                } elseif {$::AIT::arch_device eq "zynq"} {
+                    set data_width 64
+                }
+
+                set_property -dict [list CONFIG.ENABLE_ADVANCED_OPTIONS {1} CONFIG.XBAR_DATA_WIDTH.VALUE_SRC PROPAGATED CONFIG.XBAR_DATA_WIDTH $data_width] [get_bd_cells bridge_to_host/DDR_S_AXI_Inter]
                 set_property -dict [list CONFIG.S00_ARB_PRIORITY 15] [get_bd_cells bridge_to_host/DDR_S_AXI_Inter]
             }
 
@@ -451,12 +460,6 @@ namespace eval AIT {
             set_property -dict [list CONFIG.NUM_${role}I [expr ($counter%16) + 1]] [get_bd_cells $inter]
             set_property -quiet -dict [list CONFIG.STRATEGY ${::AIT::interconOpt}] [get_bd_cells $inter]
 
-            if {${::AIT::interconPriority}} {
-                # Enable advanced settings in order to set priorities and set proper data path
-                set_property -dict [list CONFIG.ENABLE_ADVANCED_OPTIONS {1} CONFIG.XBAR_DATA_WIDTH.VALUE_SRC PROPAGATED] [get_bd_cells $inter]
-                # Set priority (0-15)
-                set_property -dict [list CONFIG.${port}_ARB_PRIORITY [expr 15 - ($counter%16)]] [get_bd_cells $inter]
-            }
             connect_clock [get_bd_pins $inter/${port}_ACLK]
             connect_reset [get_bd_pins $inter/${port}_ARESETN] "peripheral"
             connect_bd_intf_net -boundary_type upper [get_bd_intf_pins $src] [get_bd_intf_pins $inter/${port}_AXI]
@@ -484,6 +487,25 @@ namespace eval AIT {
             }
 
             set interface [connect_to_interface $src data S $num]
+
+            if {${::AIT::interconPriority}} {
+                set data_width 32
+                if {$::AIT::arch_device eq "alveo"} {
+                    set data_width 512
+                } elseif {$::AIT::arch_device eq "zynqmp"} {
+                    set data_width 128
+                } elseif {$::AIT::arch_device eq "zynq"} {
+                    set data_width 64
+                }
+
+                regsub {_AXI} [lindex $interface 1] "" port
+                regsub {S} $port "" counter
+                set counter [scan $counter %d]
+                # Enable advanced settings in order to set priorities and set proper data path
+                set_property -dict [list CONFIG.ENABLE_ADVANCED_OPTIONS {1} CONFIG.XBAR_DATA_WIDTH.VALUE_SRC PROPAGATED] [get_bd_cells [lindex $interface 0]]
+                # Set priority (0-15)
+                set_property -dict [list CONFIG.${port}_ARB_PRIORITY [expr 15 - ($counter%16)] CONFIG.XBAR_DATA_WIDTH $data_width] [get_bd_cells [lindex $interface 0]]
+            }
 
             if {${::AIT::interleaving_stride} ne "None"} {
                 connect_bd_net [get_bd_pins ${src}_awaddr] [get_bd_pins [lindex $interface 0]/[lindex $interface 1]_awaddr]

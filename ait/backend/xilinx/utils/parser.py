@@ -136,6 +136,9 @@ class ArgParser():
         if args.enable_memory_bonding and board.mem.type != 'hbm':
             msg.error('Memory channel bonding is only available for HBM memories')
 
+        if args.interconnect_priorities and (board.arch.device == 'zynq' or board.arch.device == 'zynqmp'):
+            msg.error('Memory interconnect priorities are not available on neither Zynq nor ZynqMP boards')
+
         if args.simplify_interconnection and (board.arch.device == 'zynq' or board.arch.device == 'zynqmp'):
             msg.error('Simplify memory interconnection is not available on neither Zynq nor ZynqMP boards')
         if args.simplify_interconnection and board.mem.type != 'ddr':
