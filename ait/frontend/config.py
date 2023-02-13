@@ -21,7 +21,7 @@
 # ------------------------------------------------------------------------ #
 
 MIN_PYTHON_VERSION = (3, 7)
-MIN_WRAPPER_VERSION = 8
+MIN_WRAPPER_VERSION = 13
 BITINFO_VERSION = 9
 VERSION_MAJOR = 6
 VERSION_MINOR = 4
