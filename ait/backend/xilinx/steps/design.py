@@ -44,26 +44,26 @@ def generate_Vivado_variables_tcl():
                                + 'namespace eval AIT {' \
                                + '\n' \
                                + '\t# Project variables\n' \
-                               + '\tvariable name_Project ' + args.name + '\n' \
-                               + '\tvariable name_Design ' + args.name + '_design\n' \
-                               + '\tvariable target_lang ' + args.target_language + '\n' \
-                               + '\tvariable num_accs ' + str(args.num_instances) + '\n' \
-                               + '\tvariable num_acc_creators ' + str(args.num_acc_creators) + '\n' \
-                               + '\tvariable num_jobs ' + str(args.jobs) + '\n' \
-                               + '\tvariable ait_call "' + str(re.escape(os.path.basename(sys.argv[0]) + ' ' + ' '.join(sys.argv[1:]))) + '"\n' \
-                               + '\tvariable bitInfo_note ' + str(re.escape(args.bitinfo_note)) + '\n' \
-                               + '\tvariable version_major_ait ' + str(VERSION_MAJOR) + '\n' \
-                               + '\tvariable version_minor_ait ' + str(VERSION_MINOR) + '\n' \
-                               + '\tvariable version_patch_ait ' + str(VERSION_PATCH) + '\n' \
-                               + '\tvariable version_bitInfo ' + str(BITINFO_VERSION).lower() + '\n' \
-                               + '\tvariable version_wrapper ' + (str(args.wrapper_version).lower() if args.wrapper_version else '0') + '\n' \
-                               + '\tvariable memory_bonding ' + (str(args.enable_memory_bonding)) + '\n' \
+                               + '\tvariable name_Project {}\n'           .format(args.name) \
+                               + '\tvariable name_Design {}_design\n'     .format(args.name) \
+                               + '\tvariable target_lang {}\n'            .format(args.target_language) \
+                               + '\tvariable num_accs {}\n'               .format(str(args.num_instances)) \
+                               + '\tvariable num_acc_creators {}\n'       .format(str(args.num_acc_creators)) \
+                               + '\tvariable num_jobs {}\n'               .format(str(args.jobs)) \
+                               + '\tvariable ait_call "{}"\n'             .format(str(re.escape(os.path.basename(sys.argv[0]) + ' ' + ' '.join(sys.argv[1:])))) \
+                               + '\tvariable bitInfo_note {}\n'           .format(str(re.escape(args.bitinfo_note))) \
+                               + '\tvariable version_major_ait {}\n'      .format(str(VERSION_MAJOR)) \
+                               + '\tvariable version_minor_ait {}\n'      .format(str(VERSION_MINOR)) \
+                               + '\tvariable version_patch_ait {}\n'      .format(str(VERSION_PATCH)) \
+                               + '\tvariable version_bitInfo {}\n'        .format(str(BITINFO_VERSION).lower()) \
+                               + '\tvariable version_wrapper {}\n'        .format((str(args.wrapper_version).lower() if args.wrapper_version else '0')) \
+                               + '\tvariable memory_bonding {}\n'         .format(str(args.enable_memory_bonding)) \
                                + '\n' \
                                + '\t# IP caching variables\n' \
-                               + '\tvariable IP_caching ' + str(not args.disable_IP_caching).lower() + '\n'
+                               + '\tvariable IP_caching {}\n'             .format(str(not args.disable_IP_caching).lower())
 
     if not args.disable_IP_caching:
-        vivado_project_variables += '\tvariable path_CacheLocation ' + os.path.realpath(args.IP_cache_location) + '\n'
+        vivado_project_variables += '\tvariable path_CacheLocation {}\n'  .format(os.path.realpath(args.IP_cache_location))
 
     regslice_all = '0'
     regslice_mem = '0'
@@ -79,70 +79,70 @@ def generate_Vivado_variables_tcl():
 
     vivado_project_variables += '\n' \
                                 + '\t# Bitstream variables\n' \
-                                + '\tvariable interconOpt ' + str(args.interconnect_opt + 1) + '\n' \
-                                + '\tvariable debugInterfaces ' + str(args.debug_intfs) + '\n' \
-                                + '\tvariable interconRegSlice_all ' + regslice_all + '\n' \
-                                + '\tvariable interconRegSlice_mem ' + regslice_mem + '\n' \
-                                + '\tvariable interconRegSlice_hwruntime ' + regslice_hwruntime + '\n' \
-                                + '\tvariable interleaving_stride ' + (hex(args.memory_interleaving_stride) if args.memory_interleaving_stride is not None else str(args.memory_interleaving_stride)) + '\n'\
-                                + '\tvariable simplify_interconnection ' + str(args.simplify_interconnection).lower() + '\n' \
-                                + '\tvariable interconPriority ' + str(args.interconnect_priorities) + '\n' \
-                                + '\tvariable floorplanning_constr ' + str(args.floorplanning_constr) + '\n' \
-                                + '\tvariable slr_slices ' + str(args.slr_slices) + '\n' \
+                                + '\tvariable interconOpt {}\n'                 .format(str(args.interconnect_opt + 1)) \
+                                + '\tvariable debugInterfaces {}\n'             .format(str(args.debug_intfs)) \
+                                + '\tvariable interconRegSlice_all {}\n'        .format(regslice_all) \
+                                + '\tvariable interconRegSlice_mem {}\n'        .format(regslice_mem) \
+                                + '\tvariable interconRegSlice_hwruntime {}\n'  .format(regslice_hwruntime) \
+                                + '\tvariable interleaving_stride {}\n'         .format((hex(args.memory_interleaving_stride) if args.memory_interleaving_stride is not None else str(args.memory_interleaving_stride)))\
+                                + '\tvariable simplify_interconnection {}\n'    .format(str(args.simplify_interconnection).lower()) \
+                                + '\tvariable interconPriority {}\n'            .format(str(args.interconnect_priorities)) \
+                                + '\tvariable floorplanning_constr {}\n'        .format(str(args.floorplanning_constr)) \
+                                + '\tvariable slr_slices {}\n'                  .format(str(args.slr_slices)) \
                                 + '\n' \
-                                + '\t# ' + board.name + ' board variables\n' \
-                                + '\tvariable board ' + board.name + '\n' \
-                                + '\tvariable chipPart ' + chip_part + '\n'
+                                + '\t# {} board variables\n'                    .format(board.name) \
+                                + '\tvariable board {}\n'                       .format(board.name) \
+                                + '\tvariable chipPart {}\n'                    .format(chip_part)
     if board.board_part:
-        vivado_project_variables += '\tvariable boardPart ' + str(board.board_part) + '\n'
+        vivado_project_variables += '\tvariable boardPart {}\n'                 .format(str(board.board_part))
 
-    vivado_project_variables += '\tvariable clockFreq ' + str(args.clock) + '\n' \
-                                + '\tvariable arch_device ' + board.arch.device + '\n'
+    vivado_project_variables += '\tvariable clockFreq {}\n'                     .format(str(args.clock)) \
+                                + '\tvariable arch_device {}\n'                 .format(board.arch.device)
 
     if args.slr_slices is not None or args.floorplanning_constr is not None:
-        vivado_project_variables += '\tvariable board_slr_num ' + str(board.arch.slr.num) + '\n' \
-                                    + '\tvariable board_slr_master ' + str(board.arch.slr.master) + '\n'
+        vivado_project_variables += '\tvariable board_slr_num {}\n'       .format(str(board.arch.slr.num)) \
+                                    + '\tvariable board_slr_master {}\n'  .format(str(board.arch.slr.master))
 
     vivado_project_variables += '\tvariable address_map [dict create]\n' \
-                                + '\tdict set address_map "ompss_base_addr" ' + board.address_map.ompss_base_addr + '\n' \
-                                + '\tdict set address_map "mem_base_addr" ' + board.address_map.mem_base_addr + '\n' \
-                                + '\tdict set address_map "mem_type" ' + board.mem.type + '\n'
+                                + '\tdict set address_map "ompss_base_addr" {}\n'  .format(board.address_map.ompss_base_addr) \
+                                + '\tdict set address_map "mem_base_addr" {}\n'    .format(board.address_map.mem_base_addr) \
+                                + '\tdict set address_map "mem_type" {}\n'         .format(board.mem.type)
 
     if board.arch.device == 'zynq' or board.arch.device == 'zynqmp':
-        vivado_project_variables += '\tdict set address_map "mem_size" ' + hex(decimalFromHumanReadable(board.mem.size)) + '\n'
+        vivado_project_variables += '\tdict set address_map "mem_size" {}\n'         .format(hex(decimalFromHumanReadable(board.mem.size)))
     elif board.arch.device == 'alveo':
-        vivado_project_variables += '\tdict set address_map "mem_num_banks" ' + str(board.mem.num_banks) + '\n' \
-                                    + '\tdict set address_map "mem_bank_size" ' + hex(decimalFromHumanReadable(board.mem.bank_size)) + '\n'
+        vivado_project_variables += '\tdict set address_map "mem_num_banks" {}\n'    .format(str(board.mem.num_banks)) \
+                                    + '\tdict set address_map "mem_bank_size" {}\n'  .format(hex(decimalFromHumanReadable(board.mem.bank_size)))
 
     vivado_project_variables += '\n' \
                                 + '\t# Hardware Instrumentation variables\n' \
-                                + '\tvariable hwcounter ' + str(args.hwcounter) + '\n' \
-                                + '\tvariable hwinst ' + str(args.hwinst) + '\n'
+                                + '\tvariable hwcounter {}\n'                   .format(str(args.hwcounter)) \
+                                + '\tvariable hwinst {}\n'                      .format(str(args.hwinst))
 
     vivado_project_variables += '\n' \
                                 + '\t# HW runtime variables\n' \
-                                + '\tvariable deps_hwruntime ' + str(args.deps_hwruntime) + '\n' \
-                                + '\tvariable task_creation ' + str(args.task_creation) + '\n' \
-                                + '\tvariable lock_hwruntime ' + str(args.lock_hwruntime) + '\n' \
-                                + '\tvariable cmdInSubqueue_len ' + str(args.cmdin_subqueue_len) + '\n' \
-                                + '\tvariable cmdOutSubqueue_len ' + str(args.cmdout_subqueue_len) + '\n' \
-                                + '\tvariable spawnInQueue_len ' + str(args.spawnin_queue_len) + '\n' \
-                                + '\tvariable spawnOutQueue_len ' + str(args.spawnout_queue_len) + '\n' \
-                                + '\tvariable hwruntime_interconnect ' + str(args.hwruntime_interconnect) + '\n' \
-                                + '\tvariable enable_spawn_queues ' + str(not args.disable_spawn_queues) + '\n' \
-                                + '\tvariable max_args_per_task ' + str(args.max_args_per_task) + '\n' \
-                                + '\tvariable max_deps_per_task ' + str(args.max_deps_per_task) + '\n' \
-                                + '\tvariable max_copies_per_task ' + str(args.max_copies_per_task) + '\n'
+                                + '\tvariable deps_hwruntime {}\n'          .format(str(args.deps_hwruntime)) \
+                                + '\tvariable task_creation {}\n'           .format(str(args.task_creation)) \
+                                + '\tvariable lock_hwruntime {}\n'          .format(str(args.lock_hwruntime)) \
+                                + '\tvariable cmdInSubqueue_len {}\n'       .format(str(args.cmdin_subqueue_len)) \
+                                + '\tvariable cmdOutSubqueue_len {}\n'      .format(str(args.cmdout_subqueue_len)) \
+                                + '\tvariable spawnInQueue_len {}\n'        .format(str(args.spawnin_queue_len)) \
+                                + '\tvariable spawnOutQueue_len {}\n'       .format(str(args.spawnout_queue_len)) \
+                                + '\tvariable hwruntime_interconnect {}\n'  .format(str(args.hwruntime_interconnect)) \
+                                + '\tvariable enable_spawn_queues {}\n'     .format(str(not args.disable_spawn_queues)) \
+                                + '\tvariable max_args_per_task {}\n'       .format(str(args.max_args_per_task)) \
+                                + '\tvariable max_deps_per_task {}\n'       .format(str(args.max_deps_per_task)) \
+                                + '\tvariable max_copies_per_task {}\n'     .format(str(args.max_copies_per_task))
     if args.deps_hwruntime:
         vivado_project_variables += '\n' \
                                     + '\t# Picos parameters\n' \
-                                    + '\tvariable picos_num_dcts ' + str(args.picos_num_dcts) + '\n' \
-                                    + '\tvariable picos_tm_size ' + str(args.picos_tm_size) + '\n' \
-                                    + '\tvariable picos_dm_size ' + str(args.picos_dm_size) + '\n' \
-                                    + '\tvariable picos_vm_size ' + str(args.picos_vm_size) + '\n' \
-                                    + '\tvariable picos_dm_ds ' + args.picos_dm_ds + '\n' \
-                                    + '\tvariable picos_dm_hash ' + args.picos_dm_hash + '\n' \
-                                    + '\tvariable picos_hash_t_size ' + str(args.picos_hash_t_size) + '\n'
+                                    + '\tvariable picos_num_dcts {}\n'     .format(str(args.picos_num_dcts)) \
+                                    + '\tvariable picos_tm_size {}\n'      .format(str(args.picos_tm_size)) \
+                                    + '\tvariable picos_dm_size {}\n'      .format(str(args.picos_dm_size)) \
+                                    + '\tvariable picos_vm_size {}\n'      .format(str(args.picos_vm_size)) \
+                                    + '\tvariable picos_dm_ds {}\n'        .format(args.picos_dm_ds) \
+                                    + '\tvariable picos_dm_hash {}\n'      .format(args.picos_dm_hash) \
+                                    + '\tvariable picos_hash_t_size {}\n'  .format(str(args.picos_hash_t_size))
 
     vivado_project_variables += '\n' \
                                 + '\t# List of accelerators\n' \
@@ -169,7 +169,7 @@ def generate_Vivado_variables_tcl():
 
     # Generate acc constraint file
     if (args.floorplanning_constr == 'acc') or (args.floorplanning_constr == 'all'):
-        accConstrFiles = open(f'{project_backend_path}/board/{board.name}/constraints/acc_floorplan.xdc', 'w')
+        accConstrFiles = open('{}/board/{}/constraints/acc_floorplan.xdc'.format(project_backend_path, board.name), 'w')
         for acc in accs[0:args.num_accs]:
             if hasattr(acc, 'SLR'):
                 instancesToPlace = len(acc.SLR)
@@ -181,19 +181,19 @@ def generate_Vivado_variables_tcl():
                     msg.warning('Placement list for accelerator {} has less instances than expected ({} < {}). Placing instances 0-{}'.format(acc.name, len(acc.SLR), acc.num_instances, instancesToPlace - 1))
                 # Instantiate each accelerator with a single instance and placement info
                 for instanceNumber in range(instancesToPlace):
-                    accBlock = f'{acc.name}_{instanceNumber}'
-                    accConstrFiles.write(f'add_cells_to_pblock [get_pblocks slr{acc.SLR[instanceNumber]}_pblock] '
+                    accBlock = '{acc.name}_{instanceNumber}'
+                    accConstrFiles.write('add_cells_to_pblock [get_pblocks slr{}_pblock] '.format(acc.SLR[instanceNumber])
                                          + '[get_cells {'
-                                         + f'*/{accBlock}/Adapter_* '
-                                         + f'*/{accBlock}/*_addrInterleaver '
-                                         + f'*/{accBlock}/TID_subset_converter '
-                                         + f'*/{accBlock}/{acc.name}_ompss'
+                                         + '*/{}/Adapter_* '                              .format(accBlock)
+                                         + '*/{}/*_addrInterleaver '                      .format(accBlock)
+                                         + '*/{}/TID_subset_converter '                   .format(accBlock)
+                                         + '*/{}/{}_ompss'                                .format(accBlock, acc.name)
                                          + '}]\n')
                     if acc.task_creation:
-                        accConstrFiles.write(f'add_cells_to_pblock [get_pblocks slr{acc.SLR[instanceNumber]}_pblock] '
+                        accConstrFiles.write('add_cells_to_pblock [get_pblocks slr{}_pblock] '  .format(acc.SLR[instanceNumber])
                                              + '[get_cells {'
-                                             + f'*/{accBlock}/new_task_spawner '
-                                             + f'*/{accBlock}/axis_tid_demux '
+                                             + '*/{}/new_task_spawner '                         .format(accBlock)
+                                             + '*/{}/axis_tid_demux '                           .format(accBlock)
                                              + '}]\n')
         accConstrFiles.close()
 
