@@ -6,13 +6,14 @@
 
 # Accelerator Integration Tool (AIT)
 
-The Accelerator Integration Tool (AIT) automatically integrates OmpSs@FPGA accelerators into FPGA designs using different vendor backends.
+The Accelerator Integration Tool (AIT) automatically integrates OmpSs@FPGA and OmpSs-2@FPGA accelerators into FPGA designs using different vendor backends.
 
 This README should help you install the AIT component of the OmpSs@FPGA toolchain from the repository.
 However, it is preferred using the pre-built Docker image with the latest stable toolchain.
-They are available at [OmpSs@FPGA pre-built Docker images](https://ompssatfpga.bsc.es/downloads/docker/).
+They are available at [OmpSs@FPGA pre-built Docker images](https://ompssatfpga.bsc.es/downloads/ompss/docker/) and [OmpSs-2@FPGA pre-built Docker images](https://ompssatfpga.bsc.es/downloads/ompss-2/docker/).
+
 Moreover, there are pre-built SD images for the current supported board families: Zynq7000 and Ultrascale.
-They are also available at [OmpSs@FPGA pre-built SD images](https://ompssatfpga.bsc.es/downloads/sd-images/).
+They are also available at [OmpSs@FPGA pre-built SD images](https://ompssatfpga.bsc.es/downloads/ompss/sd-images/) and [OmpSs-2@FPGA pre-built SD images](https://ompssatfpga.bsc.es/downloads/ompss-2/sd-images/).
 
 # Prerequisites
  - [Python 3.7 or later](https://www.python.org)
@@ -82,7 +83,7 @@ You can use `pip` to easily install `ait` on your system:
 
 #### Style testing
 
-The python code follows pycodestyle which is verified using the `flake8` tool.
+The python code follows PEP 8 style guide which is verified using the `flake8` tool.
 
 To check the current source code just execute `python3 -m flake8`.
 
