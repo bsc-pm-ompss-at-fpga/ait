@@ -282,6 +282,14 @@ def run_step(project_args):
     # Check if Vivado requirements are met
     checkers.check_vivado()
 
+    # Copy AIT tcl scripts and IPs to project directory tree
+    shutil.rmtree(project_backend_path + '/tcl', ignore_errors=True)
+    shutil.copytree(ait_backend_path + '/tcl', project_backend_path + '/tcl')
+    shutil.rmtree(project_backend_path + '/IPs', ignore_errors=True)
+    shutil.copytree(ait_backend_path + '/IPs', project_backend_path + '/IPs')
+    shutil.rmtree(project_backend_path + '/board', ignore_errors=True)
+    shutil.copytree(ait_backend_path + '/board/' + args.board, project_backend_path + '/board/' + args.board)
+
     # Load accelerator placement info
     load_acc_placement(accs[0:args.num_accs], args)
 
