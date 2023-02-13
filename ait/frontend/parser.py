@@ -323,8 +323,8 @@ class ArgParser:
 
     def check_required_args(self, args):
         # Validate required args
-        if not re.match('^[A-Za-z][A-Za-z0-9_]*$', args.name):
-            msg.error('Invalid project name. Must start with a letter and contain only letters, numbers or underscores')
+        if re.search('(^[^A-Za-z])|(\W|__)|([^A-Za-z0-9]$)', args.name):
+            msg.error('Invalid project name. Must start with a letter, contain only letters, numbers or non-consecutive underscores, and end with a letter or number')
 
         if args.wrapper_version and args.wrapper_version < MIN_WRAPPER_VERSION:
             msg.error('Unsupported wrapper version (' + str(args.wrapper_version) + '). Minimum version is ' + str(MIN_WRAPPER_VERSION))
