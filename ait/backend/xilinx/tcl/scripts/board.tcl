@@ -98,11 +98,6 @@ namespace eval AIT {
         }
 
         proc bond_QDMA_channels {} {
-            set old_num_banks [dict get ${::AIT::address_map} "mem_num_banks"]
-            set old_bank_size [dict get ${::AIT::address_map} "mem_bank_size"]
-            dict set ::AIT::address_map "mem_num_banks" [expr $old_num_banks/2]
-            dict set ::AIT::address_map "mem_bank_size" [expr $old_bank_size*2]
-
             set_property -dict [list CONFIG.USER_SAXI_14 {true}] [get_bd_cells bridge_to_host/HBM/HBM]
             set axi_fifo [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_data_fifo:* bridge_to_host/HBM/S_AXI_QDMA/AXI_fifo]
             set_property -dict [list CONFIG.READ_FIFO_DEPTH {32}] $axi_fifo
@@ -168,15 +163,31 @@ namespace eval AIT {
         proc configure_address_map {} {
             AIT::info_msg "Using generic configure_address_map procedure"
 
+            set mem_type [dict get ${::AIT::address_map} "mem_type"]
+            set base_addr [dict get ${::AIT::address_map} "mem_base_addr"]
+
             # Assign memory address space
             if {(${::AIT::arch_device} eq "zynq") || (${::AIT::arch_device} eq "zynqmp")} {
+                set mem_size [dict get ${::AIT::address_map} "mem_size"]
                 assign_bd_address [get_bd_addr_segs -regexp ".*HP._DDR_LOW.*"]
-                set_property -quiet offset [dict get ${::AIT::address_map} "mem_base_addr"] [get_bd_addr_segs -regexp ".*SEG_.*HP._DDR_LOW.*"]
-                set_property -quiet range [dict get ${::AIT::address_map} "mem_size"] [get_bd_addr_segs -regexp ".*SEG_.*HP._DDR_LOW.*"]
-            } else {
-                for {set i 0} {$i < [dict get ${::AIT::address_map} "mem_num_banks"]} {incr i} {
-                    if {[llength [get_bd_addr_segs -regexp ".*DDR_${i}.*_DDR4_ADDRESS_BLOCK"]]} {
-                        assign_bd_address [get_bd_addr_segs -regexp ".*DDR_${i}.*_DDR4_ADDRESS_BLOCK"] -offset [expr [dict get ${::AIT::address_map} "mem_base_addr"] + [dict get ${::AIT::address_map} "mem_bank_size"]*$i] -range [dict get ${::AIT::address_map} "mem_bank_size"]
+                set_property -quiet offset $base_addr [get_bd_addr_segs -regexp ".*SEG_.*HP._DDR_LOW.*"]
+                set_property -quiet range $mem_size [get_bd_addr_segs -regexp ".*SEG_.*HP._DDR_LOW.*"]
+            } elseif {${::AIT::arch_device} eq "alveo"} {
+                set bank_size [dict get ${::AIT::address_map} "mem_bank_size"]
+                set num_banks [dict get ${::AIT::address_map} "mem_num_banks"]
+                if {$mem_type eq "ddr"} {
+                    for {set i 0} {$i < $num_banks} {incr i} {
+                        if {[llength [get_bd_addr_segs -regexp ".*DDR_${i}.*_DDR4_ADDRESS_BLOCK"]]} {
+                            assign_bd_address [get_bd_addr_segs -regexp ".*DDR_${i}.*_DDR4_ADDRESS_BLOCK"] -offset [expr $base_addr + $bank_size*$i] -range $bank_size
+                        }
+                    }
+                } elseif {$mem_type eq "hbm"} {
+                    for {set i 0} {$i < $num_banks} {incr i} {
+                        if {[llength [get_bd_addr_segs -regexp ".*SAXI_[format %02u $i].*HBM_MEM.*"]]} {
+                            for {set j 0} {$j < $num_banks} {incr j} {
+                                assign_bd_address [get_bd_addr_segs -regexp ".*SAXI_[format %02u $i].*HBM_MEM[format %02u $j]"] -offset [expr $base_addr + $bank_size*$j] -range $bank_size
+                            }
+                        }
                     }
                 }
             }
