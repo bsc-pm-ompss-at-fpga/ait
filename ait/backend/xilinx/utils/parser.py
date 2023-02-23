@@ -108,7 +108,7 @@ class ArgParser():
         self.parser.add_argument('--debug_intfs', help='choose which interfaces mark for debug and instantiate the correspondent ILA cores\nAXI: debug accelerator\'s AXI interfaces\nstream: debug accelerator\'s AXI-Stream interfaces\nboth: debug both accelerator\'s AXI and AXI-Stream interfaces\ncustom: debug user-defined interfaces\nnone: do not mark for debug any interface\n(def: \'none\')', choices=['AXI', 'stream', 'both', 'custom', 'none'], metavar='INTF_TYPE', default='none')
         self.parser.add_argument('--debug_intfs_list', help='path of file with the list of interfaces to debug', type=FileType())
         self.parser.add_argument('--ignore_eng_sample', help='ignore engineering sample status from chip part number', action='store_true', default=False)
-        self.parser.add_argument('--target_language', help='choose target language to synthesize files to: VHDL or Verilog\n(def: \'VHDL\')', choices=['VHDL', 'Verilog'], metavar='TARGET_LANG', default='VHDL')
+        self.parser.add_argument('--target_language', help='choose target language to synthesize files to: vhdl or verilog\n(def: \'verilog\')', choices=['vhdl', 'verilog'], metavar='TARGET_LANG', default='verilog')
 
     def check_args(self, args):
         if args.debug_intfs == 'custom' and args.debug_intfs_list is None:
