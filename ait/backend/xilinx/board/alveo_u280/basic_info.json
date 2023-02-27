@@ -1,0 +1,26 @@
+{
+	"name": "alveo_u280",
+	"chip_part": "xcu280-fsvh2892-2L-e",
+	"es": "",
+	"board_part": "xilinx.com:au280",
+
+	"arch": {
+		"device": "alveo"
+	},
+
+	"frequency": {
+		"min": 5,
+		"max": 933
+	},
+
+	"mem": {
+		"type": "ddr",
+		"num_banks": 2,
+		"bank_size": "16G"
+	},
+
+	"address_map": {
+		"mem_base_addr": "0x0",
+		"ompss_base_addr": "0x0"
+	}
+}
