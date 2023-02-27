@@ -181,7 +181,7 @@ def generate_Vivado_variables_tcl():
                     msg.warning('Placement list for accelerator {} has less instances than expected ({} < {}). Placing instances 0-{}'.format(acc.name, len(acc.SLR), acc.num_instances, instancesToPlace - 1))
                 # Instantiate each accelerator with a single instance and placement info
                 for instanceNumber in range(instancesToPlace):
-                    accBlock = '{acc.name}_{instanceNumber}'
+                    accBlock = '{}_{}'                                                    .format(acc.name, instanceNumber)
                     accConstrFiles.write('add_cells_to_pblock [get_pblocks slr{}_pblock] '.format(acc.SLR[instanceNumber])
                                          + '[get_cells {'
                                          + '*/{}/Adapter_* '                              .format(accBlock)
