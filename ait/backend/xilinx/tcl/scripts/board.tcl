@@ -7,10 +7,6 @@ namespace eval AIT {
 
         # Instantiates and connects required common IPs
         proc init_bd {} {
-            if {${::AIT::memory_bonding}} {
-                bond_QDMA_channels
-            }
-
             # If interconnect priorities are enabled, set PCIe master as max priority
             if {${::AIT::interconPriority}} {
                 set data_width 32
@@ -95,37 +91,6 @@ namespace eval AIT {
             connect_reset [get_bd_pins bitInfo_BRAM_Ctrl/s_axi_aresetn] "peripheral"
             connect_clock [get_bd_pins managed_reset/s_axi_aclk]
             connect_reset [get_bd_pins managed_reset/s_axi_aresetn] "peripheral"
-        }
-
-        proc bond_QDMA_channels {} {
-            set_property -dict [list CONFIG.USER_SAXI_14 {true}] [get_bd_cells bridge_to_host/HBM/HBM]
-            set axi_fifo [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_data_fifo:* bridge_to_host/HBM/S_AXI_QDMA/AXI_fifo]
-            set_property -dict [list CONFIG.READ_FIFO_DEPTH {32}] $axi_fifo
-            delete_bd_objs [get_bd_cells bridge_to_host/HBM/S_AXI_QDMA/HBM_data_width_converter]
-            delete_bd_objs [get_bd_intf_nets bridge_to_host/HBM/S_AXI_QDMA]
-            delete_bd_objs [get_bd_intf_nets bridge_to_host/HBM/S_AXI_QDMA/HBM_protocol_converter_M_AXI]
-            connect_bd_intf_net [get_bd_intf_pins bridge_to_host/HBM/S_AXI_QDMA/S_AXI] [get_bd_intf_pins bridge_to_host/HBM/S_AXI_QDMA/HBM_protocol_converter/S_AXI]
-            connect_bd_intf_net [get_bd_intf_pins bridge_to_host/HBM/S_AXI_QDMA/HBM_protocol_converter/M_AXI] [get_bd_intf_pins bridge_to_host/HBM/S_AXI_QDMA/AXI_fifo/S_AXI]
-            connect_bd_intf_net [get_bd_intf_pins bridge_to_host/HBM/S_AXI_QDMA/M_AXI] [get_bd_intf_pins bridge_to_host/HBM/S_AXI_QDMA/AXI_fifo/M_AXI]
-            connect_bd_intf_net [get_bd_intf_pins bridge_to_host/QDMA/M_AXI] [get_bd_intf_pins bridge_to_host/HBM/S_AXI_QDMA]
-            connect_bd_net [get_bd_pins bridge_to_host/HBM/S_AXI_QDMA/QDMA_aclk] [get_bd_pins bridge_to_host/HBM/S_AXI_QDMA/AXI_fifo/aclk]
-            connect_bd_net [get_bd_pins bridge_to_host/HBM/S_AXI_QDMA/QDMA_peripheral_aresetn] [get_bd_pins bridge_to_host/HBM/S_AXI_QDMA/AXI_fifo/aresetn]
-            delete_bd_objs [get_bd_nets bridge_to_host/HBM/S_AXI_QDMA/S_AXI_QDMA_awaddr_2] [get_bd_nets bridge_to_host/HBM/S_AXI_QDMA/S_AXI_QDMA_araddr_2] [get_bd_pins bridge_to_host/HBM/S_AXI_QDMA/S_AXI_QDMA_awaddr] [get_bd_pins bridge_to_host/HBM/S_AXI_QDMA/S_AXI_QDMA_araddr]
-            set_property name S_AXI_QDMA_0 [get_bd_cells bridge_to_host/HBM/S_AXI_QDMA]
-            copy_bd_objs bridge_to_host/HBM [get_bd_cells {bridge_to_host/HBM/S_AXI_QDMA_0}]
-            connect_bd_net [get_bd_pins bridge_to_host/HBM/S_AXI_QDMA_1/QDMA_aclk] [get_bd_pins bridge_to_host/HBM/HBM/AXI_14_ACLK] [get_bd_pins bridge_to_host/HBM/QDMA_aclk]
-            connect_bd_net [get_bd_pins bridge_to_host/HBM/S_AXI_QDMA_1/QDMA_peripheral_aresetn] [get_bd_pins bridge_to_host/HBM/HBM/AXI_14_ARESET_N] [get_bd_pins bridge_to_host/HBM/QDMA_peripheral_aresetn]
-            connect_bd_intf_net [get_bd_intf_pins bridge_to_host/HBM/S_AXI_QDMA_1/M_AXI] [get_bd_intf_pins bridge_to_host/HBM/HBM/SAXI_14]
-
-            set mem_channel_bonding [create_bd_cell -type ip -vlnv bsc:ompss:memory_channel_bonding:* bridge_to_host/HBM/QDMA_mem_channel_bonding]
-            set_property -dict [list CONFIG.AXI_ID_WIDTH {4} CONFIG.AXI_ADDR_WIDTH {64} CONFIG.AXI_MASTER_DATA_WIDTH {256} CONFIG.WIDE_BANK_BITS {28} CONFIG.NARROW_BANK_CAPACITY {268435456}] $mem_channel_bonding
-            connect_bd_intf_net [get_bd_intf_pins bridge_to_host/HBM/S_AXI_QDMA] [get_bd_intf_pins $mem_channel_bonding/s_axi]
-            connect_bd_intf_net [get_bd_intf_pins bridge_to_host/HBM/S_AXI_QDMA_0/S_AXI] [get_bd_intf_pins $mem_channel_bonding/m0_axi]
-            connect_bd_intf_net [get_bd_intf_pins bridge_to_host/HBM/S_AXI_QDMA_1/S_AXI] [get_bd_intf_pins $mem_channel_bonding/m1_axi]
-            connect_bd_net [get_bd_pins $mem_channel_bonding/clk] [get_bd_pins bridge_to_host/QDMA/aclk]
-            connect_bd_net [get_bd_pins $mem_channel_bonding/rstn] [get_bd_pins bridge_to_host/QDMA/aresetn]
-            connect_bd_net [get_bd_pins bridge_to_host/HBM/S_AXI_QDMA_awaddr] [get_bd_pins $mem_channel_bonding/s_axi_awaddr]
-            connect_bd_net [get_bd_pins bridge_to_host/HBM/S_AXI_QDMA_araddr] [get_bd_pins $mem_channel_bonding/s_axi_araddr]
         }
 
         # Initializes axi_interfaces variable with the available AXI interfaces along with their occupation

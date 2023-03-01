@@ -133,9 +133,6 @@ class ArgParser():
             elif math.log2(decimalFromHumanReadable(board.mem.bank_size)) - math.log2(args.memory_interleaving_stride) < math.ceil(math.log2(board.mem.num_banks)):
                 msg.error('Max allowed interleaving stride in current board: ' + decimalToHumanReadable(2**(math.log2(decimalFromHumanReadable(board.mem.bank_size)) - math.ceil(math.log2(board.mem.num_banks))), 2))
 
-        if args.enable_memory_bonding and board.mem.type != 'hbm':
-            msg.error('Memory channel bonding is only available for HBM memories')
-
         if args.interconnect_priorities and (board.arch.device == 'zynq' or board.arch.device == 'zynqmp'):
             msg.error('Memory interconnect priorities are not available on neither Zynq nor ZynqMP boards')
 
