@@ -86,7 +86,7 @@ namespace eval AIT {
             create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 bridge_to_host/S_AXI_${data_intf}
             create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 bridge_to_host/HBM/S_AXI_${data_intf}
             connect_bd_net [get_bd_pins bridge_to_host/HBM/aclk] [get_bd_pins $hier_cell/aclk] [get_bd_pins bridge_to_host/HBM/HBM/AXI_[format %02u $data_intf]_ACLK]
-            connect_bd_net [get_bd_pins bridge_to_host/HBM/peripheral_aresetn] [get_bd_pins $hier_cell/aresetn]
+            connect_bd_net [get_bd_pins bridge_to_host/HBM/peripheral_aresetn] [get_bd_pins $hier_cell/aresetn] [get_bd_pins bridge_to_host/HBM/HBM/AXI_[format %02u $data_intf]_ARESET_N]
             connect_bd_intf_net -boundary_type upper [get_bd_intf_pins bridge_to_host/HBM/S_AXI_${data_intf}] [get_bd_intf_pins $hier_cell/S_AXI]
             connect_bd_intf_net -boundary_type upper [get_bd_intf_pins bridge_to_host/HBM/HBM/SAXI_[format %02u $data_intf]] [get_bd_intf_pins $hier_cell/M_AXI]
             connect_bd_intf_net -boundary_type upper [get_bd_intf_pins bridge_to_host/S_AXI_${data_intf}] [get_bd_intf_pins bridge_to_host/HBM/S_AXI_${data_intf}]
