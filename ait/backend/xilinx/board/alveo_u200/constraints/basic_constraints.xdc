@@ -8,7 +8,7 @@ set_property BITSTREAM.GENERAL.COMPRESS TRUE [current_design]
 set_property BITSTREAM.CONFIG.OVERTEMPSHUTDOWN ENABLE [current_design]
 
 # Managed reset false path
-set_false_path -through [get_pins */Hardware_Runtime/*_OmpSs_Manager/managed_aresetn]
+set_false_path -through [get_pins */reset_AND/Res[0]]
 
 # User clock location
 set_property -dict {PACKAGE_PIN AV19 IOSTANDARD LVDS} [get_ports USER_SI570_CLOCK_clk_n]; # Bank 64 VCCO - VCC1V2 Net "USER_SI570_CLOCK_N"  - IO_L12N_T1U_N11_GC_64
