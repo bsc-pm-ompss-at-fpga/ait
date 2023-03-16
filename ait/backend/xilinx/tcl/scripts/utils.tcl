@@ -64,4 +64,15 @@ namespace eval AIT {
             return 1
         }
     }
+
+    # Converts decimal numbers to a fixed-length hex string
+    # This implementation assumes bits is divisible by 64
+    proc long_int_to_hex {bits num} {
+        set result ""
+        set div [expr $bits/64]
+        for {set i 0} {$i < $div} {incr i} {
+            append result [format %016llX [expr ($num >> ($div-$i-1)*64) & 0xFFFFFFFFFFFFFFFF]]
+        }
+        return $result
+   }
 }

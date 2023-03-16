@@ -304,7 +304,7 @@ proc create_root_design { parentCell } {
   # Create instance: M_AXI_HPM_LPD_0_Inter, and set properties
   set M_AXI_HPM_LPD_0_Inter [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect M_AXI_HPM_LPD_0_Inter ]
   set_property -dict [ list \
-   CONFIG.NUM_MI {2} \
+   CONFIG.NUM_MI {1} \
  ] $M_AXI_HPM_LPD_0_Inter
 
   # Create instance: M_AXI_master_0_Inter, and set properties

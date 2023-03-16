@@ -258,9 +258,6 @@ proc create_hier_cell_Hardware_Runtime { parentCell nameHier } {
 
   # Create interface pins
   create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S_AXI_GP
-  if ${::AIT::task_creation} {
-      create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:bram_rtl:1.0 bitInfo
-  }
 
   # Create pins
   create_bd_pin -dir I -type clk aclk
@@ -276,25 +273,22 @@ proc create_hier_cell_Hardware_Runtime { parentCell nameHier } {
 
   # Create instance: GP_Inter, and set properties
   set GP_Inter [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect GP_Inter ]
-  if $::AIT::enable_spawn_queues {
-    set_property -dict [ list \
-     CONFIG.M00_HAS_REGSLICE {4} \
-     CONFIG.M01_HAS_REGSLICE {4} \
-     CONFIG.M02_HAS_REGSLICE {4} \
-     CONFIG.M03_HAS_REGSLICE {4} \
-     CONFIG.NUM_MI {4} \
-     CONFIG.S00_HAS_REGSLICE {4} \
-     CONFIG.STRATEGY {1} \
-    ] $GP_Inter
-  } else {
-    set_property -dict [ list \
-     CONFIG.M00_HAS_REGSLICE {4} \
-     CONFIG.M01_HAS_REGSLICE {4} \
-     CONFIG.NUM_MI {2} \
-     CONFIG.S00_HAS_REGSLICE {4} \
-     CONFIG.STRATEGY {1} \
-    ] $GP_Inter
+  set nmasters 2
+  set GP_Inter_config [list CONFIG.M00_HAS_REGSLICE 4 CONFIG.M01_HAS_REGSLICE 4 CONFIG.S00_HAS_REGSLICE 4 CONFIG.STRATEGY 1]
+  if ${::AIT::enable_spawn_queues} {
+    set spawn_out_m $nmasters
+    incr nmasters
+    set spawn_in_m $nmasters
+    incr nmasters
+    lappend GP_Inter_config CONFIG.M0${spawn_out_m}_HAS_REGSLICE 4 CONFIG.M0${spawn_in_m}_HAS_REGSLICE 4
   }
+  if ${::AIT::enable_pom_axilite} {
+    set pom_axilite_m $nmasters
+    incr nmasters
+    lappend GP_Inter_config CONFIG.M0${pom_axilite_m}_HAS_REGSLICE 4
+  }
+  lappend GP_Inter_config CONFIG.NUM_MI $nmasters
+  set_property -dict $GP_Inter_config $GP_Inter
 
   # Create instance: axis_cmdin_TID, and set properties
   set axis_cmdin_TID [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_subset_converter axis_cmdin_TID]
@@ -334,26 +328,26 @@ proc create_hier_cell_Hardware_Runtime { parentCell nameHier } {
 
   # Create instance: Picos_OmpSs_Manager, and set properties
   set Picos_OmpSs_Manager [ create_bd_cell -type ip -vlnv bsc:ompss:picosompssmanager Picos_OmpSs_Manager ]
-  set_property -dict [ list \
-   CONFIG.MAX_ACCS [expr max(${::AIT::num_accs}, 2)] \
-   CONFIG.MAX_ACC_TYPES [expr max([llength ${::AIT::accs}], 2)] \
-   CONFIG.MAX_ACC_CREATORS [expr max(${::AIT::num_acc_creators}, 2)] \
-   CONFIG.CMDIN_SUBQUEUE_LEN ${::AIT::cmdInSubqueue_len} \
-   CONFIG.CMDOUT_SUBQUEUE_LEN ${::AIT::cmdOutSubqueue_len} \
-   CONFIG.ENABLE_SPAWN_QUEUES ${::AIT::enable_spawn_queues} \
-   CONFIG.ENABLE_TASK_CREATION ${::AIT::task_creation} \
-   CONFIG.LOCK_SUPPORT ${::AIT::lock_hwruntime} \
-  ] $Picos_OmpSs_Manager
+  set POM_Config [list \
+    CONFIG.MAX_ACCS [expr max(${::AIT::num_accs}, 2)] \
+    CONFIG.MAX_ACC_TYPES [expr max([llength ${::AIT::accs}], 2)] \
+    CONFIG.MAX_ACC_CREATORS [expr max(${::AIT::num_acc_creators}, 2)] \
+    CONFIG.CMDIN_SUBQUEUE_LEN ${::AIT::cmdInSubqueue_len} \
+    CONFIG.CMDOUT_SUBQUEUE_LEN ${::AIT::cmdOutSubqueue_len} \
+    CONFIG.ENABLE_SPAWN_QUEUES ${::AIT::enable_spawn_queues} \
+    CONFIG.ENABLE_TASK_CREATION ${::AIT::task_creation} \
+    CONFIG.LOCK_SUPPORT ${::AIT::lock_hwruntime} \
+    CONFIG.AXILITE_INTF ${::AIT::enable_pom_axilite} \
+  ]
 
   if ${::AIT::enable_spawn_queues} {
-    set_property -dict [list \
+    lappend POM_Config \
       CONFIG.SPAWNIN_QUEUE_LEN ${::AIT::spawnInQueue_len} \
-      CONFIG.SPAWNOUT_QUEUE_LEN ${::AIT::spawnOutQueue_len} \
-    ] $Picos_OmpSs_Manager
+      CONFIG.SPAWNOUT_QUEUE_LEN ${::AIT::spawnOutQueue_len}
   }
 
   if {${::AIT::task_creation} && ${::AIT::deps_hwruntime}} {
-    set_property -dict [list \
+    lappend POM_Config \
       CONFIG.ENABLE_DEPS ${::AIT::deps_hwruntime} \
       CONFIG.NUM_DCTS ${::AIT::picos_num_dcts} \
       CONFIG.TM_SIZE ${::AIT::picos_tm_size} \
@@ -361,9 +355,10 @@ proc create_hier_cell_Hardware_Runtime { parentCell nameHier } {
       CONFIG.VM_SIZE ${::AIT::picos_vm_size} \
       CONFIG.DM_DS ${::AIT::picos_dm_ds} \
       CONFIG.DM_HASH ${::AIT::picos_dm_hash} \
-      CONFIG.HASH_T_SIZE ${::AIT::picos_hash_t_size} \
-    ] $Picos_OmpSs_Manager
+      CONFIG.HASH_T_SIZE ${::AIT::picos_hash_t_size}
   }
+
+  set_property -dict $POM_Config $Picos_OmpSs_Manager
 
   # Create instance: cmdInQueue, and set properties
   set cmdInQueue [ create_bd_cell -type ip -vlnv xilinx.com:ip:blk_mem_gen cmdInQueue ]
@@ -431,7 +426,7 @@ proc create_hier_cell_Hardware_Runtime { parentCell nameHier } {
    CONFIG.SINGLE_PORT_BRAM {1} \
  ] $cmdOutQueue_BRAM_Ctrl
 
-if $::AIT::enable_spawn_queues {
+if ${::AIT::enable_spawn_queues} {
     # Create instance: spawnInQueue, and set properties
     set spawnInQueue [ create_bd_cell -type ip -vlnv xilinx.com:ip:blk_mem_gen spawnInQueue ]
     set_property -dict [ list \
@@ -510,7 +505,6 @@ if $::AIT::enable_spawn_queues {
     connect_bd_intf_net [get_bd_intf_pins Picos_OmpSs_Manager/taskwait_in] [get_bd_intf_pins hwr_inStream/taskwait_in]
     connect_bd_intf_net [get_bd_intf_pins Picos_OmpSs_Manager/taskwait_out] [get_bd_intf_pins axis_taskwait_TID/S_AXIS]
     connect_bd_intf_net [get_bd_intf_pins hwr_outStream/taskwait_out] [get_bd_intf_pins axis_taskwait_TID/M_AXIS]
-    connect_bd_intf_net -intf_net Picos_OmpSs_Manager_bitInfo [get_bd_intf_pins bitInfo] [get_bd_intf_pins Picos_OmpSs_Manager/bitInfo]
   }
   if ${::AIT::lock_hwruntime} {
     connect_bd_intf_net [get_bd_intf_pins Picos_OmpSs_Manager/lock_in] [get_bd_intf_pins hwr_inStream/lock_in]
@@ -529,10 +523,13 @@ if $::AIT::enable_spawn_queues {
     connect_bd_intf_net -intf_net Picos_OmpSs_Manager_spawnOutQueue [get_bd_intf_pins Picos_OmpSs_Manager/spawnout_queue] [get_bd_intf_pins spawnOutQueue/BRAM_PORTA]
     connect_bd_intf_net -intf_net spawnInQueue_BRAM_Ctrl_BRAM_PORTA [get_bd_intf_pins spawnInQueue/BRAM_PORTB] [get_bd_intf_pins spawnInQueue_BRAM_Ctrl/BRAM_PORTA]
     connect_bd_intf_net -intf_net spawnOutQueue_BRAM_Ctrl_BRAM_PORTA [get_bd_intf_pins spawnOutQueue/BRAM_PORTB] [get_bd_intf_pins spawnOutQueue_BRAM_Ctrl/BRAM_PORTA]
-    connect_bd_intf_net -intf_net GP_Inter_M02_AXI [get_bd_intf_pins GP_Inter/M02_AXI] [get_bd_intf_pins spawnOutQueue_BRAM_Ctrl/S_AXI]
-    connect_bd_intf_net -intf_net GP_Inter_M03_AXI [get_bd_intf_pins GP_Inter/M03_AXI] [get_bd_intf_pins spawnInQueue_BRAM_Ctrl/S_AXI]
+    connect_bd_intf_net -intf_net GP_Inter_spawn_out [get_bd_intf_pins GP_Inter/M0${spawn_out_m}_AXI] [get_bd_intf_pins spawnOutQueue_BRAM_Ctrl/S_AXI]
+    connect_bd_intf_net -intf_net GP_Inter_spawn_in [get_bd_intf_pins GP_Inter/M0${spawn_in_m}_AXI] [get_bd_intf_pins spawnInQueue_BRAM_Ctrl/S_AXI]
     connect_bd_net [get_bd_pins aclk] [get_bd_pins spawnInQueue_BRAM_Ctrl/s_axi_aclk] [get_bd_pins spawnOutQueue_BRAM_Ctrl/s_axi_aclk]
     connect_bd_net [get_bd_pins peripheral_aresetn] [get_bd_pins spawnInQueue_BRAM_Ctrl/s_axi_aresetn] [get_bd_pins spawnOutQueue_BRAM_Ctrl/s_axi_aresetn]
+  }
+  if ${::AIT::enable_pom_axilite} {
+    connect_bd_intf_net -intf_net GP_Inter_pom_axilite [get_bd_intf_pins GP_Inter/M0${pom_axilite_m}_AXI] [get_bd_intf_pins Picos_OmpSs_Manager/axilite]
   }
 
   # Create port connections
@@ -546,8 +543,12 @@ if $::AIT::enable_spawn_queues {
     connect_bd_net [get_bd_pins managed_aresetn] [get_bd_pins axis_spawn_TID/aresetn] [get_bd_pins axis_taskwait_TID/aresetn]
   }
   if ${::AIT::enable_spawn_queues} {
-    connect_bd_net [get_bd_pins aclk] [get_bd_pins GP_Inter/M02_ACLK] [get_bd_pins GP_Inter/M03_ACLK]
-    connect_bd_net [get_bd_pins peripheral_aresetn] [get_bd_pins GP_Inter/M02_ARESETN] [get_bd_pins GP_Inter/M03_ARESETN]
+    connect_bd_net [get_bd_pins aclk] [get_bd_pins GP_Inter/M0${spawn_out_m}_ACLK] [get_bd_pins GP_Inter/M0${spawn_in_m}_ACLK]
+    connect_bd_net [get_bd_pins peripheral_aresetn] [get_bd_pins GP_Inter/M0${spawn_out_m}_ARESETN] [get_bd_pins GP_Inter/M0${spawn_in_m}_ARESETN]
+  }
+  if ${::AIT::enable_pom_axilite} {
+    connect_bd_net [get_bd_pins aclk] [get_bd_pins GP_Inter/M0${pom_axilite_m}_ACLK]
+    connect_bd_net [get_bd_pins peripheral_aresetn] [get_bd_pins GP_Inter/M0${pom_axilite_m}_ARESETN]
   }
   if ${::AIT::lock_hwruntime} {
     connect_bd_net [get_bd_pins aclk] [get_bd_pins axis_lock_TID/aclk]

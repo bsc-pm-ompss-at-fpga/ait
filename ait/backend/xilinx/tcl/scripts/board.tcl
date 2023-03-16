@@ -10,11 +10,11 @@ namespace eval AIT {
             # If interconnect priorities are enabled, set PCIe master as max priority
             if {${::AIT::interconPriority}} {
                 set data_width 32
-                if {$::AIT::arch_device eq "alveo"} {
+                if {${::AIT::arch_device} eq "alveo"} {
                     set data_width 512
-                } elseif {$::AIT::arch_device eq "zynqmp"} {
+                } elseif {${::AIT::arch_device} eq "zynqmp"} {
                     set data_width 128
-                } elseif {$::AIT::arch_device eq "zynq"} {
+                } elseif {${::AIT::arch_device} eq "zynq"} {
                     set data_width 64
                 }
 
@@ -76,12 +76,9 @@ namespace eval AIT {
             connect_bd_net [get_bd_pins managed_reset/gpio_io_o] [get_bd_pins reset_AND/Op1]
             connect_reset [get_bd_pins reset_AND/Op2] "peripheral"
 
-            if {${::AIT::arch_device} eq "zynq"} {
+            if {(${::AIT::arch_device} eq "zynq") || (${::AIT::arch_device} eq "zynqmp")} {
                 connect_to_master_interface [get_bd_intf_pins bitInfo_BRAM_Ctrl/S_AXI] 1
                 connect_to_master_interface [get_bd_intf_pins managed_reset/S_AXI] 1
-            } elseif {${::AIT::arch_device} eq "zynqmp"} {
-                connect_to_interface [get_bd_intf_pins bitInfo_BRAM_Ctrl/S_AXI] HPM_LPD M
-                connect_to_interface [get_bd_intf_pins managed_reset/S_AXI] HPM_LPD M
             } else {
                 connect_to_master_interface [get_bd_intf_pins bitInfo_BRAM_Ctrl/S_AXI]
                 connect_to_master_interface [get_bd_intf_pins managed_reset/S_AXI]
@@ -466,11 +463,11 @@ namespace eval AIT {
 
             if {${::AIT::interconPriority}} {
                 set data_width 32
-                if {$::AIT::arch_device eq "alveo"} {
+                if {${::AIT::arch_device} eq "alveo"} {
                     set data_width 512
-                } elseif {$::AIT::arch_device eq "zynqmp"} {
+                } elseif {${::AIT::arch_device} eq "zynqmp"} {
                     set data_width 128
-                } elseif {$::AIT::arch_device eq "zynq"} {
+                } elseif {${::AIT::arch_device} eq "zynq"} {
                     set data_width 64
                 }
 

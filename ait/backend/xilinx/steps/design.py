@@ -131,7 +131,9 @@ def generate_Vivado_variables_tcl():
                                 + '\tvariable enable_spawn_queues {}\n'     .format(str(not args.disable_spawn_queues)) \
                                 + '\tvariable max_args_per_task {}\n'       .format(str(args.max_args_per_task)) \
                                 + '\tvariable max_deps_per_task {}\n'       .format(str(args.max_deps_per_task)) \
-                                + '\tvariable max_copies_per_task {}\n'     .format(str(args.max_copies_per_task))
+                                + '\tvariable max_copies_per_task {}\n'     .format(str(args.max_copies_per_task)) \
+                                + '\tvariable enable_pom_axilite {}\n'      .format(str(args.enable_pom_axilite))
+
     if args.deps_hwruntime:
         vivado_project_variables += '\n' \
                                     + '\t# Picos parameters\n' \

@@ -66,7 +66,7 @@ if {[file exists board/${::AIT::board}/procs.tcl]} {
 
 ## Variables
 # BitInfo feature bitmap
-variable bitmap_bitInfo "0x00000000"
+variable bitmap_bitInfo 0x00000000
 set bitmap_bitInfo [format 0x%08x [expr $bitmap_bitInfo | ([expr ${::AIT::interconOpt} - 1]<<2)]]
 
 # Cleanup files
@@ -77,19 +77,20 @@ file delete ../${::AIT::name_Project}.debuginterfaces.txt
 set dataInterfaces_file [open ../${::AIT::name_Project}.datainterfaces.txt "w"]
 
 # Compute addresses
-# Length unit is 64-bit words
 set bd_addr_segments [list \
     [dict create name cmdInQueue bd_seg_name Hardware_Runtime/cmdInQueue_BRAM_Ctrl/S_AXI/Mem0 size [expr ${::AIT::cmdInSubqueue_len}*${::AIT::num_accs}*8]] \
     [dict create name cmdOutQueue bd_seg_name Hardware_Runtime/cmdOutQueue_BRAM_Ctrl/S_AXI/Mem0 size [expr ${::AIT::cmdOutSubqueue_len}*${::AIT::num_accs}*8]] \
+    [dict create name managed_rstn bd_seg_name *managed_reset* size 4096] \
 ]
 if ${::AIT::enable_spawn_queues} {
     lappend bd_addr_segments [dict create name spawnInQueue bd_seg_name Hardware_Runtime/spawnInQueue_BRAM_Ctrl/S_AXI/Mem0 size [expr ${::AIT::spawnInQueue_len}*8]]
     lappend bd_addr_segments [dict create name spawnOutQueue bd_seg_name Hardware_Runtime/spawnOutQueue_BRAM_Ctrl/S_AXI/Mem0 size [expr ${::AIT::spawnOutQueue_len}*8]]
-} else {
-
 }
 if {${::AIT::hwcounter} || ${::AIT::hwinst}} {
     lappend bd_addr_segments [dict create name hwcounter bd_seg_name HW_Counter/s_axi/reg0 size 4096]
+}
+if ${::AIT::enable_pom_axilite} {
+    lappend bd_addr_segments [dict create name pom_axilite bd_seg_name Hardware_Runtime/Picos_OmpSs_Manager/axilite/reg_0 size 16384]
 }
 
 # Sort the segments in decreasing size to minimize fragmentation when assigning addresses
@@ -98,14 +99,10 @@ set bd_addr_segments [lsort -decreasing -command AIT::comp_bd_addr_seg $bd_addr_
 set addr_hwruntime_spawnInQueue 0x0000000000000000
 set addr_hwruntime_spawnOutQueue 0x0000000000000000
 set addr_hwcounter 0x0000000000000000
+set addr_pom_axilite 0x0000000000000000
 
-set bitInfo_offset 0x20000
-set managed_reset_offset 0x21000
-if {(${::AIT::arch_device} eq "zynq") || (${::AIT::arch_device} eq "zynqmp")} {
-    set addr 0x0
-} elseif {${::AIT::arch_device} eq "alveo"} {
-    set addr [expr $bitInfo_offset + 8192]
-}
+set bitInfo_offset 0x0
+set addr [expr $bitInfo_offset + 4096]
 for {set i 0} {$i < [llength $bd_addr_segments]} {incr i} {
     set cur_dict [lindex $bd_addr_segments $i]
     set size [dict get $cur_dict size]
@@ -132,17 +129,15 @@ for {set i 0} {$i < [llength $bd_addr_segments]} {incr i} {
         set addr_hwruntime_spawnOutQueue $format_addr
     } elseif {$name eq "hwcounter"} {
         set addr_hwcounter $format_addr
+    } elseif {$name eq "pom_axilite"} {
+        set addr_pom_axilite $format_addr
+    } elseif {$name eq "managed_rstn"} {
+        set addr_managed_reset $format_addr
     }
     set addr [expr $addr + $size]
 }
 
-if {(${::AIT::arch_device} eq "zynq") || (${::AIT::arch_device} eq "zynqmp")} {
-    variable addr_bitInfo [format 0x%016x [expr "0x0000000080000000" + $bitInfo_offset]]
-    variable addr_managed_reset [format 0x%016x [expr "0x0000000080000000" + $managed_reset_offset]]
-} elseif {${::AIT::arch_device} eq "alveo"} {
-    variable addr_bitInfo [format 0x%016x [expr [dict get ${::AIT::address_map} "ompss_base_addr"] + $bitInfo_offset]]
-    variable addr_managed_reset [format 0x%016x [expr [dict get ${::AIT::address_map} "ompss_base_addr"] + $managed_reset_offset]]
-}
+variable addr_bitInfo [format 0x%016x [expr [dict get ${::AIT::address_map} "ompss_base_addr"] + $bitInfo_offset]]
 
 # Create project and set board files
 create_project -force ${::AIT::name_Project} ${::AIT::name_Project} -part ${::AIT::chipPart}
@@ -230,12 +225,6 @@ AIT::board::connect_clock [get_bd_pins Hardware_Runtime/aclk]
 AIT::board::connect_reset [get_bd_pins Hardware_Runtime/interconnect_aresetn] "interconnect"
 AIT::board::connect_reset [get_bd_pins Hardware_Runtime/peripheral_aresetn] "peripheral"
 connect_bd_net [get_bd_pins Hardware_Runtime/managed_aresetn] [get_bd_pins reset_AND/Res]
-
-if ${::AIT::task_creation} {
-    # Add the second port to bitInfo and connect it to OmpSs Manager
-    set_property -dict [list CONFIG.Memory_Type {True_Dual_Port_RAM} CONFIG.Register_PortA_Output_of_Memory_Primitives {false} CONFIG.Register_PortB_Output_of_Memory_Primitives {false}] [get_bd_cells bitInfo]
-    connect_bd_intf_net -boundary_type upper [get_bd_intf_pins Hardware_Runtime/bitInfo] [get_bd_intf_pins bitInfo/BRAM_PORTB]
-}
 
 if {${::AIT::hwruntime_interconnect} == "centralized"} {
     set hwruntime_interconnect_script "tcl/scripts/hwr_central_interconnect.tcl"
@@ -529,10 +518,24 @@ foreach bd_addr_seg $bd_addr_segments {
 }
 
 if ${::AIT::task_creation} {
+    set bitmap_bitInfo [format 0x%08x [expr $bitmap_bitInfo | 0x1<<5]]
+}
+
+if ${::AIT::deps_hwruntime} {
+    set bitmap_bitInfo [format 0x%08x [expr $bitmap_bitInfo | 0x1<<6]]
+}
+
+if ${::AIT::enable_spawn_queues} {
+    set bitmap_bitInfo [format 0x%08x [expr $bitmap_bitInfo | 0x1<<8]]
+}
+
+if ${::AIT::lock_hwruntime} {
     set bitmap_bitInfo [format 0x%08x [expr $bitmap_bitInfo | 0x1<<7]]
 }
 
-set bitmap_bitInfo [format 0x%08x [expr $bitmap_bitInfo | 0x1<<9]]
+if ${::AIT::enable_pom_axilite} {
+    set bitmap_bitInfo [format 0x%08x [expr $bitmap_bitInfo | 0x1<<4]]
+}
 
 if ${::AIT::simplify_interconnection} {
     set bitmap_bitInfo [format 0x%08x [expr $bitmap_bitInfo | 0x1<<3]]
@@ -540,7 +543,6 @@ if ${::AIT::simplify_interconnection} {
 
 if {(${::AIT::arch_device} ne "simulation") && (${::AIT::arch_device} ne "shell")} {
     assign_bd_address [get_bd_addr_segs *bitInfo_BRAM_Ctrl*] -range 4K -offset $addr_bitInfo
-    assign_bd_address [get_bd_addr_segs *managed_reset*] -range 4K -offset $addr_managed_reset
 }
 
 AIT::board::configure_address_map
@@ -558,8 +560,13 @@ close $config_file
 close $newConfig_file
 exec mv ../${::AIT::name_Project}.xtasks.config.new ../${::AIT::name_Project}.xtasks.config
 
-# Generate xtasks.config binary string
+# Generate xtasks.config binary string and POM scheduler parameters
 set xtasks_bin_str ""
+set sched_count 0
+set sched_accid 0
+set sched_ttype 0
+set accid 0
+set i 0
 foreach acc ${::AIT::accs} {
     lassign [split $acc ":"] accHash accNumInstances accName
     set bin_word [expr $accNumInstances | (($accHash & 0xFFFF) << 16)]
@@ -575,11 +582,44 @@ foreach acc ${::AIT::accs} {
     append accName [string repeat " " [expr 32-[string length $accName]]]
     # Convert ascii to hexadecimal string
     append xtasks_bin_str [AIT::ascii2hex $accName]
+
+    set sched_count [expr $sched_count | (($accNumInstances-1) << $i*8)]
+    set sched_accid [expr $sched_accid | ($accid << $i*8)]
+    set sched_ttype [expr $sched_ttype | (($accHash & 0xFFFFFFFF) << $i*32)]
+    incr accid $accNumInstances
+    incr i
+}
+
+if ${::AIT::task_creation} {
+    if {[llen ${::AIT::accs}] > 16} {
+        AIT::error_msg "Max number of accelerator types supported by POM is 16, but design has [llen ${::AIT::accs}]"
+    }
+    set_property -dict [list \
+        CONFIG.SCHED_COUNT 0x[AIT::long_int_to_hex 128 $sched_count] \
+        CONFIG.SCHED_ACCID 0x[AIT::long_int_to_hex 128 $sched_accid] \
+        CONFIG.SCHED_TTYPE 0x[AIT::long_int_to_hex 512 $sched_ttype] \
+    ] [get_bd_cells */Picos_OmpSs_Manager]
 }
 
 set bitInfo_intlv_stride 0
 if {${::AIT::interleaving_stride} ne "None"} {
     set bitInfo_intlv_stride ${::AIT::interleaving_stride}
+}
+
+set hwruntime_vlnv [get_property VLNV [get_bd_cells /Hardware_Runtime/Picos_OmpSs_Manager]]
+set xtasks_config_acc_size 44
+set dynamic_field_sizes [list [expr $xtasks_config_acc_size*[llen ${::AIT::accs}]] [string len ${::AIT::ait_call}] [string len $hwruntime_vlnv] [string len ${::AIT::bitInfo_note}]]
+set dynamic_field_offsets [list]
+# Calculate the bitinfo offset of each variable-length field
+# Variable-length fields are appended next to the fixed-length fields which take 31 slots
+set offset 31
+foreach size $dynamic_field_sizes {
+   lappend dynamic_field_offsets $offset
+   incr offset [expr int(ceil($size/4.))]
+}
+set bitinfo_len $offset
+if {$bitinfo_len > 1024} {
+    AIT::error_msg "BitInfo length ($bitinfo_len) is greater than its mapped region (1024)"
 }
 
 # Create bitInfo.coe file
@@ -588,9 +628,10 @@ set bitInfo_coe "memory_initialization_radix=16;\nmemory_initialization_vector=\
 append bitInfo_coe [format %08x ${::AIT::version_bitInfo}]\n
 append bitInfo_coe [format %08x ${::AIT::num_accs}]\n
 append bitInfo_coe [format %08x $bitmap_bitInfo]\n
-append bitInfo_coe [format %08x [expr ${::AIT::version_major_ait}<<24 | ${::AIT::version_minor_ait}<<16 | ${::AIT::version_patch_ait}]]\n
+append bitInfo_coe [format %08x [expr ${::AIT::version_major_ait}<<22 | ${::AIT::version_minor_ait}<<11 | ${::AIT::version_patch_ait}]]\n
 append bitInfo_coe [format %08x ${::AIT::version_wrapper}]\n
 append bitInfo_coe [format %08x [AIT::board::get_base_freq]]\n
+append bitInfo_coe [format %08x $bitInfo_intlv_stride]\n
 append bitInfo_coe [string range $addr_hwruntime_cmdInQueue 10 17]\n
 append bitInfo_coe [string range $addr_hwruntime_cmdInQueue 2 9]\n
 append bitInfo_coe [format %08x ${::AIT::cmdInSubqueue_len}]\n
@@ -607,22 +648,23 @@ append bitInfo_coe [string range $addr_managed_reset 10 17]\n
 append bitInfo_coe [string range $addr_managed_reset 2 9]\n
 append bitInfo_coe [string range $addr_hwcounter 10 17]\n
 append bitInfo_coe [string range $addr_hwcounter 2 9]\n
+append bitInfo_coe [string range $addr_pom_axilite 10 17]\n
+append bitInfo_coe [string range $addr_pom_axilite 2 9]\n
+# CMS AXI-Lite interface address
+append bitInfo_coe 0\n
+append bitInfo_coe 0\n
+for {set i 0} {$i < [llen $dynamic_field_sizes]} {incr i} {
+   append bitInfo_coe [format %08X [expr [lindex $dynamic_field_sizes $i] | ([lindex $dynamic_field_offsets $i] << 16)]]\n
+}
 append bitInfo_coe $xtasks_bin_str
-append bitInfo_coe "FFFFFFFF\n"
-append bitInfo_coe [AIT::ascii2hex ${::AIT::ait_call}\n]
-append bitInfo_coe "FFFFFFFF\n"
-set hwruntime_vlnv [get_property VLNV [get_bd_cells /Hardware_Runtime/Picos_OmpSs_Manager]]
-append bitInfo_coe [AIT::ascii2hex $hwruntime_vlnv\n]
-append bitInfo_coe "FFFFFFFF\n"
-append bitInfo_coe [AIT::ascii2hex ${::AIT::bitInfo_note}\n]
-append bitInfo_coe "FFFFFFFF\n"
-append bitInfo_coe [format %08x $bitInfo_intlv_stride]\n
-append bitInfo_coe "FFFFFFFF;"
+append bitInfo_coe [AIT::ascii2hex ${::AIT::ait_call}]
+append bitInfo_coe [AIT::ascii2hex $hwruntime_vlnv]
+append bitInfo_coe [AIT::ascii2hex ${::AIT::bitInfo_note}]
 puts $bitInfo_file $bitInfo_coe
 close $bitInfo_file
 
 # Load bitInfo coe file
-set_property -dict [list CONFIG.Load_Init_File {true} CONFIG.Coe_File [pwd]/${::AIT::name_Project}/bitInfo.coe] [get_bd_cells bitInfo]
+set_property -dict [list CONFIG.Write_Depth_A $bitinfo_len CONFIG.Load_Init_File {true} CONFIG.Coe_File [pwd]/${::AIT::name_Project}/bitInfo.coe] [get_bd_cells bitInfo]
 
 # Update outdated IPs
 update_ip_catalog -rebuild -scan_changes

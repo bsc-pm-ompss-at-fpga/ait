@@ -244,6 +244,7 @@ class ArgParser:
         hwruntime_args.add_argument('--max_args_per_task', help='maximum number of arguments for any task in the bitstream\n(def: \'15\')', type=IntRangeType(imin=1), default=15)
         hwruntime_args.add_argument('--max_deps_per_task', help='maximum number of dependencies for any task in the bitstream\n(def: \'8\')', type=IntRangeType(imin=2), default=8)
         hwruntime_args.add_argument('--max_copies_per_task', help='maximum number of copies for any task in the bitstream\n(def: \'15\')', type=IntRangeType(imin=1), default=15)
+        hwruntime_args.add_argument('--enable_pom_axilite', help='enable the POM axilite interface with debug counters\n', action='store_true', default=False)
 
         # Picos arguments
         picos_args = self.parser.add_argument_group('Picos')
