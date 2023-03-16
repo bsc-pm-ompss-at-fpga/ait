@@ -24,25 +24,10 @@ namespace eval AIT {
         rename configure_address_map generic_configure_address_map
 
         proc configure_address_map {} {
-            #assign_bd_address [get_bd_addr_segs {axi_stub_0/s_axi/reg0 }] -offset 0 -range 16E
-        }
+            generic_configure_address_map
 
-        # Connects source pin received as argument to the output of the clock generator IP
-        proc connect_clock {srcPin} {
-            connect_bd_net -quiet [get_bd_pins $srcPin] [get_bd_pins /clk]
-        }
-
-        # Connects reset
-        proc connect_reset {rst_source rst_name} {
-            connect_bd_net -quiet $rst_source [get_bd_pins /rstn]
-        }
-
-        proc set_and_get_freq {targetFreq} {
-            return $targetFreq
-        }
-
-        proc get_base_freq {} {
-            return 100
+            # Assign rest of peripherals
+            create_bd_addr_seg -range 0x00010000 -offset 0x80000000 [get_bd_addr_spaces bridge_to_host/Data] [get_bd_addr_segs peri/axi_gpio_control/S_AXI/Reg] SEG_axi_gpio_control_Reg
         }
     }
 }

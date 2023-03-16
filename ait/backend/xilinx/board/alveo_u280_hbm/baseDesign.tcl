@@ -58,6 +58,11 @@ if { $list_projs eq "" } {
 variable design_name
 set design_name ${argv}_design
 
+variable num_banks
+set num_banks 32
+variable QDMA_port
+set QDMA_port 15
+
 # If you do not already have an existing IP Integrator design open,
 # you can create a design using the following command:
 #    create_bd_design $design_name
@@ -385,13 +390,15 @@ proc create_hier_cell_QDMA { parentCell nameHier } {
   current_bd_instance $oldCurInst
 }
 
-# Hierarchical cell: HBM
-proc create_hier_cell_HBM { parentCell nameHier } {
+# Hierarchical cell: memory
+proc create_hier_cell_memory { parentCell nameHier } {
 
   variable script_folder
+  variable num_banks
+  variable QDMA_port
 
   if { $parentCell eq "" || $nameHier eq "" } {
-     catch {common::send_gid_msg -ssname BD::TCL -id 2092 -severity "ERROR" "create_hier_cell_HBM() - Empty argument(s)!"}
+     catch {common::send_gid_msg -ssname BD::TCL -id 2092 -severity "ERROR" "create_hier_cell_memory() - Empty argument(s)!"}
      return
   }
 
@@ -420,8 +427,12 @@ proc create_hier_cell_HBM { parentCell nameHier } {
   current_bd_instance $hier_obj
 
   # Create interface pins
-  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S_AXI_QDMA
-
+  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S15_AXI
+  for {set i 0} {$i < $num_banks} {incr i} {
+    if {$i != $QDMA_port} {
+      create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S[format %02u $i]_AXI
+    }
+  }
 
   # Create pins
   create_bd_pin -dir I -type clk APB_PCLK
@@ -429,8 +440,6 @@ proc create_hier_cell_HBM { parentCell nameHier } {
   create_bd_pin -dir I -type clk HBM_REF_CLK
   create_bd_pin -dir I -type clk QDMA_aclk
   create_bd_pin -dir I -type rst QDMA_peripheral_aresetn
-  create_bd_pin -dir I -from 63 -to 0 S_AXI_QDMA_araddr
-  create_bd_pin -dir I -from 63 -to 0 S_AXI_QDMA_awaddr
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type rst peripheral_aresetn
 
@@ -536,38 +545,38 @@ proc create_hier_cell_HBM { parentCell nameHier } {
    CONFIG.USER_PHY_ENABLE_13 {TRUE} \
    CONFIG.USER_PHY_ENABLE_14 {TRUE} \
    CONFIG.USER_PHY_ENABLE_15 {TRUE} \
-   CONFIG.USER_SAXI_00 {false} \
-   CONFIG.USER_SAXI_01 {false} \
-   CONFIG.USER_SAXI_02 {false} \
-   CONFIG.USER_SAXI_03 {false} \
-   CONFIG.USER_SAXI_04 {false} \
-   CONFIG.USER_SAXI_05 {false} \
-   CONFIG.USER_SAXI_06 {false} \
-   CONFIG.USER_SAXI_07 {false} \
-   CONFIG.USER_SAXI_08 {false} \
-   CONFIG.USER_SAXI_09 {false} \
-   CONFIG.USER_SAXI_10 {false} \
-   CONFIG.USER_SAXI_11 {false} \
-   CONFIG.USER_SAXI_12 {false} \
-   CONFIG.USER_SAXI_13 {false} \
-   CONFIG.USER_SAXI_14 {false} \
+   CONFIG.USER_SAXI_00 {true} \
+   CONFIG.USER_SAXI_01 {true} \
+   CONFIG.USER_SAXI_02 {true} \
+   CONFIG.USER_SAXI_03 {true} \
+   CONFIG.USER_SAXI_04 {true} \
+   CONFIG.USER_SAXI_05 {true} \
+   CONFIG.USER_SAXI_06 {true} \
+   CONFIG.USER_SAXI_07 {true} \
+   CONFIG.USER_SAXI_08 {true} \
+   CONFIG.USER_SAXI_09 {true} \
+   CONFIG.USER_SAXI_10 {true} \
+   CONFIG.USER_SAXI_11 {true} \
+   CONFIG.USER_SAXI_12 {true} \
+   CONFIG.USER_SAXI_13 {true} \
+   CONFIG.USER_SAXI_14 {true} \
    CONFIG.USER_SAXI_15 {true} \
-   CONFIG.USER_SAXI_16 {false} \
-   CONFIG.USER_SAXI_17 {false} \
-   CONFIG.USER_SAXI_18 {false} \
-   CONFIG.USER_SAXI_19 {false} \
-   CONFIG.USER_SAXI_20 {false} \
-   CONFIG.USER_SAXI_21 {false} \
-   CONFIG.USER_SAXI_22 {false} \
-   CONFIG.USER_SAXI_23 {false} \
-   CONFIG.USER_SAXI_24 {false} \
-   CONFIG.USER_SAXI_25 {false} \
-   CONFIG.USER_SAXI_26 {false} \
-   CONFIG.USER_SAXI_27 {false} \
-   CONFIG.USER_SAXI_28 {false} \
-   CONFIG.USER_SAXI_29 {false} \
-   CONFIG.USER_SAXI_30 {false} \
-   CONFIG.USER_SAXI_31 {false} \
+   CONFIG.USER_SAXI_16 {true} \
+   CONFIG.USER_SAXI_17 {true} \
+   CONFIG.USER_SAXI_18 {true} \
+   CONFIG.USER_SAXI_19 {true} \
+   CONFIG.USER_SAXI_20 {true} \
+   CONFIG.USER_SAXI_21 {true} \
+   CONFIG.USER_SAXI_22 {true} \
+   CONFIG.USER_SAXI_23 {true} \
+   CONFIG.USER_SAXI_24 {true} \
+   CONFIG.USER_SAXI_25 {true} \
+   CONFIG.USER_SAXI_26 {true} \
+   CONFIG.USER_SAXI_27 {true} \
+   CONFIG.USER_SAXI_28 {true} \
+   CONFIG.USER_SAXI_29 {true} \
+   CONFIG.USER_SAXI_30 {true} \
+   CONFIG.USER_SAXI_31 {true} \
    CONFIG.USER_SINGLE_STACK_SELECTION {LEFT} \
    CONFIG.USER_SWITCH_ENABLE_00 {TRUE} \
    CONFIG.USER_SWITCH_ENABLE_01 {TRUE} \
@@ -575,12 +584,8 @@ proc create_hier_cell_HBM { parentCell nameHier } {
    CONFIG.USER_TEMP_POLL_CNT_1 {100000} \
  ] $HBM
 
-  # Create instance: S_AXI_QDMA
-  create_hier_cell_S_AXI_QDMA $hier_obj S_AXI_QDMA
-
   # Create interface connections
-  connect_bd_intf_net -intf_net HBM_RAMA_m_axi [get_bd_intf_pins HBM/SAXI_15] [get_bd_intf_pins S_AXI_QDMA/M_AXI]
-  connect_bd_intf_net -intf_net S_AXI_QDMA [get_bd_intf_pins S_AXI_QDMA] [get_bd_intf_pins S_AXI_QDMA/S_AXI]
+  connect_bd_intf_net -intf_net HBM_SAXI_15_m_axi [get_bd_intf_pins HBM/SAXI_15] [get_bd_intf_pins S15_AXI]
 
   # Create port connections
   connect_bd_net -net APB_PCLK_1 [get_bd_pins APB_PCLK] [get_bd_pins HBM/APB_0_PCLK] [get_bd_pins HBM/APB_1_PCLK]
@@ -588,11 +593,17 @@ proc create_hier_cell_HBM { parentCell nameHier } {
   connect_bd_net -net HBM_DRAM_0_STAT_CATTRIP [get_bd_pins HBM_CATTRIP_OR/Op1] [get_bd_pins HBM/DRAM_0_STAT_CATTRIP]
   connect_bd_net -net HBM_DRAM_1_STAT_CATTRIP [get_bd_pins HBM_CATTRIP_OR/Op2] [get_bd_pins HBM/DRAM_1_STAT_CATTRIP]
   connect_bd_net -net HBM_REF_CLK_1 [get_bd_pins HBM_REF_CLK] [get_bd_pins HBM/HBM_REF_CLK_0] [get_bd_pins HBM/HBM_REF_CLK_1]
-  connect_bd_net -net S_AXI_QDMA_araddr_2 [get_bd_pins S_AXI_QDMA_araddr] [get_bd_pins S_AXI_QDMA/S_AXI_QDMA_araddr]
-  connect_bd_net -net S_AXI_QDMA_awaddr_2 [get_bd_pins S_AXI_QDMA_awaddr] [get_bd_pins S_AXI_QDMA/S_AXI_QDMA_awaddr]
-  connect_bd_net -net aclk_2 [get_bd_pins QDMA_aclk] [get_bd_pins HBM/AXI_15_ACLK] [get_bd_pins S_AXI_QDMA/QDMA_aclk]
+  connect_bd_net -net aclk_2 [get_bd_pins QDMA_aclk] [get_bd_pins HBM/AXI_15_ACLK]
   connect_bd_net -net peripheral_aresetn_1 [get_bd_pins peripheral_aresetn] [get_bd_pins HBM/APB_0_PRESET_N] [get_bd_pins HBM/APB_1_PRESET_N]
-  connect_bd_net -net peripheral_aresetn_2 [get_bd_pins QDMA_peripheral_aresetn] [get_bd_pins HBM/AXI_15_ARESET_N] [get_bd_pins S_AXI_QDMA/QDMA_peripheral_aresetn]
+  connect_bd_net -net peripheral_aresetn_2 [get_bd_pins QDMA_peripheral_aresetn] [get_bd_pins HBM/AXI_15_ARESET_N]
+
+  for {set i 0} {$i < $num_banks} {incr i} {
+    if {$i != $QDMA_port} {
+      connect_bd_intf_net -intf_net SAXI_[format %02u $i] [get_bd_intf_pins S[format %02u $i]_AXI] [get_bd_intf_pins HBM/SAXI_[format %02u $i]]
+      connect_bd_net -net peripheral_aresetn_2 [get_bd_pins HBM/AXI_[format %02u $i]_ARESET_N]
+      connect_bd_net -net aclk_1 [get_bd_pins aclk] [get_bd_pins HBM/AXI_[format %02u $i]_ACLK]
+    }
+  }
 
   # Restore current instance
   current_bd_instance $oldCurInst
@@ -602,6 +613,8 @@ proc create_hier_cell_HBM { parentCell nameHier } {
 proc create_hier_cell_bridge_to_host { parentCell nameHier } {
 
   variable script_folder
+  variable num_banks
+  variable QDMA_port
 
   if { $parentCell eq "" || $nameHier eq "" } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2092 -severity "ERROR" "create_hier_cell_bridge_to_host() - Empty argument(s)!"}
@@ -634,9 +647,12 @@ proc create_hier_cell_bridge_to_host { parentCell nameHier } {
 
   # Create interface pins
   create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 M_AXI_LITE
-
+  for {set i 0} {$i < $num_banks} {incr i} {
+    if {$i != $QDMA_port} {
+      create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S[format %02u $i]_AXI
+    }
+  }
   create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:pcie_7x_mgt_rtl:1.0 pci_express_x8
-
   create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 pcie_refclk
 
 
@@ -649,11 +665,17 @@ proc create_hier_cell_bridge_to_host { parentCell nameHier } {
   create_bd_pin -dir I -type rst pcie_perstn
   create_bd_pin -dir I -type rst peripheral_aresetn
 
-  # Create instance: HBM
-  create_hier_cell_HBM $hier_obj HBM
+  # Create instance: memory
+  create_hier_cell_memory $hier_obj memory
 
   # Create instance: QDMA
   create_hier_cell_QDMA $hier_obj QDMA
+
+  # Create instance: QDMA_M_AXI_Inter, and set properties
+  set QDMA_M_AXI_Inter [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect QDMA_M_AXI_Inter ]
+  set_property -dict [ list \
+   CONFIG.NUM_MI {1} \
+ ] $QDMA_M_AXI_Inter
 
   # Create instance: QDMA_M_AXI_LITE_Inter, and set properties
   set QDMA_M_AXI_LITE_Inter [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect QDMA_M_AXI_LITE_Inter ]
@@ -673,26 +695,33 @@ proc create_hier_cell_bridge_to_host { parentCell nameHier } {
    }
 
   # Create interface connections
-  connect_bd_intf_net -intf_net QDMA_M_AXI [get_bd_intf_pins HBM/S_AXI_QDMA] [get_bd_intf_pins QDMA/M_AXI]
+  connect_bd_intf_net -intf_net QDMA_M_AXI_Inter_M00_AXI [get_bd_intf_pins memory/S15_AXI] [get_bd_intf_pins QDMA_M_AXI_Inter/M00_AXI]
+  connect_bd_intf_net -intf_net QDMA_M_AXI [get_bd_intf_pins QDMA/M_AXI] [get_bd_intf_pins QDMA_M_AXI_Inter/S00_AXI]
   connect_bd_intf_net -intf_net QDMA_M_AXI_LITE_Inter_M00_AXI [get_bd_intf_pins M_AXI_LITE] [get_bd_intf_pins QDMA_M_AXI_LITE_Inter/M00_AXI]
   connect_bd_intf_net -intf_net QDMA_pci_express_x8 [get_bd_intf_pins pci_express_x8] [get_bd_intf_pins QDMA/pci_express_x8]
   connect_bd_intf_net -intf_net S00_AXI_1 [get_bd_intf_pins QDMA/M_AXI_LITE] [get_bd_intf_pins QDMA_M_AXI_LITE_Inter/S00_AXI]
   connect_bd_intf_net -intf_net pcie_refclk_1 [get_bd_intf_pins pcie_refclk] [get_bd_intf_pins QDMA/pcie_refclk]
 
   # Create port connections
-  connect_bd_net -net APB_PCLK_1 [get_bd_pins APB_PCLK] [get_bd_pins HBM/APB_PCLK]
-  connect_bd_net -net HBM_CATTRIP_OR_Res [get_bd_pins HBM_CATTRIP] [get_bd_pins HBM/HBM_CATTRIP]
-  connect_bd_net -net HBM_REF_CLK_1 [get_bd_pins HBM_REF_CLK] [get_bd_pins HBM/HBM_REF_CLK]
+  connect_bd_net -net APB_PCLK_1 [get_bd_pins APB_PCLK] [get_bd_pins memory/APB_PCLK]
+  connect_bd_net -net HBM_CATTRIP_OR_Res [get_bd_pins HBM_CATTRIP] [get_bd_pins memory/HBM_CATTRIP]
+  connect_bd_net -net HBM_REF_CLK_1 [get_bd_pins HBM_REF_CLK] [get_bd_pins memory/HBM_REF_CLK]
   connect_bd_net -net QDMA_QDMA_m_axi_araddr [get_bd_pins QDMA/QDMA_m_axi_araddr] [get_bd_pins bridge_to_host_addrInterleaver/in_araddr]
   connect_bd_net -net QDMA_QDMA_m_axi_awaddr [get_bd_pins QDMA/QDMA_m_axi_awaddr] [get_bd_pins bridge_to_host_addrInterleaver/in_awaddr]
-  connect_bd_net -net QDMA_aclk [get_bd_pins HBM/QDMA_aclk] [get_bd_pins QDMA/aclk] [get_bd_pins QDMA_M_AXI_LITE_Inter/S00_ACLK]
-  connect_bd_net -net QDMA_aresetn [get_bd_pins HBM/QDMA_peripheral_aresetn] [get_bd_pins QDMA/aresetn] [get_bd_pins QDMA_M_AXI_LITE_Inter/S00_ARESETN]
-  connect_bd_net -net QDMA_s_axi_araddr [get_bd_pins HBM/S_AXI_QDMA_araddr] [get_bd_pins bridge_to_host_addrInterleaver/out_araddr]
-  connect_bd_net -net QDMA_s_axi_awaddr [get_bd_pins HBM/S_AXI_QDMA_awaddr] [get_bd_pins bridge_to_host_addrInterleaver/out_awaddr]
-  connect_bd_net -net aclk_1 [get_bd_pins aclk] [get_bd_pins HBM/aclk] [get_bd_pins QDMA_M_AXI_LITE_Inter/ACLK] [get_bd_pins QDMA_M_AXI_LITE_Inter/M00_ACLK]
-  connect_bd_net -net interconnect_aresetn_1 [get_bd_pins interconnect_aresetn] [get_bd_pins QDMA_M_AXI_LITE_Inter/ARESETN]
+  connect_bd_net -net QDMA_aclk [get_bd_pins memory/QDMA_aclk] [get_bd_pins QDMA/aclk] [get_bd_pins QDMA_M_AXI_LITE_Inter/S00_ACLK] [get_bd_pins QDMA_M_AXI_Inter/S00_ACLK] [get_bd_pins QDMA_M_AXI_Inter/M00_ACLK]
+  connect_bd_net -net QDMA_aresetn [get_bd_pins memory/QDMA_peripheral_aresetn] [get_bd_pins QDMA/aresetn] [get_bd_pins QDMA_M_AXI_LITE_Inter/S00_ARESETN] [get_bd_pins QDMA_M_AXI_Inter/S00_ARESETN] [get_bd_pins QDMA_M_AXI_Inter/M00_ARESETN]
+  connect_bd_net -net QDMA_s_axi_araddr [get_bd_pins QDMA_M_AXI_Inter/S00_AXI_araddr] [get_bd_pins bridge_to_host_addrInterleaver/out_araddr]
+  connect_bd_net -net QDMA_s_axi_awaddr [get_bd_pins QDMA_M_AXI_Inter/S00_AXI_awaddr] [get_bd_pins bridge_to_host_addrInterleaver/out_awaddr]
+  connect_bd_net -net aclk_1 [get_bd_pins aclk] [get_bd_pins memory/aclk] [get_bd_pins QDMA_M_AXI_LITE_Inter/ACLK] [get_bd_pins QDMA_M_AXI_LITE_Inter/M00_ACLK] [get_bd_pins QDMA_M_AXI_Inter/ACLK]
+  connect_bd_net -net interconnect_aresetn_1 [get_bd_pins interconnect_aresetn] [get_bd_pins QDMA_M_AXI_LITE_Inter/ARESETN] [get_bd_pins QDMA_M_AXI_Inter/ARESETN]
   connect_bd_net -net pcie_perstn_1 [get_bd_pins pcie_perstn] [get_bd_pins QDMA/pcie_perstn]
-  connect_bd_net -net peripheral_aresetn_1 [get_bd_pins peripheral_aresetn] [get_bd_pins HBM/peripheral_aresetn] [get_bd_pins QDMA_M_AXI_LITE_Inter/M00_ARESETN]
+  connect_bd_net -net peripheral_aresetn_1 [get_bd_pins peripheral_aresetn] [get_bd_pins memory/peripheral_aresetn] [get_bd_pins QDMA_M_AXI_LITE_Inter/M00_ARESETN]
+
+  for {set i 0} {$i < $num_banks} {incr i} {
+    if {$i != $QDMA_port} {
+      connect_bd_intf_net -intf_net memory_S[format %02u $i]_AXI [get_bd_intf_pins S[format %02u $i]_AXI] [get_bd_intf_pins memory/S[format %02u $i]_AXI]
+    }
+  }
 
   # Restore current instance
   current_bd_instance $oldCurInst
@@ -705,6 +734,8 @@ proc create_root_design { parentCell } {
 
   variable script_folder
   variable design_name
+  variable num_banks
+  variable QDMA_port
 
   if { $parentCell eq "" } {
      set parentCell [get_bd_cells /]
@@ -757,12 +788,23 @@ proc create_root_design { parentCell } {
    CONFIG.POLARITY {ACTIVE_LOW} \
  ] $pcie_perstn
 
-  # Create instance: M_AXI_master_Inter, and set properties
-  set M_AXI_master_Inter [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect M_AXI_master_Inter ]
+  # Create instance: M_AXI_Inter, and set properties
+  set M_AXI_Inter [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect M_AXI_Inter ]
   set_property -dict [ list \
    CONFIG.NUM_MI {1} \
    CONFIG.STRATEGY {1} \
- ] $M_AXI_master_Inter
+ ] $M_AXI_Inter
+
+  # Create instance: S_AXI_XX_Inter, and set properties
+  for {set i 0} {$i < $num_banks} {incr i} {
+    if {$i != $QDMA_port} {
+      set S_AXI_Inter [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect S_AXI_[format %02u $i]_Inter ]
+      set_property -dict [ list \
+       CONFIG.NUM_MI {1} \
+       CONFIG.NUM_SI {1} \
+     ] $S_AXI_Inter
+    }
+  }
 
   # Create instance: bridge_to_host
   create_hier_cell_bridge_to_host [current_bd_instance .] bridge_to_host
@@ -799,7 +841,7 @@ proc create_root_design { parentCell } {
   set sysclk1_ds_buf [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_ds_buf sysclk1_ds_buf ]
 
   # Create interface connections
-  connect_bd_intf_net -intf_net S00_AXI_1 [get_bd_intf_pins M_AXI_master_Inter/S00_AXI] [get_bd_intf_pins bridge_to_host/M_AXI_LITE]
+  connect_bd_intf_net -intf_net S00_AXI_1 [get_bd_intf_pins M_AXI_Inter/S00_AXI] [get_bd_intf_pins bridge_to_host/M_AXI_LITE]
   connect_bd_intf_net -intf_net pcie_refclk_1 [get_bd_intf_ports pcie_refclk] [get_bd_intf_pins bridge_to_host/pcie_refclk]
   connect_bd_intf_net -intf_net qdma_0_pcie_mgt [get_bd_intf_ports pci_express_x8] [get_bd_intf_pins bridge_to_host/pci_express_x8]
   connect_bd_intf_net -intf_net sysclk0_1 [get_bd_intf_ports sysclk0] [get_bd_intf_pins clock_generator/CLK_IN1_D]
@@ -808,47 +850,21 @@ proc create_root_design { parentCell } {
   # Create port connections
   connect_bd_net -net bridge_to_host_HBM_CATTRIP [get_bd_ports HBM_CATTRIP] [get_bd_pins bridge_to_host/HBM_CATTRIP]
   connect_bd_net -net clock_generator_apb_clk [get_bd_pins bridge_to_host/APB_PCLK] [get_bd_pins clock_generator/apb_clk]
-  connect_bd_net -net clock_generator_clk_out1 [get_bd_pins M_AXI_master_Inter/ACLK] [get_bd_pins M_AXI_master_Inter/S00_ACLK] [get_bd_pins bridge_to_host/aclk] [get_bd_pins clock_generator/clk_out1] [get_bd_pins processor_system_reset/slowest_sync_clk]
+  connect_bd_net -net clock_generator_clk_out1 [get_bd_pins M_AXI_Inter/ACLK] [get_bd_pins M_AXI_Inter/S00_ACLK] [get_bd_pins bridge_to_host/aclk] [get_bd_pins clock_generator/clk_out1] [get_bd_pins processor_system_reset/slowest_sync_clk]
   connect_bd_net -net clock_generator_locked [get_bd_pins clock_generator/locked] [get_bd_pins processor_system_reset/dcm_locked]
   connect_bd_net -net pcie_perstn_1 [get_bd_ports pcie_perstn] [get_bd_pins bridge_to_host/pcie_perstn] [get_bd_pins clock_generator/resetn] [get_bd_pins processor_system_reset/ext_reset_in]
-  connect_bd_net -net processor_system_reset_interconnect_aresetn [get_bd_pins M_AXI_master_Inter/ARESETN] [get_bd_pins bridge_to_host/interconnect_aresetn] [get_bd_pins processor_system_reset/interconnect_aresetn]
-  connect_bd_net -net processor_system_reset_peripheral_aresetn [get_bd_pins M_AXI_master_Inter/S00_ARESETN] [get_bd_pins bridge_to_host/peripheral_aresetn] [get_bd_pins processor_system_reset/peripheral_aresetn]
+  connect_bd_net -net processor_system_reset_interconnect_aresetn [get_bd_pins M_AXI_Inter/ARESETN] [get_bd_pins bridge_to_host/interconnect_aresetn] [get_bd_pins processor_system_reset/interconnect_aresetn]
+  connect_bd_net -net processor_system_reset_peripheral_aresetn [get_bd_pins M_AXI_Inter/S00_ARESETN] [get_bd_pins bridge_to_host/peripheral_aresetn] [get_bd_pins processor_system_reset/peripheral_aresetn]
   connect_bd_net -net sysclk1_ds_buf_IBUF_OUT [get_bd_pins bridge_to_host/HBM_REF_CLK] [get_bd_pins sysclk1_ds_buf/IBUF_OUT]
 
-  # Create address segments
-  assign_bd_address -offset 0x00000000 -range 0x10000000 -target_address_space [get_bd_addr_spaces bridge_to_host/QDMA/QDMA/M_AXI] [get_bd_addr_segs bridge_to_host/HBM/HBM/SAXI_15/HBM_MEM00] -force
-  assign_bd_address -offset 0x10000000 -range 0x10000000 -target_address_space [get_bd_addr_spaces bridge_to_host/QDMA/QDMA/M_AXI] [get_bd_addr_segs bridge_to_host/HBM/HBM/SAXI_15/HBM_MEM01] -force
-  assign_bd_address -offset 0x20000000 -range 0x10000000 -target_address_space [get_bd_addr_spaces bridge_to_host/QDMA/QDMA/M_AXI] [get_bd_addr_segs bridge_to_host/HBM/HBM/SAXI_15/HBM_MEM02] -force
-  assign_bd_address -offset 0x30000000 -range 0x10000000 -target_address_space [get_bd_addr_spaces bridge_to_host/QDMA/QDMA/M_AXI] [get_bd_addr_segs bridge_to_host/HBM/HBM/SAXI_15/HBM_MEM03] -force
-  assign_bd_address -offset 0x40000000 -range 0x10000000 -target_address_space [get_bd_addr_spaces bridge_to_host/QDMA/QDMA/M_AXI] [get_bd_addr_segs bridge_to_host/HBM/HBM/SAXI_15/HBM_MEM04] -force
-  assign_bd_address -offset 0x50000000 -range 0x10000000 -target_address_space [get_bd_addr_spaces bridge_to_host/QDMA/QDMA/M_AXI] [get_bd_addr_segs bridge_to_host/HBM/HBM/SAXI_15/HBM_MEM05] -force
-  assign_bd_address -offset 0x60000000 -range 0x10000000 -target_address_space [get_bd_addr_spaces bridge_to_host/QDMA/QDMA/M_AXI] [get_bd_addr_segs bridge_to_host/HBM/HBM/SAXI_15/HBM_MEM06] -force
-  assign_bd_address -offset 0x70000000 -range 0x10000000 -target_address_space [get_bd_addr_spaces bridge_to_host/QDMA/QDMA/M_AXI] [get_bd_addr_segs bridge_to_host/HBM/HBM/SAXI_15/HBM_MEM07] -force
-  assign_bd_address -offset 0x80000000 -range 0x10000000 -target_address_space [get_bd_addr_spaces bridge_to_host/QDMA/QDMA/M_AXI] [get_bd_addr_segs bridge_to_host/HBM/HBM/SAXI_15/HBM_MEM08] -force
-  assign_bd_address -offset 0x90000000 -range 0x10000000 -target_address_space [get_bd_addr_spaces bridge_to_host/QDMA/QDMA/M_AXI] [get_bd_addr_segs bridge_to_host/HBM/HBM/SAXI_15/HBM_MEM09] -force
-  assign_bd_address -offset 0xA0000000 -range 0x10000000 -target_address_space [get_bd_addr_spaces bridge_to_host/QDMA/QDMA/M_AXI] [get_bd_addr_segs bridge_to_host/HBM/HBM/SAXI_15/HBM_MEM10] -force
-  assign_bd_address -offset 0xB0000000 -range 0x10000000 -target_address_space [get_bd_addr_spaces bridge_to_host/QDMA/QDMA/M_AXI] [get_bd_addr_segs bridge_to_host/HBM/HBM/SAXI_15/HBM_MEM11] -force
-  assign_bd_address -offset 0xC0000000 -range 0x10000000 -target_address_space [get_bd_addr_spaces bridge_to_host/QDMA/QDMA/M_AXI] [get_bd_addr_segs bridge_to_host/HBM/HBM/SAXI_15/HBM_MEM12] -force
-  assign_bd_address -offset 0xD0000000 -range 0x10000000 -target_address_space [get_bd_addr_spaces bridge_to_host/QDMA/QDMA/M_AXI] [get_bd_addr_segs bridge_to_host/HBM/HBM/SAXI_15/HBM_MEM13] -force
-  assign_bd_address -offset 0xE0000000 -range 0x10000000 -target_address_space [get_bd_addr_spaces bridge_to_host/QDMA/QDMA/M_AXI] [get_bd_addr_segs bridge_to_host/HBM/HBM/SAXI_15/HBM_MEM14] -force
-  assign_bd_address -offset 0xF0000000 -range 0x10000000 -target_address_space [get_bd_addr_spaces bridge_to_host/QDMA/QDMA/M_AXI] [get_bd_addr_segs bridge_to_host/HBM/HBM/SAXI_15/HBM_MEM15] -force
-  assign_bd_address -offset 0x000100000000 -range 0x10000000 -target_address_space [get_bd_addr_spaces bridge_to_host/QDMA/QDMA/M_AXI] [get_bd_addr_segs bridge_to_host/HBM/HBM/SAXI_15/HBM_MEM16] -force
-  assign_bd_address -offset 0x000110000000 -range 0x10000000 -target_address_space [get_bd_addr_spaces bridge_to_host/QDMA/QDMA/M_AXI] [get_bd_addr_segs bridge_to_host/HBM/HBM/SAXI_15/HBM_MEM17] -force
-  assign_bd_address -offset 0x000120000000 -range 0x10000000 -target_address_space [get_bd_addr_spaces bridge_to_host/QDMA/QDMA/M_AXI] [get_bd_addr_segs bridge_to_host/HBM/HBM/SAXI_15/HBM_MEM18] -force
-  assign_bd_address -offset 0x000130000000 -range 0x10000000 -target_address_space [get_bd_addr_spaces bridge_to_host/QDMA/QDMA/M_AXI] [get_bd_addr_segs bridge_to_host/HBM/HBM/SAXI_15/HBM_MEM19] -force
-  assign_bd_address -offset 0x000140000000 -range 0x10000000 -target_address_space [get_bd_addr_spaces bridge_to_host/QDMA/QDMA/M_AXI] [get_bd_addr_segs bridge_to_host/HBM/HBM/SAXI_15/HBM_MEM20] -force
-  assign_bd_address -offset 0x000150000000 -range 0x10000000 -target_address_space [get_bd_addr_spaces bridge_to_host/QDMA/QDMA/M_AXI] [get_bd_addr_segs bridge_to_host/HBM/HBM/SAXI_15/HBM_MEM21] -force
-  assign_bd_address -offset 0x000160000000 -range 0x10000000 -target_address_space [get_bd_addr_spaces bridge_to_host/QDMA/QDMA/M_AXI] [get_bd_addr_segs bridge_to_host/HBM/HBM/SAXI_15/HBM_MEM22] -force
-  assign_bd_address -offset 0x000170000000 -range 0x10000000 -target_address_space [get_bd_addr_spaces bridge_to_host/QDMA/QDMA/M_AXI] [get_bd_addr_segs bridge_to_host/HBM/HBM/SAXI_15/HBM_MEM23] -force
-  assign_bd_address -offset 0x000180000000 -range 0x10000000 -target_address_space [get_bd_addr_spaces bridge_to_host/QDMA/QDMA/M_AXI] [get_bd_addr_segs bridge_to_host/HBM/HBM/SAXI_15/HBM_MEM24] -force
-  assign_bd_address -offset 0x000190000000 -range 0x10000000 -target_address_space [get_bd_addr_spaces bridge_to_host/QDMA/QDMA/M_AXI] [get_bd_addr_segs bridge_to_host/HBM/HBM/SAXI_15/HBM_MEM25] -force
-  assign_bd_address -offset 0x0001A0000000 -range 0x10000000 -target_address_space [get_bd_addr_spaces bridge_to_host/QDMA/QDMA/M_AXI] [get_bd_addr_segs bridge_to_host/HBM/HBM/SAXI_15/HBM_MEM26] -force
-  assign_bd_address -offset 0x0001B0000000 -range 0x10000000 -target_address_space [get_bd_addr_spaces bridge_to_host/QDMA/QDMA/M_AXI] [get_bd_addr_segs bridge_to_host/HBM/HBM/SAXI_15/HBM_MEM27] -force
-  assign_bd_address -offset 0x0001C0000000 -range 0x10000000 -target_address_space [get_bd_addr_spaces bridge_to_host/QDMA/QDMA/M_AXI] [get_bd_addr_segs bridge_to_host/HBM/HBM/SAXI_15/HBM_MEM28] -force
-  assign_bd_address -offset 0x0001D0000000 -range 0x10000000 -target_address_space [get_bd_addr_spaces bridge_to_host/QDMA/QDMA/M_AXI] [get_bd_addr_segs bridge_to_host/HBM/HBM/SAXI_15/HBM_MEM29] -force
-  assign_bd_address -offset 0x0001E0000000 -range 0x10000000 -target_address_space [get_bd_addr_spaces bridge_to_host/QDMA/QDMA/M_AXI] [get_bd_addr_segs bridge_to_host/HBM/HBM/SAXI_15/HBM_MEM30] -force
-  assign_bd_address -offset 0x0001F0000000 -range 0x10000000 -target_address_space [get_bd_addr_spaces bridge_to_host/QDMA/QDMA/M_AXI] [get_bd_addr_segs bridge_to_host/HBM/HBM/SAXI_15/HBM_MEM31] -force
-
+  for {set i 0} {$i < $num_banks} {incr i} {
+    if {$i != $QDMA_port} {
+      connect_bd_intf_net -intf_net S_AXI_[format %02u $i]_AXI [get_bd_intf_pins S_AXI_[format %02u $i]_Inter/M00_AXI] [get_bd_intf_pins bridge_to_host/S[format %02u $i]_AXI]
+      connect_bd_net -net clock_generator_clk_out1 [get_bd_pins S_AXI_[format %02u $i]_Inter/ACLK] [get_bd_pins S_AXI_[format %02u $i]_Inter/M00_ACLK] [get_bd_pins S_AXI_[format %02u $i]_Inter/S00_ACLK] [get_bd_pins clock_generator/clk_out1]
+      connect_bd_net -net processor_system_reset_interconnect_aresetn [get_bd_pins S_AXI_[format %02u $i]_Inter/ARESETN] [get_bd_pins processor_system_reset/interconnect_aresetn]
+      connect_bd_net -net processor_system_reset_peripheral_aresetn [get_bd_pins S_AXI_[format %02u $i]_Inter/M00_ARESETN] [get_bd_pins S_AXI_[format %02u $i]_Inter/S00_ARESETN] [get_bd_pins processor_system_reset/peripheral_aresetn]
+    }
+  }
 
   # Restore current instance
   current_bd_instance $oldCurInst

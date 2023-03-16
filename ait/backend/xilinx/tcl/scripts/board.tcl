@@ -25,8 +25,8 @@ namespace eval AIT {
             # If enabled, simplify interconnection to memory
             if {${::AIT::simplify_interconnection}} {
                 move_bd_cells [get_bd_cells /] [get_bd_cells bridge_to_host/DDR_S_AXI_Inter]
-                delete_bd_objs [get_bd_cells S_AXI_data_control_coherent_Inter]
-                set_property name S_AXI_data_control_coherent_Inter [get_bd_cells DDR_S_AXI_Inter]
+                delete_bd_objs [get_bd_cells S_AXI_Inter]
+                set_property name S_AXI_Inter [get_bd_cells DDR_S_AXI_Inter]
             }
 
             get_bd_axi_interfaces
@@ -77,11 +77,11 @@ namespace eval AIT {
             connect_reset [get_bd_pins reset_AND/Op2] "peripheral"
 
             if {(${::AIT::arch_device} eq "zynq") || (${::AIT::arch_device} eq "zynqmp")} {
-                connect_to_master_interface [get_bd_intf_pins bitInfo_BRAM_Ctrl/S_AXI] 1
-                connect_to_master_interface [get_bd_intf_pins managed_reset/S_AXI] 1
+                connect_to_axi_interface [get_bd_intf_pins bitInfo_BRAM_Ctrl/S_AXI] M 1
+                connect_to_axi_interface [get_bd_intf_pins managed_reset/S_AXI] M 1
             } else {
-                connect_to_master_interface [get_bd_intf_pins bitInfo_BRAM_Ctrl/S_AXI]
-                connect_to_master_interface [get_bd_intf_pins managed_reset/S_AXI]
+                connect_to_axi_interface [get_bd_intf_pins bitInfo_BRAM_Ctrl/S_AXI] M
+                connect_to_axi_interface [get_bd_intf_pins managed_reset/S_AXI] M
             }
             connect_bd_intf_net [get_bd_intf_pins bitInfo/BRAM_PORTA] [get_bd_intf_pins bitInfo_BRAM_Ctrl/BRAM_PORTA]
             connect_clock [get_bd_pins bitInfo_BRAM_Ctrl/s_axi_aclk]
@@ -93,17 +93,19 @@ namespace eval AIT {
         # Initializes axi_interfaces variable with the available AXI interfaces along with their occupation
         proc get_bd_axi_interfaces {} {
             variable axi_interfaces
-            set access_type_list {data coherent control master HPM_LPD}
-            set interconnect_list [get_bd_cells -regexp (M|S)_AXI_(([join $access_type_list "|"])_?)+(_[0-9])?_Inter]
+            set axi_interfaces {}
 
+            set interconnect_list [get_bd_cells -regexp (M|S)_AXI(_([0-9])*)?_Inter]
             foreach interconnect $interconnect_list {
-                set role [string trim [regsub -all {_AXI_.+$} $interconnect ""] "/"]
-                set counter [expr [get_property CONFIG.NUM_${role}I $interconnect] - 1]
-                if {$counter < 16} {
-                    lappend axi_interfaces "$interconnect $counter"
-                    set axi_interfaces [lsort -integer -index 1 -increasing $axi_interfaces]
+                set mode [string trim [regsub -all {_AXI_.+$} $interconnect ""] "/"]
+                set counter [expr [get_property CONFIG.NUM_${mode}I $interconnect] - 1]
+                set capacity 16
+                if {$counter < $capacity} {
+                    lappend axi_interfaces "$mode [string trim $interconnect "/"] $counter $capacity"
                 }
             }
+
+            set axi_interfaces [lsort -integer -index 2 -increasing $axi_interfaces]
         }
 
         # Returns the total number of free AXI data interfaces
@@ -112,12 +114,13 @@ namespace eval AIT {
             set available_ports 0
 
             foreach interface $axi_interfaces {
-                foreach {inter counter} $interface {
-                    if {[string match "*data*" $inter]} {
-                        incr available_ports [expr 16 - $counter]
+                foreach {mode name counter capacity} $interface {
+                    if {$mode eq "S"} {
+                        incr available_ports [expr $capacity - $counter]
                     }
                 }
             }
+
             return $available_ports
         }
 
@@ -378,8 +381,9 @@ namespace eval AIT {
 
         # Creates and connects a nested interconnect
         proc create_nested_interconnect {parent_inter {num 1}} {
+            variable axi_interfaces
             set index [lsearch -regexp ${::AIT::board::axi_interfaces} $parent_inter]
-            set ::AIT::board::axi_interfaces [lreplace ${::AIT::board::axi_interfaces} $index $index]
+            set axi_interfaces [lreplace $axi_interfaces $index $index]
 
             AIT::info_msg "Creating $num nested interconnects for $parent_inter"
 
@@ -394,72 +398,66 @@ namespace eval AIT {
                 set_property -dict [list CONFIG.NUM_MI {1} CONFIG.NUM_SI {1} CONFIG.STRATEGY ${::AIT::interconOpt}] [get_bd_cells $nested_inter]
 
                 # Connect clocks and resets
-                AIT::board::connect_clock [get_bd_pins $nested_inter/ACLK]
-                AIT::board::connect_clock [get_bd_pins $nested_inter/M00_ACLK]
-                AIT::board::connect_reset [get_bd_pins $nested_inter/ARESETN] "interconnect"
-                AIT::board::connect_reset [get_bd_pins $nested_inter/M00_ARESETN] "peripheral"
+                connect_clock [get_bd_pins $nested_inter/ACLK]
+                connect_clock [get_bd_pins $nested_inter/M00_ACLK]
+                connect_reset [get_bd_pins $nested_inter/ARESETN] "interconnect"
+                connect_reset [get_bd_pins $nested_inter/M00_ARESETN] "peripheral"
 
                 # Connect nested interconnect to parent interconnect
                 connect_bd_intf_net -boundary_type upper [get_bd_intf_pins $parent_inter/S${port_num}_AXI] [get_bd_intf_pins $nested_inter/M00_AXI]
 
-                AIT::board::connect_clock [get_bd_pins $parent_inter/S${port_num}_ACLK]
-                AIT::board::connect_reset [get_bd_pins $parent_inter/S${port_num}_ARESETN] "peripheral"
+                connect_clock [get_bd_pins $parent_inter/S${port_num}_ACLK]
+                connect_reset [get_bd_pins $parent_inter/S${port_num}_ARESETN] "peripheral"
 
-                lappend ::AIT::board::axi_interfaces "$nested_inter 0"
+                lappend axi_interfaces "S [string trim $nested_inter "/"] 0 16"
             }
-            set ::AIT::board::axi_interfaces [lsort -integer -index 1 -increasing ${::AIT::board::axi_interfaces}]
+            set axi_interfaces [lsort -integer -index 2 -increasing $axi_interfaces]
         }
 
         # Connects the IP to the host through the given port
-        proc connect_to_interface {src intf role {num ""}} {
+        proc connect_to_axi_interface {src mode {num ""}} {
             variable axi_interfaces
-            if {$num ne ""} {
-                set index [lsearch -regexp $axi_interfaces ${role}_AXI_${intf}.*_${num}]
-            } else {
-                set index [lsearch -regexp $axi_interfaces ${role}_AXI_${intf}(_[0-9])?]
+
+            # Look for src in dataInterfaces_map
+            set index [lsearch -regexp ${::AIT::dataInterfaces_map} [string trim $src "/"]]
+            if {$index != -1} {
+                set port [lindex [lindex ${::AIT::dataInterfaces_map} $index] 1]
+                # Port must be 'S_AXI_X' where X is the value we need for $num
+                regsub {S_AXI_} $port "" num
             }
-            set interface [lindex [lindex $axi_interfaces $index] 0]
-            set counter [lindex [lindex $axi_interfaces $index] 1]
+
+            # Get AXI interface by num or the least occupied
+            if {$num ne ""} {
+                set index [lsearch -exact $axi_interfaces [lsearch -regexp -inline -index 1 [lsearch -all -inline -index 0 $axi_interfaces $mode] .*_(0)?$num.*]]
+                if {$index == -1} {
+                    if {$mode eq "S"} {
+                        set mode "slave"
+                    } elseif {$mode eq "M"} {
+                        set mode "master"
+                    }
+                    AIT::error_msg "Cannot connect $src to $mode interface $num. It does not exist"
+                }
+            } else {
+                set index [lsearch -index 0 $axi_interfaces $mode]
+            }
+
+            set mode [lindex [lindex $axi_interfaces $index] 0]
+            set dst_name [lindex [lindex $axi_interfaces $index] 1]
+            set counter [lindex [lindex $axi_interfaces $index] 2]
+            set capacity [lindex [lindex $axi_interfaces $index] 3]
             set axi_interfaces [lreplace $axi_interfaces $index $index]
 
             # Interconnect is full
-            if {!($counter%16) && ($counter > 0)} {
-                AIT::error_msg "${intf} interface occupation is 100%"
+            if {!($counter%$capacity) && ($counter > 0)} {
+                AIT::error_msg "${dst_name} interface occupation is 100%"
             }
 
-            set inter ${interface}
-            set port ${role}[format %02u [expr $counter%16]]
+            set dst [get_bd_cells -hierarchical $dst_name]
 
-            set_property -dict [list CONFIG.NUM_${role}I [expr ($counter%16) + 1]] [get_bd_cells $inter]
-            set_property -quiet -dict [list CONFIG.STRATEGY ${::AIT::interconOpt}] [get_bd_cells $inter]
+            set port ${mode}[format %02u $counter]
 
-            connect_clock [get_bd_pins $inter/${port}_ACLK]
-            connect_reset [get_bd_pins $inter/${port}_ARESETN] "peripheral"
-            connect_bd_intf_net -boundary_type upper [get_bd_intf_pins $src] [get_bd_intf_pins $inter/${port}_AXI]
-
-            incr counter
-            lappend axi_interfaces "$interface $counter"
-
-            set axi_interfaces [lsort -integer -index 1 -increasing $axi_interfaces]
-            return [list "$interface" "${port}_AXI"]
-        }
-
-        proc connect_to_master_interface {src {num ""}} {
-            return [connect_to_interface $src master M $num]
-        }
-
-        proc connect_to_data_interface {src {num ""}} {
-            # If num is empty, look for src in dataInterfaces_map
-            if {$num eq ""} {
-                set index [lsearch -regexp ${::AIT::dataInterfaces_map} $src]
-                if {$index != -1} {
-                    set port [lindex [lindex ${::AIT::dataInterfaces_map} $index] 1]
-                    # Port must be 'S_AXI_data_X' where X is the value we need for $num
-                    regsub {S_AXI_data_} $port "" num
-                }
-            }
-
-            set interface [connect_to_interface $src data S $num]
+            set_property -dict [list CONFIG.NUM_${mode}I [expr $counter + 1]] $dst
+            set_property -quiet -dict [list CONFIG.STRATEGY ${::AIT::interconOpt}] $dst
 
             if {${::AIT::interconPriority}} {
                 set data_width 32
@@ -471,32 +469,32 @@ namespace eval AIT {
                     set data_width 64
                 }
 
-                regsub {_AXI} [lindex $interface 1] "" port
-                regsub {S} $port "" counter
-                set counter [scan $counter %d]
                 # Enable advanced settings in order to set priorities and set proper data path
-                set_property -dict [list CONFIG.ENABLE_ADVANCED_OPTIONS {1} CONFIG.XBAR_DATA_WIDTH.VALUE_SRC PROPAGATED] [get_bd_cells [lindex $interface 0]]
+                set_property -dict [list CONFIG.ENABLE_ADVANCED_OPTIONS {1} CONFIG.XBAR_DATA_WIDTH.VALUE_SRC PROPAGATED] $dst
                 # Set priority (0-15)
-                set_property -dict [list CONFIG.${port}_ARB_PRIORITY [expr 15 - ($counter%16)] CONFIG.XBAR_DATA_WIDTH $data_width] [get_bd_cells [lindex $interface 0]]
+                set_property -dict [list CONFIG.${port}_ARB_PRIORITY [expr 15 - ($counter%16)] CONFIG.XBAR_DATA_WIDTH $data_width] $dst
             }
 
-            if {${::AIT::interleaving_stride} ne "None"} {
-                connect_bd_net [get_bd_pins ${src}_awaddr] [get_bd_pins [lindex $interface 0]/[lindex $interface 1]_awaddr]
-                connect_bd_net [get_bd_pins ${src}_araddr] [get_bd_pins [lindex $interface 0]/[lindex $interface 1]_araddr]
+            set axi_pin [get_bd_intf_pins $dst/${port}_AXI]
+            set clk_pin [get_bd_pins $dst/${port}_ACLK]
+            set rst_pin [get_bd_pins $dst/${port}_ARESETN]
+
+            # Only interleave slave interfaces
+            if {($mode eq "S") && (${::AIT::interleaving_stride} ne "None")} {
+                connect_bd_net [get_bd_pins ${src}_awaddr] [get_bd_pins ${axi_pin}_awaddr]
+                connect_bd_net [get_bd_pins ${src}_araddr] [get_bd_pins ${axi_pin}_araddr]
             }
 
-            # Add a line to datainterfaces.txt
-            puts ${::dataInterfaces_file} "$src\t[lindex $interface 0]"
+            connect_clock $clk_pin
+            connect_reset $rst_pin "peripheral"
+            connect_bd_intf_net -boundary_type upper $src $axi_pin
 
-            return "$interface"
-        }
+            incr counter
 
-        proc connect_to_control_interface {src {num ""}} {
-            return [connect_to_interface $src control S $num]
-        }
+            lappend axi_interfaces "$mode $dst_name $counter $capacity"
+            set axi_interfaces [lsort -integer -index 2 -increasing $axi_interfaces]
 
-        proc connect_to_coherent_interface {src {num ""}} {
-            return [connect_to_interface $src coherent S $num]
+            return [list "$dst_name" "${mode}_AXI"]
         }
 
         # Connects source clock pin to the output of the clock generator IP
@@ -550,16 +548,19 @@ namespace eval AIT {
         # Removes derelict and unused IPs
         proc cleanup_bd {} {
             variable axi_interfaces
-            set access_type_list {data coherent control master HPM_LPD}
-            set interconnect_list [get_bd_cells -regexp (M|S)_AXI_(([join $access_type_list "|"])_?)+(_[0-9])?_Inter]
 
-            foreach interconnect $interconnect_list {
-                set index [lsearch $axi_interfaces "$interconnect *"]
-                set counter [lindex [lindex $axi_interfaces $index] 1]
-                if {$counter == 0} {
-                    set axi_interfaces [lreplace $axi_interfaces $index $index]
-                    delete_bd_objs [get_bd_cells $interconnect]
-                    set axi_interfaces [lsort -integer -index 1 -increasing $axi_interfaces]
+            foreach interface $axi_interfaces {
+                foreach {mode name counter capacity} $interface {
+                    if {$counter == 0} {
+                        set mem_type [dict get ${::AIT::address_map} "mem_type"]
+                        if {$mem_type eq "hbm"} {
+                            set port [string trim [string trim $name {_Inter}] {S_AXI_}]
+                            set_property -dict [list CONFIG.USER_SAXI_$port {false}] [get_bd_cells -hierarchical HBM]
+                            delete_bd_objs [get_bd_intf_pins bridge_to_host/memory/S${port}_AXI]
+                            delete_bd_objs [get_bd_intf_pins bridge_to_host/S${port}_AXI]
+                        }
+                        delete_bd_objs [get_bd_cells -hierarchical $name]
+                    }
                 }
             }
         }

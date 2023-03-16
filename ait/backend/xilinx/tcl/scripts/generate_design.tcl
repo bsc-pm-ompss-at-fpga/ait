@@ -216,9 +216,9 @@ if {[catch {source -notrace tcl/templates/Picos_OmpSs_Manager.tcl}]} {
 }
 
 if {(${::AIT::arch_device} eq "zynq") || (${::AIT::arch_device} eq "zynqmp")} {
-    AIT::board::connect_to_master_interface Hardware_Runtime/S_AXI_GP 1
+    AIT::board::connect_to_axi_interface [get_bd_intf_pins Hardware_Runtime/S_AXI_GP] M 1
 } else {
-    AIT::board::connect_to_master_interface Hardware_Runtime/S_AXI_GP
+    AIT::board::connect_to_axi_interface [get_bd_intf_pins Hardware_Runtime/S_AXI_GP] M
 }
 
 AIT::board::connect_clock [get_bd_pins Hardware_Runtime/aclk]
@@ -409,7 +409,7 @@ foreach acc ${::AIT::accs} {
 # If we are generating a design for a discrete FPGA that uses DDR, check for
 # available ports to memory and instantiate a nested interconnect, if necessary
 if {(${::AIT::arch_device} eq "alveo") && ([dict get ${::AIT::address_map} "mem_type"] eq "ddr") && ([llength $axi_ports] > [AIT::board::get_available_data_ports])} {
-    AIT::board::create_nested_interconnect S_AXI_data_control_coherent_Inter [dict get ${::AIT::address_map} "mem_num_banks"]
+    AIT::board::create_nested_interconnect S_AXI_Inter [dict get ${::AIT::address_map} "mem_num_banks"]
     save_bd_design
 }
 
@@ -420,7 +420,7 @@ if {[llength $axi_ports] > [AIT::board::get_available_data_ports]} {
 
 # Connect data ports to memory interconnection
 foreach port $axi_ports {
-    set intf [AIT::board::connect_to_data_interface $port]
+    set intf [AIT::board::connect_to_axi_interface [get_bd_intf_pins $port] S]
 
     # Mark AXI port for debug
     if {(${::AIT::debugInterfaces} eq "AXI") || (${::AIT::debugInterfaces} eq "both")} {
@@ -453,9 +453,9 @@ if {${::AIT::hwcounter} || ${::AIT::hwinst}} {
     create_bd_cell -type module -reference hwcounter HW_Counter
 
     if {(${::AIT::arch_device} eq "zynq") || (${::AIT::arch_device} eq "zynqmp")} {
-        AIT::board::connect_to_master_interface HW_Counter/S_AXI 1
+        AIT::board::connect_to_axi_interface [get_bd_intf_pins HW_Counter/S_AXI] M 1
     } else {
-        AIT::board::connect_to_master_interface HW_Counter/S_AXI
+        AIT::board::connect_to_axi_interface [get_bd_intf_pins HW_Counter/S_AXI] M
     }
 
     AIT::board::connect_clock [get_bd_pins HW_Counter/s_axi_aclk]
@@ -507,7 +507,20 @@ append ompss_at_fpga_node "\t};\n};"
 puts $ompss_at_fpga_DeviceTree_file $ompss_at_fpga_node
 close $ompss_at_fpga_DeviceTree_file
 
-# Connect Hardware Runtime to accelerators and map queues to address space
+set bitmap_bitInfo [format 0x%08x [expr $bitmap_bitInfo | 0x1<<9]]
+if ${::AIT::task_creation} {
+    set bitmap_bitInfo [format 0x%08x [expr $bitmap_bitInfo | 0x1<<7]]
+}
+if ${::AIT::simplify_interconnection} {
+    set bitmap_bitInfo [format 0x%08x [expr $bitmap_bitInfo | 0x1<<3]]
+}
+
+# Wipe clean address map
+delete_bd_objs [get_bd_addr_segs]
+
+AIT::board::configure_address_map
+
+# Map hwruntime queues to address space
 foreach bd_addr_seg $bd_addr_segments {
     set name [dict get $bd_addr_seg name]
     set addr [dict get $bd_addr_seg addr]
@@ -541,11 +554,10 @@ if ${::AIT::simplify_interconnection} {
     set bitmap_bitInfo [format 0x%08x [expr $bitmap_bitInfo | 0x1<<3]]
 }
 
+# Map bitinfo BRAM to address space
 if {(${::AIT::arch_device} ne "simulation") && (${::AIT::arch_device} ne "shell")} {
     assign_bd_address [get_bd_addr_segs *bitInfo_BRAM_Ctrl*] -range 4K -offset $addr_bitInfo
 }
-
-AIT::board::configure_address_map
 
 # Store real PS frequency in xtasks config file
 set config_file [open ../${::AIT::name_Project}.xtasks.config "r"]
@@ -707,7 +719,7 @@ if ${::AIT::interconRegSlice_all} {
         }
     }
 } elseif ${::AIT::interconRegSlice_mem} {
-    set interconnects [get_bd_cells -hierarchical -regexp -filter {VLNV =~ xilinx.com:ip:axi_interconnect.* && NAME =~ {.*(data|control|coherent|master).*}} .*]
+    set interconnects [get_bd_cells -hierarchical -regexp -filter {VLNV =~ xilinx.com:ip:axi_interconnect.* && NAME =~ {S_AXI(_[0-9]*)?_Inter}} .*]
 
     foreach inter $interconnects {
         for {set i 0} {$i < [get_property CONFIG.NUM_MI [get_bd_cells $inter]]} {incr i} {

@@ -204,7 +204,7 @@ def generate_Vivado_variables_tcl():
 
         vivado_project_variables += '\n' \
                                     + '\t# List of datainterfaces map\n' \
-                                    + '\tSet dataInterfaces_map [list'
+                                    + '\tset dataInterfaces_map [list'
 
         with open(args.datainterfaces_map) as map_file:
             map_data = map_file.readlines()
