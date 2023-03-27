@@ -16,8 +16,8 @@ proc AIT::create_DDR_reg_slice {ddrName ddrPort masterSlr migSlr} {
     connect_bd_intf_net [get_bd_intf_pins $ddrRegSlice/M_AXI] [get_bd_intf_pins bridge_to_host/memory/${ddrName}/C0_DDR4_${ddrPort}]
     connect_bd_intf_net [get_bd_intf_pins $ddrRegSlice/S_AXI] [get_bd_intf_pins bridge_to_host/memory/${ddrName}_${ddrPort}]
 
-    connect_bd_net [get_bd_pins $ddrRegSlice/aclk] [get_bd_pins bridge_to_host/memory/${ddrName}/c0_ddr4_ui_clk]
-    connect_bd_net [get_bd_pins $ddrRegSlice/aresetn] [get_bd_pins /bridge_to_host/memory/${ddrName}_procSysRst/peripheral_aresetn]
+    connect_bd_net [get_bd_pins $ddrRegSlice/aclk] [get_bd_pins bridge_to_host/memory/${ddrName}/ui_clk]
+    connect_bd_net [get_bd_pins $ddrRegSlice/aresetn] [get_bd_pins bridge_to_host/memory/${ddrName}/DDR_procSysRst/peripheral_aresetn]
 }
 
 proc AIT::static_logic_register_slices {} {
