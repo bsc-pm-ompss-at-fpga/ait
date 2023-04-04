@@ -142,9 +142,11 @@ variable addr_bitInfo [format 0x%016x [expr [dict get ${::AIT::address_map} "omp
 # Create project and set board files
 create_project -force ${::AIT::name_Project} ${::AIT::name_Project} -part ${::AIT::chipPart}
 if {[info exists {::AIT::boardPart}]} {
-   if {[llength [get_boards ${::AIT::boardPart}:*]]} {
-       set_property board_part [get_board_parts -latest_file_version ${::AIT::boardPart}:*] [current_project]
-   }
+    if {[llength [get_boards ${::AIT::boardPart}:*]]} {
+        set_property board_part [get_board_parts -latest_file_version ${::AIT::boardPart}:*] [current_project]
+    } else {
+        AIT::error_msg "Board part is missing, design will fail. Please add the corresponding board files to the Vivado installation"
+    }
 }
 
 # Set repository path
@@ -319,7 +321,7 @@ foreach acc ${::AIT::accs} {
         }
 
         # If this is a task creator, instantiate the newtask_spawner
-        if $taskCreator {
+        if ${taskCreator} {
             if {[get_bd_intf_pins -quiet -regexp ${accName}_${instanceNum}/$accName_long/mcxx_spawnInPort(_V)*?] ne ""} {
                 set acc_spawnInStream [get_bd_intf_pins -regexp ${accName}_${instanceNum}/$accName_long/mcxx_spawnInPort(_V)*?]
             } elseif {[get_bd_pins -quiet -regexp ${accName}_${instanceNum}/$accName_long/mcxx_spawnInPort(_V)*?] ne ""} {
