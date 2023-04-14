@@ -353,9 +353,9 @@ foreach acc ${::AIT::accs} {
 
                 # Create and connect the Adapter_instr
                 create_bd_cell -type ip -vlnv bsc:ompss:Adapter_instr_wrapper:1.0 ${accName}_${instanceNum}/Adapter_instr
-                connect_bd_net [get_bd_pins ${accName}_${instanceNum}/Adapter_instr/in_V_ap_vld] [get_bd_pins ${accName}_${instanceNum}/$accName_long/mcxx_instr_V_ap_vld]
-                connect_bd_net [get_bd_pins ${accName}_${instanceNum}/Adapter_instr/in_V_ap_ack] [get_bd_pins ${accName}_${instanceNum}/$accName_long/mcxx_instr_V_ap_ack]
-                connect_bd_net [get_bd_pins ${accName}_${instanceNum}/Adapter_instr/in_V] [get_bd_pins ${accName}_${instanceNum}/$accName_long/mcxx_instr_V]
+                connect_bd_net [get_bd_pins -regexp ${accName}_${instanceNum}/Adapter_instr/in(_V)*?_ap_vld] [get_bd_pins -regexp ${accName}_${instanceNum}/$accName_long/mcxx_instr(_V)*?_ap_vld]
+                connect_bd_net [get_bd_pins -regexp ${accName}_${instanceNum}/Adapter_instr/in(_V)*?_ap_ack] [get_bd_pins -regexp ${accName}_${instanceNum}/$accName_long/mcxx_instr(_V)*?_ap_ack]
+                connect_bd_net [get_bd_pins -regexp ${accName}_${instanceNum}/Adapter_instr/in(_V)*?] [get_bd_pins -regexp ${accName}_${instanceNum}/$accName_long/mcxx_instr(_V)*?]
                 AIT::board::connect_clock [get_bd_pins ${accName}_${instanceNum}/Adapter_instr/ap_clk]
                 connect_bd_net [get_bd_pins ${accName}_${instanceNum}/Adapter_instr/ap_rst_n] [get_bd_pins ${accName}_${instanceNum}/managed_aresetn]
 
