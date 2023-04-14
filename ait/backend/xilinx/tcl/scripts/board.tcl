@@ -158,25 +158,30 @@ namespace eval AIT {
             # Assign memory address space
             if {(${::AIT::arch_device} eq "zynq") || (${::AIT::arch_device} eq "zynqmp")} {
                 set mem_size [dict get ${::AIT::address_map} "mem_size"]
-                assign_bd_address [get_bd_addr_segs -regexp ".*HP._DDR_LOW.*"]
-                set_property -quiet offset $base_addr [get_bd_addr_segs -regexp ".*SEG_.*HP._DDR_LOW.*"]
-                set_property -quiet range $mem_size [get_bd_addr_segs -regexp ".*SEG_.*HP._DDR_LOW.*"]
+                # Zynq DDR address segment name format: /bridge_to_host/S_AXI_HPX/HPX_DDR_LOWOCM, being
+                # S_AXI_HPX the AXI interface used
+                foreach addr_seg [get_bd_addr_segs -regexp ".*/S_AXI_HP[0-9]/HP[0-9]_DDR_LOWOCM"] {
+                    assign_bd_address $addr_seg -offset $base_addr -range $mem_size
+                }
             } elseif {${::AIT::arch_device} eq "alveo"} {
                 set bank_size [dict get ${::AIT::address_map} "mem_bank_size"]
                 set num_banks [dict get ${::AIT::address_map} "mem_num_banks"]
                 if {$mem_type eq "ddr"} {
-                    for {set i 0} {$i < $num_banks} {incr i} {
-                        if {[llength [get_bd_addr_segs -regexp ".*DDR_${i}.*_DDR4_ADDRESS_BLOCK"]]} {
-                            assign_bd_address [get_bd_addr_segs -regexp ".*DDR_${i}.*_DDR4_ADDRESS_BLOCK"] -offset [expr $base_addr + $bank_size*$i] -range $bank_size
-                        }
+                    set bank_num 0
+                    # DDR address segment name format: /bridge_to_host/memory/DDR_X/DDR/C0_DDR4_MEMORY_MAP/C0_DDR4_ADDRESS_BLOCK, being
+                    # DDR_X each DDR bank
+                    foreach addr_seg [get_bd_addr_segs -regexp ".*/DDR_[0-9]/.*/C0_DDR4_ADDRESS_BLOCK"] {
+                        assign_bd_address $addr_seg -offset [expr $base_addr + $bank_size*$bank_num] -range $bank_size
+                        incr bank_num
                     }
                 } elseif {$mem_type eq "hbm"} {
-                    for {set i 0} {$i < $num_banks} {incr i} {
-                        if {[llength [get_bd_addr_segs -regexp ".*SAXI_[format %02u $i].*HBM_MEM.*"]]} {
-                            for {set j 0} {$j < $num_banks} {incr j} {
-                                assign_bd_address [get_bd_addr_segs -regexp ".*SAXI_[format %02u $i].*HBM_MEM[format %02u $j]"] -offset [expr $base_addr + $bank_size*$j] -range $bank_size
-                            }
-                        }
+                    set bank_num 0
+                    # HBM address segment name format: /bridge_to_host/memory/HBM/SAXI_XX/HBM_MEMYY, being
+                    # SAXI_XX the AXI interface used
+                    # HBM_MEMYY each HBM bank
+                    foreach addr_seg [get_bd_addr_segs -regexp ".*/SAXI_[0-9]{2}/HBM_MEM[0-9]{2}"] {
+                        assign_bd_address $addr_seg -offset [expr 0x0 + ($bank_num%$num_banks)*$bank_size] -range $bank_size
+                        incr bank_num
                     }
                 }
             }
