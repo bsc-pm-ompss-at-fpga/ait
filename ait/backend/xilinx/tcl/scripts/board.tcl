@@ -176,10 +176,10 @@ namespace eval AIT {
                     }
                 } elseif {$mem_type eq "hbm"} {
                     set bank_num 0
-                    # HBM address segment name format: /bridge_to_host/memory/HBM/SAXI_XX/HBM_MEMYY, being
-                    # SAXI_XX the AXI interface used
+                    # HBM address segment name format: /bridge_to_host/memory/HBM/SAXI_XX[_8HI]/HBM_MEMYY, being
+                    # SAXI_XX[_8HI] the AXI interface used
                     # HBM_MEMYY each HBM bank
-                    foreach addr_seg [get_bd_addr_segs -regexp ".*/SAXI_[0-9]{2}/HBM_MEM[0-9]{2}"] {
+                    foreach addr_seg [get_bd_addr_segs -regexp ".*/SAXI_[0-9]{2}(_8HI)?/HBM_MEM[0-9]{2}"] {
                         assign_bd_address $addr_seg -offset [expr 0x0 + ($bank_num%$num_banks)*$bank_size] -range $bank_size
                         incr bank_num
                     }

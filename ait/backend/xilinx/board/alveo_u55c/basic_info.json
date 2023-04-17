@@ -1,0 +1,26 @@
+{
+	"name": "alveo_u55c",
+	"chip_part": "xcu55c-fsvh2892-2L-e",
+	"es": "",
+	"board_part": "xilinx.com:au55c",
+
+	"arch": {
+		"device": "alveo"
+	},
+
+	"frequency": {
+		"min": 5,
+		"max": 933
+	},
+
+	"mem": {
+		"type": "hbm",
+		"num_banks": 32,
+		"bank_size": "512M"
+	},
+
+	"address_map": {
+		"mem_base_addr": "0x0",
+		"ompss_base_addr": "0x0"
+	}
+}
