@@ -38,9 +38,6 @@ namespace eval AIT {
 
             assign_bd_address [get_bd_addr_segs "*DDR_aux_rst_gpio/S_AXI/Reg"] -offset [expr [dict get ${::AIT::address_map} "ompss_base_addr"] + [expr 0x100000*$num_banks]] -range 64K
 
-            include_bd_addr_seg [get_bd_addr_segs -quiet -excluded -regexp .*SEG_HW_Counter.*]
-            include_bd_addr_seg [get_bd_addr_segs -quiet -excluded -regexp .*SEG_hwruntime_rst.*]
-
             # Assign rest of peripherals
             assign_bd_address -offset 0x003000400000 -range 0x00010000 -target_address_space [get_bd_addr_spaces bridge_to_host/maxilink/maxilink/maxi_zu9m] [get_bd_addr_segs bridge_to_host/memory/DDR_aux_rst_gpio/S_AXI/Reg] -force
             assign_bd_address -offset 0xC0000000 -range 0x00004000 -target_address_space [get_bd_addr_spaces bridge_to_host/maxilink/maxilink/maxi_zu9m] [get_bd_addr_segs bridge_to_host/peripherals/axi_bram_ctrl_0/S_AXI/Mem0] -force

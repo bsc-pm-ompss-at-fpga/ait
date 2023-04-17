@@ -15,8 +15,7 @@
 
 	"mem": {
 		"type": "ddr",
-		"num_banks": 1,
-		"bank_size": "16G"
+		"size": "16G"
 	},
 
 	"address_map": {

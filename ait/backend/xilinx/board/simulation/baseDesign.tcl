@@ -16,18 +16,18 @@ set_property -dict [list CONFIG.AXI_ID_WIDTH [expr max(int(ceil(log(${::AIT::num
 connect_bd_net [get_bd_ports clk] [get_bd_pins axi_stub_0/aclk]
 connect_bd_net [get_bd_ports rstn] [get_bd_pins axi_stub_0/aresetn]
 
-create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect S_AXI_data_0_Inter
-set_property -dict [list CONFIG.NUM_MI {1}] [get_bd_cells S_AXI_data_0_Inter]
-connect_bd_intf_net -boundary_type upper [get_bd_intf_pins S_AXI_data_0_Inter/M00_AXI] [get_bd_intf_pins axi_stub_0/s_axi]
+create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect S_AXI_0_Inter
+set_property -dict [list CONFIG.NUM_MI {1}] [get_bd_cells S_AXI_0_Inter]
+connect_bd_intf_net -boundary_type upper [get_bd_intf_pins S_AXI_0_Inter/M00_AXI] [get_bd_intf_pins axi_stub_0/s_axi]
 
-connect_bd_net [get_bd_ports clk] [get_bd_pins S_AXI_data_0_Inter/ACLK] [get_bd_pins S_AXI_data_0_Inter/S00_ACLK] [get_bd_pins S_AXI_data_0_Inter/M00_ACLK]
-connect_bd_net [get_bd_ports rstn] [get_bd_pins S_AXI_data_0_Inter/ARESETN] [get_bd_pins S_AXI_data_0_Inter/S00_ARESETN] [get_bd_pins S_AXI_data_0_Inter/M00_ARESETN]
+connect_bd_net [get_bd_ports clk] [get_bd_pins S_AXI_0_Inter/ACLK] [get_bd_pins S_AXI_0_Inter/S00_ACLK] [get_bd_pins S_AXI_0_Inter/M00_ACLK]
+connect_bd_net [get_bd_ports rstn] [get_bd_pins S_AXI_0_Inter/ARESETN] [get_bd_pins S_AXI_0_Inter/S00_ARESETN] [get_bd_pins S_AXI_0_Inter/M00_ARESETN]
 
-create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect M_AXI_master_0_Inter
-set_property -dict [list CONFIG.NUM_MI {1}] [get_bd_cells M_AXI_master_0_Inter]
-connect_bd_intf_net [get_bd_intf_ports hwruntime_m_axi] -boundary_type upper [get_bd_intf_pins M_AXI_master_0_Inter/S00_AXI]
-connect_bd_net [get_bd_ports clk] [get_bd_pins M_AXI_master_0_Inter/ACLK] [get_bd_pins M_AXI_master_0_Inter/S00_ACLK] [get_bd_pins M_AXI_master_0_Inter/M00_ACLK]
-connect_bd_net [get_bd_ports rstn] [get_bd_pins M_AXI_master_0_Inter/ARESETN] [get_bd_pins M_AXI_master_0_Inter/S00_ARESETN] [get_bd_pins M_AXI_master_0_Inter/M00_ARESETN]
+create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect M_AXI_0_Inter
+set_property -dict [list CONFIG.NUM_MI {1}] [get_bd_cells M_AXI_0_Inter]
+connect_bd_intf_net [get_bd_intf_ports hwruntime_m_axi] -boundary_type upper [get_bd_intf_pins M_AXI_0_Inter/S00_AXI]
+connect_bd_net [get_bd_ports clk] [get_bd_pins M_AXI_0_Inter/ACLK] [get_bd_pins M_AXI_0_Inter/S00_ACLK] [get_bd_pins M_AXI_0_Inter/M00_ACLK]
+connect_bd_net [get_bd_ports rstn] [get_bd_pins M_AXI_0_Inter/ARESETN] [get_bd_pins M_AXI_0_Inter/S00_ARESETN] [get_bd_pins M_AXI_0_Inter/M00_ARESETN]
 
 add_files ./board/simulation/sources/sim_tb.sv ./board/simulation/sources/cmd_in_queue_driver.sv ./board/simulation/sources/acc_stub.v
 

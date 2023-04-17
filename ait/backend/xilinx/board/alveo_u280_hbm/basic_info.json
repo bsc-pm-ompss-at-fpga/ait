@@ -16,7 +16,6 @@
 	"mem": {
 		"type": "hbm",
 		"num_banks": 32,
-		"addr_width": 64,
 		"bank_size": "256M"
 	},
 
