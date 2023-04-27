@@ -84,7 +84,7 @@ namespace eval AIT {
             connect_bd_intf_net [get_bd_intf_pins $newtask_spawner/stream_in] $hier_outStream
             connect_bd_intf_net [get_bd_intf_pins $newtask_spawner/ack_out] $acc_spawnInStream
 
-            set tid_demux [create_bd_cell -quiet -type module -reference axis_tid_demux ${accName}_${instanceNum}/axis_tid_demux]
+            set tid_demux [create_bd_cell -type module -reference axis_tid_demux ${accName}_${instanceNum}/axis_tid_demux]
             connect_bd_net [get_bd_pins $tid_demux/clk] [get_bd_pins ${accName}_${instanceNum}/aclk]
             connect_bd_intf_net [get_bd_intf_pins $tid_demux/m0] $hier_inStream
             connect_bd_intf_net [get_bd_intf_pins $tid_demux/m1] [get_bd_intf_pins $newtask_spawner/ack_in]
@@ -96,13 +96,14 @@ namespace eval AIT {
             set accIDWidth [expr max(int(ceil(log(${::AIT::num_accs})/log(2))), 1)]
 
             # We need to insert accID to the new_task_spawner TID AXI-Stream signal
-            set tidSubsetConv [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_subset_converter ${accName}_${instanceNum}/TID_subset_converter]
-            connect_bd_net [get_bd_pins $tidSubsetConv/aclk] [get_bd_pins ${accName}_${instanceNum}/aclk]
+            set tidSubsetConv [create_bd_cell -type module -reference ompss_axis_subset_converter ${accName}_${instanceNum}/TID_subset_converter]
+            connect_bd_net [get_bd_pins $tidSubsetConv/clk] [get_bd_pins ${accName}_${instanceNum}/aclk]
             connect_bd_net [get_bd_pins $tidSubsetConv/aresetn] [get_bd_pins ${accName}_${instanceNum}/managed_aresetn]
 
-            # Format accID as a 4-bit value
-            set_property -dict [list CONFIG.M_TID_WIDTH.VALUE_SRC USER] $tidSubsetConv
-            set_property -dict [list CONFIG.M_TID_WIDTH $accIDWidth CONFIG.TID_REMAP "$accIDWidth'b[AIT::dec2bin $accID $accIDWidth]"] $tidSubsetConv
+            # Add accID as AXI-Stream TID signal
+            set_property -dict [list \
+                CONFIG.ID_WIDTH $accIDWidth \
+                CONFIG.ID $accID] $tidSubsetConv
 
             connect_bd_intf_net $AXIS_port [get_bd_intf_pins $tidSubsetConv/S_AXIS]
             return [get_bd_intf_pins $tidSubsetConv/M_AXIS]

@@ -170,9 +170,11 @@ if {[file isdirectory IPs]} {
     set_property ip_repo_paths "[get_property ip_repo_paths [current_project]] IPs" [current_project]
     update_ip_catalog
     foreach {IP} [glob -nocomplain IPs/*.zip] {
+        AIT::info_msg "Adding auxiliary IP $IP"
         update_ip_catalog -add_ip $IP -repo_path IPs
     }
     foreach {IP} [glob -nocomplain IPs/*.{v,vhdl}] {
+        AIT::info_msg "Adding auxiliary IP $IP"
         import_files -norecurse $IP
     }
     update_ip_catalog
