@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 # ------------------------------------------------------------------------ #
-#     (C) Copyright 2017-2022 Barcelona Supercomputing Center              #
+#     (C) Copyright 2017-2023 Barcelona Supercomputing Center              #
 #                             Centro Nacional de Supercomputacion          #
 #                                                                          #
 #     This file is part of OmpSs@FPGA toolchain.                           #
@@ -19,7 +19,6 @@
 #     You should have received a copy of the GNU Lesser General Public     #
 #     License along with this code. If not, see <www.gnu.org/licenses/>.   #
 # ------------------------------------------------------------------------ #
-
 
 import importlib
 import math
