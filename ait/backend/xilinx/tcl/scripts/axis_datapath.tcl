@@ -57,7 +57,7 @@ namespace eval AIT {
             set port_name [string trimright [string replace [string range $AXIS_port [expr [string last / $AXIS_port] + 1] end] 0 [expr [string length "mcxx_"] - 1]] "_V"]
             set dir [get_property DIR $AXIS_port]
             if {$dir eq "O"} {
-                set stream_adapter [create_bd_cell -type module -reference hsToStreamAdapter ${accName}_${instanceNum}/Adapter_${port_name}]
+                set stream_adapter [create_bd_cell -type module -reference bsc_ompss_hsToStreamAdapter ${accName}_${instanceNum}/Adapter_${port_name}]
                 set_property -dict [list CONFIG.TID_WIDTH [expr max(int(ceil(log(${::AIT::num_accs})/log(2))), 1)] CONFIG.ACCID $accID] $stream_adapter
                 connect_bd_net [get_bd_pins $stream_adapter/in_hs_ap_vld] [get_bd_pins -regexp ${AXIS_port}_ap_vld]
                 connect_bd_net [get_bd_pins $stream_adapter/in_hs_ap_ack] [get_bd_pins -regexp ${AXIS_port}_ap_ack]
@@ -66,7 +66,7 @@ namespace eval AIT {
                 connect_bd_net [get_bd_pins $stream_adapter/aresetn] [get_bd_pins ${accName}_${instanceNum}/managed_aresetn]
                 return [get_bd_intf_pins $stream_adapter/outStream]
             } elseif {$dir eq "I"} {
-                set stream_adapter [create_bd_cell -type module -reference streamToHsAdapter ${accName}_${instanceNum}/Adapter_${port_name}]
+                set stream_adapter [create_bd_cell -type module -reference bsc_ompss_streamToHsAdapter ${accName}_${instanceNum}/Adapter_${port_name}]
                 connect_bd_net [get_bd_pins $stream_adapter/out_hs_ap_vld] [get_bd_pins -regexp ${AXIS_port}_ap_vld]
                 connect_bd_net [get_bd_pins $stream_adapter/out_hs_ap_ack] [get_bd_pins -regexp ${AXIS_port}_ap_ack]
                 connect_bd_net [get_bd_pins $stream_adapter/out_hs] ${AXIS_port}
@@ -84,7 +84,7 @@ namespace eval AIT {
             connect_bd_intf_net [get_bd_intf_pins $newtask_spawner/stream_in] $hier_outStream
             connect_bd_intf_net [get_bd_intf_pins $newtask_spawner/ack_out] $acc_spawnInStream
 
-            set tid_demux [create_bd_cell -type module -reference axis_tid_demux ${accName}_${instanceNum}/axis_tid_demux]
+            set tid_demux [create_bd_cell -type module -reference bsc_ompss_axis_tid_demux ${accName}_${instanceNum}/axis_tid_demux]
             connect_bd_net [get_bd_pins $tid_demux/clk] [get_bd_pins ${accName}_${instanceNum}/aclk]
             connect_bd_intf_net [get_bd_intf_pins $tid_demux/m0] $hier_inStream
             connect_bd_intf_net [get_bd_intf_pins $tid_demux/m1] [get_bd_intf_pins $newtask_spawner/ack_in]
@@ -96,7 +96,7 @@ namespace eval AIT {
             set accIDWidth [expr max(int(ceil(log(${::AIT::num_accs})/log(2))), 1)]
 
             # We need to insert accID to the new_task_spawner TID AXI-Stream signal
-            set tidSubsetConv [create_bd_cell -type module -reference ompss_axis_subset_converter ${accName}_${instanceNum}/TID_subset_converter]
+            set tidSubsetConv [create_bd_cell -type module -reference bsc_ompss_axis_subset_converter ${accName}_${instanceNum}/TID_subset_converter]
             connect_bd_net [get_bd_pins $tidSubsetConv/clk] [get_bd_pins ${accName}_${instanceNum}/aclk]
             connect_bd_net [get_bd_pins $tidSubsetConv/aresetn] [get_bd_pins ${accName}_${instanceNum}/managed_aresetn]
 

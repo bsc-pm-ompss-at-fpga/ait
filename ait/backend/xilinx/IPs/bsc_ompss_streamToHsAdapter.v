@@ -18,67 +18,49 @@
 /*    License along with this code. If not, see <www.gnu.org/licenses/>.  */
 /*------------------------------------------------------------------------*/
 
-`timescale 1ns / 1ps
-
-module hsToStreamAdapter #(
-    parameter USE_BUFFER = 0,
-    parameter TID_WIDTH = 4,
-    parameter ACCID = 0
+module bsc_ompss_streamToHsAdapter #(
+    parameter USE_BUFFER = 0
 )
 (
-    input       aclk,
-    input       aresetn,
+    input aclk,
+    input aresetn,
 
-    input [67:0] in_hs,
-    input        in_hs_ap_vld,
-    output       in_hs_ap_ack,
+    input [63:0] inStream_tdata,
+    input        inStream_tvalid,
+    output       inStream_tready,
 
-    output [63:0] outStream_tdata,
-    output [2:0]  outStream_tdest,
-    output [TID_WIDTH-1:0]  outStream_tid,
-    output        outStream_tlast,
-    output        outStream_tvalid,
-    input         outStream_tready
+    output [63:0] out_hs,
+    output        out_hs_ap_vld,
+    input         out_hs_ap_ack
 );
 
     if (USE_BUFFER) begin
 
     localparam IDLE = 0;
-    localparam WAIT_READY = 1;
+    localparam WAIT_ACK = 1;
 
     reg [0:0] state;
     reg [63:0] buf_data;
-    reg [2:0] buf_dest;
-    reg buf_last;
-    reg ack;
 
-    assign outStream_tid = ACCID;
-    assign outStream_tdata = buf_data;
-    assign outStream_tlast = buf_last;
-    assign outStream_tdest = buf_dest;
-    assign outStream_tvalid = state == WAIT_READY;
+    assign inStream_tready = state == IDLE;
 
-    assign in_hs_ap_ack = ack;
+    assign out_hs_ap_vld = state == WAIT_ACK;
+    assign out_hs = buf_data;
 
     always @(posedge aclk) begin
-
-        ack <= 0;
 
         case (state)
 
             IDLE: begin
-                buf_last <= in_hs[0];
-                buf_dest <= in_hs[3:1];
-                buf_data <= in_hs[67:4];
+                buf_data <= inStream_tdata;
 
-                if (in_hs_ap_vld) begin
-                    ack <= 1;
-                    state <= WAIT_READY;
+                if (inStream_tvalid) begin
+                    state <= WAIT_ACK;
                 end
             end
 
-            WAIT_READY: begin
-                if (outStream_tready) begin
+            WAIT_ACK: begin
+                if (out_hs_ap_ack) begin
                     state <= IDLE;
                 end
             end
@@ -92,13 +74,10 @@ module hsToStreamAdapter #(
 
     end else begin
 
-    assign outStream_tid = ACCID;
-    assign outStream_tdata = in_hs[67:4];
-    assign outStream_tlast = in_hs[0];
-    assign outStream_tdest = in_hs[3:1];
-    assign outStream_tvalid = in_hs_ap_vld;
+    assign out_hs_ap_vld = inStream_tvalid;
+    assign out_hs = inStream_tdata;
 
-    assign in_hs_ap_ack = in_hs_ap_vld && outStream_tready;
+    assign inStream_tready = out_hs_ap_ack;
 
     end
 

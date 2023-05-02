@@ -35,7 +35,7 @@ namespace eval AIT {
         }
 
         proc add_addrInterleaver {AXI_port port_name accName instanceNum} {
-            set addrInterleaver [create_bd_cell -type module -reference addrInterleaver ${accName}_${instanceNum}/${port_name}_addrInterleaver]
+            set addrInterleaver [create_bd_cell -type module -reference bsc_ompss_addrInterleaver ${accName}_${instanceNum}/${port_name}_addrInterleaver]
             create_bd_pin -dir O -from 63 -to 0 ${accName}_${instanceNum}/${port_name}_awaddr
             create_bd_pin -dir O -from 63 -to 0 ${accName}_${instanceNum}/${port_name}_araddr
             connect_bd_net [get_bd_pins ${AXI_port}_awaddr] [get_bd_pins $addrInterleaver/in_awaddr]

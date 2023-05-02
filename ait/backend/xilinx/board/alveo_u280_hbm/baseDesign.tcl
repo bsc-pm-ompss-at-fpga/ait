@@ -171,7 +171,7 @@ xilinx.com:ip:axi_protocol_converter:*\
 set bCheckModules 1
 if { $bCheckModules == 1 } {
    set list_check_mods "\ 
-addrInterleaver\
+bsc_ompss_addrInterleaver\
 "
 
    set list_mods_missing ""
@@ -684,7 +684,7 @@ proc create_hier_cell_bridge_to_host { parentCell nameHier } {
  ] $QDMA_M_AXI_LITE_Inter
 
   # Create instance: bridge_to_host_addrInterleaver, and set properties
-  set block_name addrInterleaver
+  set block_name bsc_ompss_addrInterleaver
   set block_cell_name bridge_to_host_addrInterleaver
   if { [catch {set bridge_to_host_addrInterleaver [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2095 -severity "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}

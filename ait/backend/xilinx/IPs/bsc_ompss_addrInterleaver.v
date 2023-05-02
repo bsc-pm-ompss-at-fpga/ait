@@ -18,21 +18,19 @@
 /*    License along with this code. If not, see <www.gnu.org/licenses/>.  */
 /*------------------------------------------------------------------------*/
 
-`timescale 1ns / 1ps
-
 `undef __ENABLE__
 `define __ADDR_WIDTH__ 64
 
 
 `ifdef __ENABLE__
-module addrInterleaver#(
+module bsc_ompss_addrInterleaver #(
     parameter NUM_BANKS = 4,
     parameter STRIDE = `__ADDR_WIDTH__'h2000, //8K
     parameter BANK_SIZE = `__ADDR_WIDTH__'h400000000, //16G
     parameter BASE_ADDR = `__ADDR_WIDTH__'h0
 )
 `else
-module addrInterleaver
+module bsc_ompss_addrInterleaver
 `endif
 (
     input wire [(`__ADDR_WIDTH__-1):0] in_awaddr,
