@@ -329,33 +329,36 @@ proc create_hier_cell_Hardware_Runtime { parentCell nameHier } {
   # Create instance: Picos_OmpSs_Manager, and set properties
   set Picos_OmpSs_Manager [ create_bd_cell -type ip -vlnv bsc:ompss:picosompssmanager Picos_OmpSs_Manager ]
   set POM_Config [list \
-    CONFIG.MAX_ACCS [expr max(${::AIT::num_accs}, 2)] \
-    CONFIG.MAX_ACC_TYPES [expr max([llength ${::AIT::accs}], 2)] \
-    CONFIG.MAX_ACC_CREATORS [expr max(${::AIT::num_acc_creators}, 2)] \
+    CONFIG.AXILITE_INTF ${::AIT::enable_pom_axilite} \
     CONFIG.CMDIN_SUBQUEUE_LEN ${::AIT::cmdInSubqueue_len} \
     CONFIG.CMDOUT_SUBQUEUE_LEN ${::AIT::cmdOutSubqueue_len} \
     CONFIG.ENABLE_SPAWN_QUEUES ${::AIT::enable_spawn_queues} \
     CONFIG.ENABLE_TASK_CREATION ${::AIT::task_creation} \
     CONFIG.LOCK_SUPPORT ${::AIT::lock_hwruntime} \
-    CONFIG.AXILITE_INTF ${::AIT::enable_pom_axilite} \
+    CONFIG.MAX_ACCS [expr max(${::AIT::num_accs}, 2)] \
+    CONFIG.MAX_ACC_CREATORS [expr max(${::AIT::num_acc_creators}, 2)] \
+    CONFIG.MAX_ACC_TYPES [expr max([llength ${::AIT::accs}], 2)] \
+    CONFIG.MAX_ARGS_PER_TASK ${::AIT::max_args_per_task} \
+    CONFIG.MAX_COPIES_PER_TASK ${::AIT::max_copies_per_task} \
+    CONFIG.MAX_DEPS_PER_TASK ${::AIT::max_deps_per_task} \
   ]
 
   if ${::AIT::enable_spawn_queues} {
     lappend POM_Config \
       CONFIG.SPAWNIN_QUEUE_LEN ${::AIT::spawnInQueue_len} \
-      CONFIG.SPAWNOUT_QUEUE_LEN ${::AIT::spawnOutQueue_len}
+      CONFIG.SPAWNOUT_QUEUE_LEN ${::AIT::spawnOutQueue_len} \
   }
 
   if {${::AIT::task_creation} && ${::AIT::deps_hwruntime}} {
     lappend POM_Config \
-      CONFIG.ENABLE_DEPS ${::AIT::deps_hwruntime} \
-      CONFIG.NUM_DCTS ${::AIT::picos_num_dcts} \
-      CONFIG.TM_SIZE ${::AIT::picos_tm_size} \
-      CONFIG.DM_SIZE ${::AIT::picos_dm_size} \
-      CONFIG.VM_SIZE ${::AIT::picos_vm_size} \
       CONFIG.DM_DS ${::AIT::picos_dm_ds} \
       CONFIG.DM_HASH ${::AIT::picos_dm_hash} \
-      CONFIG.HASH_T_SIZE ${::AIT::picos_hash_t_size}
+      CONFIG.DM_SIZE ${::AIT::picos_dm_size} \
+      CONFIG.ENABLE_DEPS ${::AIT::deps_hwruntime} \
+      CONFIG.HASH_T_SIZE ${::AIT::picos_hash_t_size} \
+      CONFIG.NUM_DCTS ${::AIT::picos_num_dcts} \
+      CONFIG.TM_SIZE ${::AIT::picos_tm_size} \
+      CONFIG.VM_SIZE ${::AIT::picos_vm_size} \
   }
 
   set_property -dict $POM_Config $Picos_OmpSs_Manager
