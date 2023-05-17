@@ -56,23 +56,23 @@ You can use `pip` to easily install `ait` on your system:
 
           git clone https://github.com/bsc-pm-ompss-at-fpga/ait.git
 
-	* From our internal GitLab repository (BSC users only):
+    * From our internal GitLab repository (BSC users only):
 
-	      git clone https://pm.bsc.es/gitlab/ompss-at-fpga/ait.git
+          git clone https://pm.bsc.es/gitlab/ompss-at-fpga/ait.git
 
 3. Enable Git LFS and install
 
-	   cd ait
-	   git lfs install
-	   git lfs pull
-	   export AIT_HOME="/path/to/install/ait"
-	   export DEB_PYTHON_INSTALL_LAYOUT=deb_system
-	   python3 -m pip install . -t $AIT_HOME
+       cd ait
+       git lfs install
+       git lfs pull
+       export AIT_HOME="/path/to/install/ait"
+       export DEB_PYTHON_INSTALL_LAYOUT=deb_system
+       python3 -m pip install . -t $AIT_HOME
 
 4. Add the installed binaries to your PATH
 
-	   export PATH=$AIT_HOME/bin:$PATH
-	   export PYTHONPATH=$AIT_HOME:$PYTHONPATH
+       export PATH=$AIT_HOME/bin:$PATH
+       export PYTHONPATH=$AIT_HOME:$PYTHONPATH
 
 # Tests
 
