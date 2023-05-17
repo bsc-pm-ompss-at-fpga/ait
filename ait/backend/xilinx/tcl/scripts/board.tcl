@@ -501,8 +501,8 @@ namespace eval AIT {
 
             # Only interleave slave interfaces
             if {($mode eq "S") && (${::AIT::interleaving_stride} ne "None")} {
-                connect_bd_net [get_bd_pins ${src}_awaddr] [get_bd_pins ${axi_pin}_awaddr]
-                connect_bd_net [get_bd_pins ${src}_araddr] [get_bd_pins ${axi_pin}_araddr]
+                connect_bd_net -quiet [get_bd_pins -quiet ${src}_araddr_intlv] [get_bd_pins -quiet ${axi_pin}_araddr] -boundary_type upper
+                connect_bd_net -quiet [get_bd_pins -quiet ${src}_awaddr_intlv] [get_bd_pins -quiet ${axi_pin}_awaddr] -boundary_type upper
             }
 
             connect_clock $clk_pin

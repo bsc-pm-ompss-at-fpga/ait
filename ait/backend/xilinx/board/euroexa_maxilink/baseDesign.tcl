@@ -660,8 +660,8 @@ proc create_hier_cell_maxilink { parentCell nameHier } {
 
 
   # Create pins
-  create_bd_pin -dir O -from 63 -to 0 M_AXI_araddr_1
-  create_bd_pin -dir O -from 63 -to 0 M_AXI_awaddr_1
+  create_bd_pin -dir O -from 63 -to 0 M_AXI_araddr_intlv
+  create_bd_pin -dir O -from 63 -to 0 M_AXI_awaddr_intlv
   create_bd_pin -dir I -type clk clk_150
   create_bd_pin -dir I -type clk clk_300
   create_bd_pin -dir I -from 5 -to 0 gtyrxn_in_0
@@ -682,13 +682,24 @@ proc create_hier_cell_maxilink { parentCell nameHier } {
    CONFIG.MAXI_VU9M1_ID_WIDTH {5} \
  ] $maxilink
 
-  # Create instance: maxilink_addrInterleaver, and set properties
+  # Create instance: maxilink_araddrInterleaver, and set properties
   set block_name bsc_ompss_addrInterleaver
-  set block_cell_name maxilink_addrInterleaver
-  if { [catch {set maxilink_addrInterleaver [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
+  set block_cell_name maxilink_araddrInterleaver
+  if { [catch {set maxilink_araddrInterleaver [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2095 -severity "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
-   } elseif { $maxilink_addrInterleaver eq "" } {
+   } elseif { $maxilink_araddrInterleaver eq "" } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   }
+
+  # Create instance: maxilink_awaddrInterleaver, and set properties
+  set block_name bsc_ompss_addrInterleaver
+  set block_cell_name maxilink_awaddrInterleaver
+  if { [catch {set maxilink_awaddrInterleaver [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2095 -severity "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   } elseif { $maxilink_awaddrInterleaver eq "" } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
@@ -705,10 +716,10 @@ proc create_hier_cell_maxilink { parentCell nameHier } {
   connect_bd_net -net clk_wiz_0_clk_out1 [get_bd_pins clk_150] [get_bd_pins maxilink/clk_freerun_in] [get_bd_pins maxilink/zu9_cci_clk]
   connect_bd_net -net gtyrxn_in_0_1 [get_bd_pins gtyrxn_in_0] [get_bd_pins maxilink/gtyrxn_in]
   connect_bd_net -net gtyrxp_in_0_1 [get_bd_pins gtyrxp_in_0] [get_bd_pins maxilink/gtyrxp_in]
-  connect_bd_net -net maxilink_addrInterleaver_out_araddr [get_bd_pins M_AXI_araddr_1] [get_bd_pins maxilink_addrInterleaver/out_araddr]
-  connect_bd_net -net maxilink_addrInterleaver_out_awaddr [get_bd_pins M_AXI_awaddr_1] [get_bd_pins maxilink_addrInterleaver/out_awaddr]
-  connect_bd_net -net maxilink_regslice_m_axi_araddr [get_bd_pins maxilink_addrInterleaver/in_araddr] [get_bd_pins maxilink_regslice/m_axi_araddr]
-  connect_bd_net -net maxilink_regslice_m_axi_awaddr [get_bd_pins maxilink_addrInterleaver/in_awaddr] [get_bd_pins maxilink_regslice/m_axi_awaddr]
+  connect_bd_net -net maxilink_araddrInterleaver_out_addr [get_bd_pins M_AXI_araddr_intlv] [get_bd_pins maxilink_araddrInterleaver/out_addr]
+  connect_bd_net -net maxilink_awaddrInterleaver_out_addr [get_bd_pins M_AXI_awaddr_intlv] [get_bd_pins maxilink_awaddrInterleaver/out_addr]
+  connect_bd_net -net maxilink_regslice_m_axi_araddr [get_bd_pins maxilink_araddrInterleaver/in_addr] [get_bd_pins maxilink_regslice/m_axi_araddr]
+  connect_bd_net -net maxilink_regslice_m_axi_awaddr [get_bd_pins maxilink_awaddrInterleaver/in_addr] [get_bd_pins maxilink_regslice/m_axi_awaddr]
   connect_bd_net -net maxilink_xilinx_axi_0_gtytxn_out [get_bd_pins gtytxn_out_0] [get_bd_pins maxilink/gtytxn_out]
   connect_bd_net -net maxilink_xilinx_axi_0_gtytxp_out [get_bd_pins gtytxp_out_0] [get_bd_pins maxilink/gtytxp_out]
   connect_bd_net -net proc_sys_reset_0_mb_reset [get_bd_pins rst] [get_bd_pins maxilink/phy_rst_n]
@@ -1065,8 +1076,8 @@ proc create_hier_cell_bridge_to_host { parentCell nameHier } {
   connect_bd_net -net M00_ARESETN_1 [get_bd_pins memory/DDR_1_peripheral_aresetn] [get_bd_pins DDR_S_AXI_CTRL_Inter/M00_ARESETN] [get_bd_pins DDR_S_AXI_Inter/M00_ARESETN]
   connect_bd_net -net M08_ACLK_1 [get_bd_pins aclk] [get_bd_pins DDR_S_AXI_Inter/S00_ACLK] [get_bd_pins DDR_S_AXI_Inter/S01_ACLK] [get_bd_pins maxilink_Inter/M00_ACLK] [get_bd_pins maxilink_Inter/M01_ACLK]
   connect_bd_net -net M08_ARESETN_1 [get_bd_pins peripheral_aresetn] [get_bd_pins DDR_S_AXI_Inter/S00_ARESETN] [get_bd_pins DDR_S_AXI_Inter/S01_ARESETN] [get_bd_pins maxilink_Inter/M00_ARESETN] [get_bd_pins maxilink_Inter/M01_ARESETN]
-  connect_bd_net -net addrInterleaver_0_out_araddr [get_bd_pins maxilink/M_AXI_araddr_1] [get_bd_pins maxilink_Inter/S00_AXI_araddr]
-  connect_bd_net -net addrInterleaver_0_out_awaddr [get_bd_pins maxilink/M_AXI_awaddr_1] [get_bd_pins maxilink_Inter/S00_AXI_awaddr]
+  connect_bd_net -net araddrInterleaver_out_addr [get_bd_pins maxilink/M_AXI_araddr_intlv] [get_bd_pins maxilink_Inter/S00_AXI_araddr]
+  connect_bd_net -net awaddrInterleaver_out_addr [get_bd_pins maxilink/M_AXI_awaddr_intlv] [get_bd_pins maxilink_Inter/S00_AXI_awaddr]
   connect_bd_net -net board_clk_300_1 [get_bd_pins vu9_board_clk_300] [get_bd_pins peripherals/jtag_aclk] [get_bd_pins proc_sys_reset_board_clock_300/slowest_sync_clk]
   connect_bd_net -net clk_100_1 [get_bd_pins clk_100] [get_bd_pins maxilink_Inter/M05_ACLK] [get_bd_pins peripherals/gpio_aclk] [get_bd_pins proc_sys_reset_100/slowest_sync_clk]
   connect_bd_net -net clk_300_1 [get_bd_pins clk_300] [get_bd_pins DDR_S_AXI_Inter/ACLK] [get_bd_pins maxilink/clk_300] [get_bd_pins maxilink_Inter/ACLK] [get_bd_pins maxilink_Inter/S00_ACLK] [get_bd_pins proc_sys_reset_300/slowest_sync_clk]
