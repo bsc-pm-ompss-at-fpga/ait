@@ -55,13 +55,13 @@ for {set i 0} {$i < $ninter} {incr i} {
             CONFIG.M00_AXIS_HIGHTDEST {0x00000000} \
             CONFIG.M01_AXIS_BASETDEST {0x00000001} \
             CONFIG.M01_AXIS_HIGHTDEST {0x00000001} \
-        ] [get_bd_cell Hardware_Runtime/hwr_inStream/inS_common_Inter_lvl0_$i]
+         ] [get_bd_cell Hardware_Runtime/hwr_inStream/inS_common_Inter_lvl0_$i]
     } else {
         # There's no need to filter if there is only one master
         set_property -dict [list \
             CONFIG.M00_AXIS_BASETDEST {0x00000000} \
             CONFIG.M00_AXIS_HIGHTDEST {0xFFFFFFFF} \
-        ] [get_bd_cell Hardware_Runtime/hwr_inStream/inS_common_Inter_lvl0_$i]
+         ] [get_bd_cell Hardware_Runtime/hwr_inStream/inS_common_Inter_lvl0_$i]
     }
 }
 if ${::AIT::task_creation} {
@@ -74,7 +74,7 @@ if ${::AIT::task_creation} {
             CONFIG.M01_AXIS_HIGHTDEST {0x00000002} \
             CONFIG.M02_AXIS_BASETDEST {0x00000003} \
             CONFIG.M02_AXIS_HIGHTDEST {0x00000003} \
-        ] [get_bd_cell Hardware_Runtime/hwr_inStream/inS_ext_Inter_lvl0_$i]
+         ] [get_bd_cell Hardware_Runtime/hwr_inStream/inS_ext_Inter_lvl0_$i]
     }
 }
 
@@ -155,18 +155,18 @@ if {[expr ${::AIT::interconRegSlice_hwruntime} || ${::AIT::interconRegSlice_all}
 
     foreach inter $inStream_interconnects {
         for {set i 0} {$i < [get_property CONFIG.NUM_MI $inter]} {incr i} {
-            set_property -dict [list CONFIG.M[format %02u $i]_HAS_REGSLICE {1}] $inter
+            set_property CONFIG.M[format %02u $i]_HAS_REGSLICE {1} $inter
         }
         for {set i 0} {$i < [get_property CONFIG.NUM_SI $inter]} {incr i} {
-            set_property -dict [list CONFIG.S[format %02u $i]_HAS_REGSLICE {1}] $inter
+            set_property CONFIG.S[format %02u $i]_HAS_REGSLICE {1} $inter
         }
     }
     foreach inter $outStream_interconnects {
         for {set i 0} {$i < [get_property CONFIG.NUM_MI $inter]} {incr i} {
-            set_property -dict [list CONFIG.M[format %02u $i]_HAS_REGSLICE {1}] $inter
+            set_property CONFIG.M[format %02u $i]_HAS_REGSLICE {1} $inter
         }
         for {set i 0} {$i < [get_property CONFIG.NUM_SI $inter]} {incr i} {
-            set_property -dict [list CONFIG.S[format %02u $i]_HAS_REGSLICE {1}] $inter
+            set_property CONFIG.S[format %02u $i]_HAS_REGSLICE {1} $inter
         }
     }
 }

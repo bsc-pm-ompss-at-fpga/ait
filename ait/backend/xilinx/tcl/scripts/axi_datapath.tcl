@@ -41,7 +41,7 @@ namespace eval AIT {
                         CONFIG.REG_R {15} \
                         CONFIG.REG_W {15} \
                         CONFIG.USE_AUTOPIPELINING {1} \
-                        ] $axiRegSlice
+                     ] $axiRegSlice
                     # Connect acc - slice
                     connect_bd_intf_net [get_bd_intf_pins $axiRegSlice/S_AXI] $AXI_port 
                     connect_bd_net [get_bd_pins $axiRegSlice/aclk] [get_bd_pins ${accName}_${instanceNum}/aclk]
@@ -75,7 +75,7 @@ namespace eval AIT {
             # Open debuginterfaces.txt file
             set debugInterfaces_file [open ../${::AIT::name_Project}.debuginterfaces.txt "a"]
 
-            set_property HDL_ATTRIBUTE.DEBUG true [get_bd_intf_nets [get_bd_intf_nets -of_objects $AXI_port]]
+            set_property HDL_ATTRIBUTE.DEBUG {true} [get_bd_intf_nets [get_bd_intf_nets -of_objects $AXI_port]]
             apply_bd_automation -rule xilinx.com:bd_rule:debug -dict [list [get_bd_intf_nets [get_bd_intf_nets -of_objects $AXI_port]] {AXI_R_ADDRESS "Data and Trigger" AXI_R_DATA "Data and Trigger" AXI_W_ADDRESS "Data and Trigger" AXI_W_DATA "Data and Trigger" AXI_W_RESPONSE "Data and Trigger" CLK_SRC clock_generator/clk_out1 SYSTEM_ILA "Auto" APC_EN "0" }]
 
             set_property -dict [list CONFIG.C_EN_STRG_QUAL {1} CONFIG.C_PROBE0_MU_CNT {2} CONFIG.ALL_PROBE_SAME_MU_CNT {2}] [get_bd_cells -hierarchical -filter {VLNV =~ xilinx.com:ip:system_ila*}]

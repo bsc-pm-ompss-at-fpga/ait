@@ -38,22 +38,26 @@ namespace eval AIT {
                     set data_width 64
                 }
 
-                set_property -dict [list CONFIG.ENABLE_ADVANCED_OPTIONS {1} CONFIG.XBAR_DATA_WIDTH.VALUE_SRC PROPAGATED CONFIG.XBAR_DATA_WIDTH $data_width] [get_bd_cells bridge_to_host/DDR_S_AXI_Inter]
-                set_property -dict [list CONFIG.S00_ARB_PRIORITY 15] [get_bd_cells bridge_to_host/DDR_S_AXI_Inter]
+                set_property -dict [list \
+                    CONFIG.ENABLE_ADVANCED_OPTIONS {1} \
+                    CONFIG.XBAR_DATA_WIDTH.VALUE_SRC {PROPAGATED} \
+                    CONFIG.XBAR_DATA_WIDTH $data_width \
+                    CONFIG.S00_ARB_PRIORITY {15} \
+                 ] [get_bd_cells bridge_to_host/DDR_S_AXI_Inter]
             }
 
             # If enabled, simplify interconnection to memory
             if {${::AIT::simplify_interconnection}} {
                 move_bd_cells [get_bd_cells /] [get_bd_cells bridge_to_host/DDR_S_AXI_Inter]
                 delete_bd_objs [get_bd_cells S_AXI_Inter]
-                set_property name S_AXI_Inter [get_bd_cells DDR_S_AXI_Inter]
+                set_property name {S_AXI_Inter} [get_bd_cells DDR_S_AXI_Inter]
             }
 
             get_bd_axi_interfaces
 
             # Create instance: bitInfo, and set properties
-            set bitInfo [ create_bd_cell -type ip -vlnv xilinx.com:ip:blk_mem_gen bitInfo ]
-            set_property -dict [ list \
+            set bitInfo [create_bd_cell -type ip -vlnv xilinx.com:ip:blk_mem_gen bitInfo]
+            set_property -dict [list \
                 CONFIG.Byte_Size {8} \
                 CONFIG.EN_SAFETY_CKT {false} \
                 CONFIG.Enable_32bit_Address {true} \
@@ -72,23 +76,23 @@ namespace eval AIT {
              ] $bitInfo
 
             # Create instance: bitInfo_BRAM_Ctrl, and set properties
-            set bitInfo_BRAM_Ctrl [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl bitInfo_BRAM_Ctrl ]
-            set_property -dict [ list \
+            set bitInfo_BRAM_Ctrl [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl bitInfo_BRAM_Ctrl]
+            set_property -dict [list \
                 CONFIG.PROTOCOL {AXI4} \
                 CONFIG.SINGLE_PORT_BRAM {1} \
              ] $bitInfo_BRAM_Ctrl
 
             # Create instance: managed_reset, and set properties
-            set managed_reset [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_gpio managed_reset ]
-            set_property -dict [ list \
+            set managed_reset [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_gpio managed_reset]
+            set_property -dict [list \
                 CONFIG.C_ALL_OUTPUTS {1} \
                 CONFIG.C_DOUT_DEFAULT {0x00000001} \
                 CONFIG.C_GPIO_WIDTH {1} \
              ] $managed_reset
 
             # Create instance: reset_AND, and set properties
-            set reset_AND [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic reset_AND ]
-            set_property -dict [ list \
+            set reset_AND [create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic reset_AND]
+            set_property -dict [list \
                 CONFIG.C_SIZE {1} \
                 CONFIG.C_OPERATION {and} \
              ] $reset_AND
@@ -414,8 +418,12 @@ namespace eval AIT {
                 set port_num [format %02u [expr $parent_inter_slaves + $i - 1]]
 
                 # Create new nested interconnect and configure it
-                create_bd_cell -vlnv xilinx.com:ip:axi_interconnect $nested_inter
-                set_property -dict [list CONFIG.NUM_MI {1} CONFIG.NUM_SI {1} CONFIG.STRATEGY ${::AIT::interconOpt}] [get_bd_cells $nested_inter]
+                set nested_inter [create_bd_cell -vlnv xilinx.com:ip:axi_interconnect $nested_inter]
+                set_property -dict [list \
+                    CONFIG.NUM_MI {1} \
+                    CONFIG.NUM_SI {1} \
+                    CONFIG.STRATEGY ${::AIT::interconOpt} \
+                 ] $nested_inter
 
                 # Connect clocks and resets
                 connect_clock [get_bd_pins $nested_inter/ACLK]
@@ -476,8 +484,8 @@ namespace eval AIT {
 
             set port ${mode}[format %02u $counter]
 
-            set_property -dict [list CONFIG.NUM_${mode}I [expr $counter + 1]] $dst
-            set_property -quiet -dict [list CONFIG.STRATEGY ${::AIT::interconOpt}] $dst
+            set_property CONFIG.NUM_${mode}I [expr $counter + 1] $dst
+            set_property -quiet CONFIG.STRATEGY ${::AIT::interconOpt} $dst
 
             if {${::AIT::interconPriority}} {
                 set data_width 32
@@ -489,10 +497,13 @@ namespace eval AIT {
                     set data_width 64
                 }
 
-                # Enable advanced settings in order to set priorities and set proper data path
-                set_property -dict [list CONFIG.ENABLE_ADVANCED_OPTIONS {1} CONFIG.XBAR_DATA_WIDTH.VALUE_SRC PROPAGATED] $dst
-                # Set priority (0-15)
-                set_property -dict [list CONFIG.${port}_ARB_PRIORITY [expr 15 - ($counter%16)] CONFIG.XBAR_DATA_WIDTH $data_width] $dst
+                # Enable advanced settings, set priority (0-15) and set proper data path
+                set_property -dict [list \
+                    CONFIG.ENABLE_ADVANCED_OPTIONS {1} \
+                    CONFIG.XBAR_DATA_WIDTH.VALUE_SRC {PROPAGATED} \
+                    CONFIG.${intf}_ARB_PRIORITY [expr 15 - ($counter%16)] \
+                    CONFIG.XBAR_DATA_WIDTH $data_width \
+                 ] $dst
             }
 
             set axi_pin [get_bd_intf_pins $dst/${port}_AXI]
@@ -535,7 +546,7 @@ namespace eval AIT {
         proc set_and_get_freq {targetFreq} {
             AIT::info_msg "Using generic set_and_get_freq procedure"
 
-            set_property -dict [list CONFIG.CLKOUT1_REQUESTED_OUT_FREQ $targetFreq] [get_bd_cells clock_generator]
+            set_property CONFIG.CLKOUT1_REQUESTED_OUT_FREQ $targetFreq [get_bd_cells clock_generator]
             set actFreq [expr [get_property CONFIG.FREQ_HZ [get_bd_pins clock_generator/clk_out1]]/1000000]
 
             return $actFreq
@@ -575,7 +586,7 @@ namespace eval AIT {
                         set mem_type [dict get ${::AIT::address_map} "mem_type"]
                         if {$mem_type eq "hbm"} {
                             set port [string trim [string trim $name {_Inter}] {S_AXI_}]
-                            set_property -dict [list CONFIG.USER_SAXI_$port {false}] [get_bd_cells -hierarchical HBM]
+                            set_property CONFIG.USER_SAXI_$port {false} [get_bd_cells -hierarchical HBM]
                             delete_bd_objs [get_bd_intf_pins bridge_to_host/memory/S${port}_AXI]
                             delete_bd_objs [get_bd_intf_pins bridge_to_host/S${port}_AXI]
                         }

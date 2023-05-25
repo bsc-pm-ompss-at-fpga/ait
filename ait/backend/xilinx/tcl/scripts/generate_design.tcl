@@ -150,10 +150,10 @@ if {[info exists {::AIT::boardPart}]} {
 }
 
 # Set repository path
-set_property ip_repo_paths HLS [current_project]
+set_property ip_repo_paths {HLS} [current_project]
 
 # Do not generate simulation scripts
-set_property sim.ip.auto_export_scripts false [current_project]
+set_property sim.ip.auto_export_scripts {false} [current_project]
 
 # If enabled, set cache location
 if ${::AIT::IP_caching} {
@@ -202,7 +202,7 @@ if {[catch {source -notrace board/${::AIT::board}/baseDesign.tcl}]} {
 open_bd_design ${::AIT::name_Project}/${::AIT::name_Project}.srcs/sources_1/bd/${::AIT::name_Design}/${::AIT::name_Design}.bd
 
 # Set synthesis by IP
-set_property synth_checkpoint_mode Hierarchical [get_files ${::AIT::name_Project}/${::AIT::name_Project}.srcs/sources_1/bd/${::AIT::name_Design}/${::AIT::name_Design}.bd]
+set_property synth_checkpoint_mode {Hierarchical} [get_files ${::AIT::name_Project}/${::AIT::name_Project}.srcs/sources_1/bd/${::AIT::name_Design}/${::AIT::name_Design}.bd]
 
 # If available, execute the user defined pre-design tcl script
 if {[file exists tcl/scripts/userPreDesign.tcl]} {
@@ -347,9 +347,9 @@ foreach acc ${::AIT::accs} {
         if {([get_bd_pins -quiet ${accName}_${instanceNum}/$accName_long/mcxx_instr_*] ne "") || ([get_bd_pins -quiet ${accName}_${instanceNum}/$accName_long/mcxx_hwcounterPort*] ne "")} {
 
             # Create counter for the current accelerator
-            create_bd_cell -type ip -vlnv xilinx.com:ip:c_counter_binary ${accName}_${instanceNum}/hwinst_counter
-            set_property -dict [list CONFIG.Output_Width {64}] [get_bd_cells ${accName}_${instanceNum}/hwinst_counter]
-            connect_bd_net [get_bd_pins ${accName}_${instanceNum}/aclk] [get_bd_pins ${accName}_${instanceNum}/hwinst_counter/CLK]
+            set hwinst_counter [create_bd_cell -type ip -vlnv xilinx.com:ip:c_counter_binary ${accName}_${instanceNum}/hwinst_counter]
+            set_property CONFIG.Output_Width {64} $hwinst_counter
+            connect_bd_net [get_bd_pins ${accName}_${instanceNum}/aclk] [get_bd_pins $hwinst_counter/CLK]
 
             if {[get_bd_pins -quiet ${accName}_${instanceNum}/$accName_long/mcxx_instr_*] ne ""} {
 
@@ -362,7 +362,7 @@ foreach acc ${::AIT::accs} {
                 connect_bd_net [get_bd_pins ${accName}_${instanceNum}/Adapter_instr/ap_rst_n] [get_bd_pins ${accName}_${instanceNum}/managed_aresetn]
 
                 # Connect to hwcounter
-                connect_bd_net [get_bd_pins ${accName}_${instanceNum}/hwinst_counter/Q] [get_bd_pins ${accName}_${instanceNum}/Adapter_instr/hwcounter]
+                connect_bd_net [get_bd_pins $hwinst_counter/Q] [get_bd_pins ${accName}_${instanceNum}/Adapter_instr/hwcounter]
 
                 set instr_AXI_port [get_bd_intf_pins -quiet ${accName}_${instanceNum}/Adapter_instr/m_axi* -filter {NAME =~ "*instr_buffer"}]
 
@@ -377,16 +377,19 @@ foreach acc ${::AIT::accs} {
             }
 
             if {[get_bd_pins -quiet ${accName}_${instanceNum}/$accName_long/mcxx_hwcounterPort*] ne ""} {
-                connect_bd_net [get_bd_pins ${accName}_${instanceNum}/hwinst_counter/Q] [get_bd_pins ${accName}_${instanceNum}/$accName_long/mcxx_hwcounterPort*]
+                connect_bd_net [get_bd_pins $hwinst_counter/Q] [get_bd_pins ${accName}_${instanceNum}/$accName_long/mcxx_hwcounterPort*]
             }
         }
 
         # If available, forward the frequency port
         if {[get_bd_pins -quiet ${accName}_${instanceNum}/$accName_long/mcxx_freqPort*] ne ""} {
             # Create and connect constant with freq
-            create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant ${accName}_${instanceNum}/accFreq
-            set_property -dict [list CONFIG.CONST_VAL $actFreq CONFIG.CONST_WIDTH {10}] [get_bd_cells ${accName}_${instanceNum}/accFreq]
-            connect_bd_net [get_bd_pins ${accName}_${instanceNum}/accFreq/dout] [get_bd_pins ${accName}_${instanceNum}/$accName_long/mcxx_freqPort*]
+            set accFreq [create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant ${accName}_${instanceNum}/accFreq]
+            set_property -dict [list \
+                CONFIG.CONST_VAL $actFreq \
+                CONFIG.CONST_WIDTH {10} \
+             ] $accFreq
+            connect_bd_net [get_bd_pins $accFreq/dout] [get_bd_pins ${accName}_${instanceNum}/$accName_long/mcxx_freqPort*]
         }
 
         # Connect AXI-Stream ports
@@ -445,11 +448,11 @@ if {${::AIT::interleaving_stride} ne "None"} {
 
     set addrInterleaver [get_bd_cell -hierarchical -filter {VLNV =~ *bsc_ompss_addrInterleaver*}]
     set_property -dict [list \
-      CONFIG.BANK_SIZE [dict get ${::AIT::address_map} "mem_bank_size"] \
-      CONFIG.NUM_BANKS $num_banks \
-      CONFIG.STRIDE ${::AIT::interleaving_stride} \
-      CONFIG.BASE_ADDR [dict get ${::AIT::address_map} "mem_base_addr"] \
-    ] $addrInterleaver
+        CONFIG.BANK_SIZE [dict get ${::AIT::address_map} "mem_bank_size"] \
+        CONFIG.NUM_BANKS $num_banks \
+        CONFIG.STRIDE ${::AIT::interleaving_stride} \
+        CONFIG.BASE_ADDR [dict get ${::AIT::address_map} "mem_base_addr"] \
+     ] $addrInterleaver
 }
 
 # If enabled, add and connect hwcounter IP
@@ -486,7 +489,7 @@ save_bd_design
 # Mark custom interfaces for debug
 if {${::AIT::debugInterfaces} eq "custom"} {
     foreach intf ${::AIT::debugInterfaces_list} {
-        set_property HDL_ATTRIBUTE.DEBUG true [get_bd_intf_nets [get_bd_intf_nets -of_objects [get_bd_intf_pins $intf]]]
+        set_property HDL_ATTRIBUTE.DEBUG {true} [get_bd_intf_nets [get_bd_intf_nets -of_objects [get_bd_intf_pins $intf]]]
         if {[llength [get_bd_intf_pins -quiet -filter {VLNV =~ *aximm_rtl*} $intf]]} {
             AIT::AXI::mark_debug $intf
         } elseif {[llength [get_bd_intf_pins -quiet -filter {VLNV =~ *axis_rtl*} $intf]]} {
@@ -614,7 +617,7 @@ if ${::AIT::task_creation} {
         CONFIG.SCHED_COUNT 0x[AIT::long_int_to_hex 128 $sched_count] \
         CONFIG.SCHED_ACCID 0x[AIT::long_int_to_hex 128 $sched_accid] \
         CONFIG.SCHED_TTYPE 0x[AIT::long_int_to_hex 512 $sched_ttype] \
-    ] [get_bd_cells */Picos_OmpSs_Manager]
+     ] [get_bd_cells */Picos_OmpSs_Manager]
 }
 
 set bitInfo_intlv_stride 0
@@ -680,7 +683,11 @@ puts $bitInfo_file $bitInfo_coe
 close $bitInfo_file
 
 # Load bitInfo coe file
-set_property -dict [list CONFIG.Write_Depth_A $bitinfo_len CONFIG.Load_Init_File {true} CONFIG.Coe_File [pwd]/${::AIT::name_Project}/bitInfo.coe] [get_bd_cells bitInfo]
+set_property -dict [list \
+    CONFIG.Write_Depth_A $bitinfo_len \
+    CONFIG.Load_Init_File {true} \
+    CONFIG.Coe_File [pwd]/${::AIT::name_Project}/bitInfo.coe \
+ ] [get_bd_cells bitInfo]
 
 # Update outdated IPs
 update_ip_catalog -rebuild -scan_changes
@@ -715,22 +722,22 @@ if ${::AIT::interconRegSlice_all} {
     set interconnects [get_bd_cells -hierarchical -regexp -filter {VLNV =~ xilinx.com:ip:axi_interconnect.*} .*]
 
     foreach inter $interconnects {
-        for {set i 0} {$i < [get_property CONFIG.NUM_MI [get_bd_cells $inter]]} {incr i} {
-            set_property -dict [list CONFIG.M[format %02u $i]_HAS_REGSLICE {4}] [get_bd_cells $inter]
+        for {set i 0} {$i < [get_property CONFIG.NUM_MI $inter]} {incr i} {
+            set_property CONFIG.M[format %02u $i]_HAS_REGSLICE {4} $inter
         }
-        for {set i 0} {$i < [get_property CONFIG.NUM_SI [get_bd_cells $inter]]} {incr i} {
-            set_property -dict [list CONFIG.S[format %02u $i]_HAS_REGSLICE {4}] [get_bd_cells $inter]
+        for {set i 0} {$i < [get_property CONFIG.NUM_SI $inter]} {incr i} {
+            set_property CONFIG.S[format %02u $i]_HAS_REGSLICE {4} $inter
         }
     }
 } elseif ${::AIT::interconRegSlice_mem} {
     set interconnects [get_bd_cells -hierarchical -regexp -filter {VLNV =~ xilinx.com:ip:axi_interconnect.* && NAME =~ {S_AXI(_[0-9]*)?_Inter}} .*]
 
     foreach inter $interconnects {
-        for {set i 0} {$i < [get_property CONFIG.NUM_MI [get_bd_cells $inter]]} {incr i} {
-            set_property -dict [list CONFIG.M[format %02u $i]_HAS_REGSLICE {4}] [get_bd_cells $inter]
+        for {set i 0} {$i < [get_property CONFIG.NUM_MI $inter]} {incr i} {
+            set_property CONFIG.M[format %02u $i]_HAS_REGSLICE {4} $inter
         }
-        for {set i 0} {$i < [get_property CONFIG.NUM_SI [get_bd_cells $inter]]} {incr i} {
-            set_property -dict [list CONFIG.S[format %02u $i]_HAS_REGSLICE {4}] [get_bd_cells $inter]
+        for {set i 0} {$i < [get_property CONFIG.NUM_SI $inter]} {incr i} {
+            set_property CONFIG.S[format %02u $i]_HAS_REGSLICE {4} $inter
         }
     }
 }

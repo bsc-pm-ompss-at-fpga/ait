@@ -33,9 +33,7 @@ namespace eval AIT {
                     if {[get_property MODE $AXIS_port] eq "Master"} {
                         # outStream slice
                         set axis_regSlice_out [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_register_slice ${accName}_${instanceNum}/axis_regSlice_out_${slr}_${::AIT::board_slr_master}]
-                        set_property -dict [ list \
-                            CONFIG.REG_CONFIG {16} \
-                            ] $axis_regSlice_out
+                        set_property CONFIG.REG_CONFIG {16} $axis_regSlice_out
                         connect_bd_intf_net $AXIS_port [get_bd_intf_pins $axis_regSlice_out/S_AXIS]
                         connect_bd_net [get_bd_pins $axis_regSlice_out/aclk] [get_bd_pins ${accName}_${instanceNum}/aclk]
                         connect_bd_net [get_bd_pins $axis_regSlice_out/aresetn] [get_bd_pins ${accName}_${instanceNum}/managed_aresetn]
@@ -44,9 +42,7 @@ namespace eval AIT {
                     } elseif {[get_property MODE $AXIS_port] eq "Slave"} {
                         # inStream slice
                         set axis_regSlice_in [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_register_slice ${accName}_${instanceNum}/axis_regSlice_in_${::AIT::board_slr_master}_${slr}]
-                        set_property -dict [ list \
-                            CONFIG.REG_CONFIG {16} \
-                            ] $axis_regSlice_in
+                        set_property CONFIG.REG_CONFIG {16} $axis_regSlice_in
                         connect_bd_intf_net [get_bd_intf_pins $axis_regSlice_in/M_AXIS] $AXIS_port
                         connect_bd_net [get_bd_pins $axis_regSlice_in/aclk] [get_bd_pins ${accName}_${instanceNum}/aclk]
                         connect_bd_net [get_bd_pins $axis_regSlice_in/aresetn] [get_bd_pins ${accName}_${instanceNum}/managed_aresetn]
@@ -63,7 +59,7 @@ namespace eval AIT {
             # Open debuginterfaces.txt file
             set debugInterfaces_file [open ../${::AIT::name_Project}.debuginterfaces.txt "a"]
 
-            set_property HDL_ATTRIBUTE.DEBUG true [get_bd_intf_nets [get_bd_intf_nets -of_objects $AXIS_port]]
+            set_property HDL_ATTRIBUTE.DEBUG {true} [get_bd_intf_nets [get_bd_intf_nets -of_objects $AXIS_port]]
             apply_bd_automation -rule xilinx.com:bd_rule:debug -dict [list [get_bd_intf_nets [get_bd_intf_nets -of_objects $AXIS_port]] {AXIS_SIGNALS "Data and Trigger" CLK_SRC clock_generator/clk_out1 SYSTEM_ILA "Auto" APC_EN "0" }]
 
             set_property -dict [list CONFIG.C_EN_STRG_QUAL {1} CONFIG.C_PROBE0_MU_CNT {2} CONFIG.ALL_PROBE_SAME_MU_CNT {2}] [get_bd_cells -hierarchical -filter {VLNV =~ xilinx.com:ip:system_ila*}]
@@ -78,7 +74,10 @@ namespace eval AIT {
             set dir [get_property DIR $AXIS_port]
             if {$dir eq "O"} {
                 set stream_adapter [create_bd_cell -type module -reference bsc_ompss_hsToStreamAdapter ${accName}_${instanceNum}/Adapter_${port_name}]
-                set_property -dict [list CONFIG.TID_WIDTH [expr max(int(ceil(log(${::AIT::num_accs})/log(2))), 1)] CONFIG.ACCID $accID] $stream_adapter
+                set_property -dict [list \
+                    CONFIG.TID_WIDTH [expr max(int(ceil(log(${::AIT::num_accs})/log(2))), 1)] \
+                    CONFIG.ACCID $accID \
+                 ] $stream_adapter
                 connect_bd_net [get_bd_pins $stream_adapter/in_hs_ap_vld] [get_bd_pins -regexp ${AXIS_port}_ap_vld]
                 connect_bd_net [get_bd_pins $stream_adapter/in_hs_ap_ack] [get_bd_pins -regexp ${AXIS_port}_ap_ack]
                 connect_bd_net [get_bd_pins $stream_adapter/in_hs] ${AXIS_port}
@@ -123,7 +122,8 @@ namespace eval AIT {
             # Add accID as AXI-Stream TID signal
             set_property -dict [list \
                 CONFIG.ID_WIDTH $accIDWidth \
-                CONFIG.ID $accID] $tidSubsetConv
+                CONFIG.ID $accID \
+             ] $tidSubsetConv
 
             connect_bd_intf_net $AXIS_port [get_bd_intf_pins $tidSubsetConv/S_AXIS]
             return [get_bd_intf_pins $tidSubsetConv/M_AXIS]

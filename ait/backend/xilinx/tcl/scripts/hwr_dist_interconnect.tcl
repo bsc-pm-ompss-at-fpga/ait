@@ -48,13 +48,13 @@ for {set i 0} {$i < $ninter} {incr i} {
             CONFIG.M00_AXIS_HIGHTDEST {0x00000000} \
             CONFIG.M01_AXIS_BASETDEST {0x00000001} \
             CONFIG.M01_AXIS_HIGHTDEST {0x00000001} \
-        ] [get_bd_cell Hardware_Runtime/hwr_inStream/inS_common_Inter_lvl0_$i]
+         ] [get_bd_cell Hardware_Runtime/hwr_inStream/inS_common_Inter_lvl0_$i]
     } else {
         # There's no need to filter if there is only one master
         set_property -dict [list \
             CONFIG.M00_AXIS_BASETDEST {0x00000000} \
             CONFIG.M00_AXIS_HIGHTDEST {0xFFFFFFFF} \
-        ] [get_bd_cell Hardware_Runtime/hwr_inStream/inS_common_Inter_lvl0_$i]
+         ] [get_bd_cell Hardware_Runtime/hwr_inStream/inS_common_Inter_lvl0_$i]
     }
 }
 
@@ -66,7 +66,7 @@ if ${::AIT::advanced_hwruntime} {
             CONFIG.M00_AXIS_HIGHTDEST {0x00000002} \
             CONFIG.M01_AXIS_BASETDEST {0x00000003} \
             CONFIG.M01_AXIS_HIGHTDEST {0x00000003} \
-        ] [get_bd_cell Hardware_Runtime/hwr_inStream/inS_ext_Inter_lvl0_$i]
+         ] [get_bd_cell Hardware_Runtime/hwr_inStream/inS_ext_Inter_lvl0_$i]
     }
 }
 
@@ -84,10 +84,10 @@ for {set i 0} {$i < ${::AIT::num_accs}} {incr i} {
             CONFIG.M00_AXIS_HIGHTDEST {0xFFFFFFFF} \
             CONFIG.NUM_MI {1} \
             CONFIG.NUM_SI {2} \
-        ] $inter
-        connect_bd_net $po_clk [get_bd_pins $inter_name/ACLK] [get_bd_pins $inter_name/S00_AXIS_ACLK] [get_bd_pins $inter_name/S01_AXIS_ACLK] [get_bd_pins $inter_name/M00_AXIS_ACLK]
-        connect_bd_net $po_inter_rstn [get_bd_pins $inter_name/ARESETN]
-        connect_bd_net $po_peri_rstn [get_bd_pins $inter_name/S00_AXIS_ARESETN] [get_bd_pins $inter_name/S01_AXIS_ARESETN] [get_bd_pins $inter_name/M00_AXIS_ARESETN]
+         ] $inter
+        connect_bd_net $po_clk [get_bd_pins $inter/ACLK] [get_bd_pins $inter/S00_AXIS_ACLK] [get_bd_pins $inter/S01_AXIS_ACLK] [get_bd_pins $inter/M00_AXIS_ACLK]
+        connect_bd_net $po_inter_rstn [get_bd_pins $inter/ARESETN]
+        connect_bd_net $po_peri_rstn [get_bd_pins $inter/S00_AXIS_ARESETN] [get_bd_pins $inter/S01_AXIS_ARESETN] [get_bd_pins $inter/M00_AXIS_ARESETN]
 
         set inter_name Hardware_Runtime/hwr_inStream/inS_extacc_Inter_${i}
         set inter [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_interconnect $inter_name]
@@ -98,10 +98,10 @@ for {set i 0} {$i < ${::AIT::num_accs}} {incr i} {
             CONFIG.M01_AXIS_HIGHTDEST {0x00000003} \
             CONFIG.NUM_MI {2} \
             CONFIG.NUM_SI {1} \
-        ] $inter
-        connect_bd_net $pi_clk [get_bd_pins $inter_name/ACLK] [get_bd_pins $inter_name/M00_AXIS_ACLK] [get_bd_pins $inter_name/M01_AXIS_ACLK] [get_bd_pins $inter_name/S00_AXIS_ACLK]
-        connect_bd_net $pi_inter_rstn [get_bd_pins $inter_name/ARESETN]
-        connect_bd_net $pi_peri_rstn [get_bd_pins $inter_name/M00_AXIS_ARESETN] [get_bd_pins $inter_name/M01_AXIS_ARESETN] [get_bd_pins $inter_name/S00_AXIS_ARESETN]
+         ] $inter
+        connect_bd_net $pi_clk [get_bd_pins $inter/ACLK] [get_bd_pins $inter/M00_AXIS_ACLK] [get_bd_pins $inter/M01_AXIS_ACLK] [get_bd_pins $inter/S00_AXIS_ACLK]
+        connect_bd_net $pi_inter_rstn [get_bd_pins $inter/ARESETN]
+        connect_bd_net $pi_peri_rstn [get_bd_pins $inter/M00_AXIS_ARESETN] [get_bd_pins $inter/M01_AXIS_ARESETN] [get_bd_pins $inter/S00_AXIS_ARESETN]
 
         connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_inStream/inS_extacc_Inter_${i}/M00_AXIS] [get_bd_intf_pins Hardware_Runtime/hwr_inStream/inS_common_Inter_lvl0_${inter_i}/S${intf_i}_AXIS]
         connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_inStream/inS_extacc_Inter_${i}/M01_AXIS] [get_bd_intf_pins Hardware_Runtime/hwr_inStream/inS_ext_Inter_lvl0_${inter_i}/S${intf_i}_AXIS]
@@ -156,18 +156,18 @@ if {[expr ${::AIT::interconRegSlice_hwruntime} || ${::AIT::interconRegSlice_all}
 
     foreach inter $inStream_interconnects {
         for {set i 0} {$i < [get_property CONFIG.NUM_MI $inter]} {incr i} {
-            set_property -dict [list CONFIG.M[format %02u $i]_HAS_REGSLICE {1}] $inter
+            set_property CONFIG.M[format %02u $i]_HAS_REGSLICE {1} $inter
         }
         for {set i 0} {$i < [get_property CONFIG.NUM_SI $inter]} {incr i} {
-            set_property -dict [list CONFIG.S[format %02u $i]_HAS_REGSLICE {1}] $inter
+            set_property CONFIG.S[format %02u $i]_HAS_REGSLICE {1} $inter
         }
     }
     foreach inter $outStream_interconnects {
         for {set i 0} {$i < [get_property CONFIG.NUM_MI $inter]} {incr i} {
-            set_property -dict [list CONFIG.M[format %02u $i]_HAS_REGSLICE {1}] $inter
+            set_property CONFIG.M[format %02u $i]_HAS_REGSLICE {1} $inter
         }
         for {set i 0} {$i < [get_property CONFIG.NUM_SI $inter]} {incr i} {
-            set_property -dict [list CONFIG.S[format %02u $i]_HAS_REGSLICE {1}] $inter
+            set_property CONFIG.S[format %02u $i]_HAS_REGSLICE {1} $inter
         }
     }
 }

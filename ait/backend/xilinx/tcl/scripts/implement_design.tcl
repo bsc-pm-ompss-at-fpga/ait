@@ -42,9 +42,9 @@ open_bd_design ${::AIT::name_Project}/${::AIT::name_Project}.srcs/sources_1/bd/$
 
 # Generate .bin file for Zynq and ZynqMP boards
 if {(${::AIT::arch_device} eq "zynq") || (${::AIT::arch_device} eq "zynqmp")} {
-    set_property STEPS.WRITE_BITSTREAM.ARGS.BIN_FILE true [get_runs impl_1]
+    set_property STEPS.WRITE_BITSTREAM.ARGS.BIN_FILE {true} [get_runs impl_1]
 } else {
-    set_property STEPS.WRITE_BITSTREAM.ARGS.BIN_FILE false [get_runs impl_1]
+    set_property STEPS.WRITE_BITSTREAM.ARGS.BIN_FILE {false} [get_runs impl_1]
 }
 
 AIT::info_msg "Launching implementation run with ${::AIT::num_jobs} jobs"
