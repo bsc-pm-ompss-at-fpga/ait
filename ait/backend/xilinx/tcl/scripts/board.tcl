@@ -487,7 +487,7 @@ namespace eval AIT {
             set_property CONFIG.NUM_${mode}I [expr $counter + 1] $dst
             set_property -quiet CONFIG.STRATEGY ${::AIT::interconOpt} $dst
 
-            if {${::AIT::interconPriority}} {
+            if {($mode eq "S") && ${::AIT::interconPriority}} {
                 set data_width 32
                 if {${::AIT::arch_device} eq "alveo"} {
                     set data_width 512
