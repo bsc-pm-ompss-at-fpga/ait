@@ -64,13 +64,23 @@ namespace eval AIT {
             set intf_pin_net [get_bd_intf_nets -of_objects $intf_pin]
 
             set_property HDL_ATTRIBUTE.DEBUG {true} $intf_pin_net
-            apply_bd_automation -rule xilinx.com:bd_rule:debug -dict [list [get_bd_intf_nets [get_bd_intf_nets -of_objects $AXIS_port]] {AXIS_SIGNALS "Data and Trigger" CLK_SRC clock_generator/clk_out1 SYSTEM_ILA "Auto" APC_EN "0" }]
 
-            set_property -dict [list CONFIG.C_EN_STRG_QUAL {1} CONFIG.C_PROBE0_MU_CNT {2} CONFIG.ALL_PROBE_SAME_MU_CNT {2}] [get_bd_cells -hierarchical -filter {VLNV =~ xilinx.com:ip:system_ila*}]
+            #FIXME: Vivado fails to create a new ILA when surpassing max of 16 probes
+            if {[llength [get_bd_intf_nets -filter {HDL_ATTRIBUTE.DEBUG == true}]] > 16} {
+                AIT::warning_msg "Maximum number of debug probes reached ([llength [get_bd_intf_nets -filter {HDL_ATTRIBUTE.DEBUG == true}]] > 16). Interface $intf_pin will not be connected to an ILA"
+            } else {
+                apply_bd_automation -rule xilinx.com:bd_rule:debug -dict [list [get_bd_intf_nets [get_bd_intf_nets -of_objects $intf_pin]] {AXIS_SIGNALS "Data and Trigger" CLK_SRC clock_generator/clk_out1 SYSTEM_ILA "Auto" APC_EN "0" }]
 
-            # Add a line to debuginterfaces.txt
-            puts $debugInterfaces_file "$intf_pin"
-            close $debugInterfaces_file
+                set_property -dict [list \
+                    CONFIG.C_EN_STRG_QUAL {1} \
+                    CONFIG.C_PROBE0_MU_CNT {2} \
+                    CONFIG.ALL_PROBE_SAME_MU_CNT {2} \
+                 ] [get_bd_cells -hierarchical -filter {VLNV =~ xilinx.com:ip:system_ila*}]
+
+                # Add a line to debuginterfaces.txt
+                puts $debugInterfaces_file "$intf_pin"
+                close $debugInterfaces_file
+            }
         }
 
         proc add_stream_adapter {intf_pin accName instanceNum {accID '0x0'}} {
