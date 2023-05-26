@@ -48,7 +48,7 @@ namespace eval AIT {
                     connect_bd_net [get_bd_pins $axiRegSlice/aresetn] [get_bd_pins ${accName}_${instanceNum}/managed_aresetn]
 
                     # Return new outermost AXI pin
-                    set intf_pin $axiRegSlice/M_AXI
+                    set intf_pin [get_bd_intf_pins $axiRegSlice/M_AXI]
                 }
             }
             return $intf_pin

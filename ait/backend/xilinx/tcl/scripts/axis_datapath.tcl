@@ -28,8 +28,9 @@ namespace eval AIT {
                 set slr [lindex [dict get ${::AIT::acc_placement} $accName] ${instanceNum}]
 
                 if {$slr != ${::AIT::board_slr_master}} {
-                    # Create register slices for stream pins
-                    # slices are named axis_regSlice{in,out}_${orig_slr}_${dest_slr}
+                    # If the acc is in a different SLR
+                    #   * Create register slices for stream pins
+                    # Register slices are named axis_regSlice{in,out}_${orig_slr}_${dest_slr}
                     if {[get_property MODE $intf_pin] eq "Master"} {
                         # outStream slice
                         set axis_regSlice_out [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_register_slice ${accName}_${instanceNum}/axis_regSlice_out_${slr}_${::AIT::board_slr_master}]
@@ -38,7 +39,8 @@ namespace eval AIT {
                         connect_bd_net [get_bd_pins $axis_regSlice_out/aclk] [get_bd_pins ${accName}_${instanceNum}/aclk]
                         connect_bd_net [get_bd_pins $axis_regSlice_out/aresetn] [get_bd_pins ${accName}_${instanceNum}/managed_aresetn]
 
-                        set intf_pin $axis_regSlice_out/M_AXIS
+                        # Return new outermost AXIS pin
+                        set intf_pin [get_bd_intf_pins $axis_regSlice_out/M_AXIS]
                     } elseif {[get_property MODE $intf_pin] eq "Slave"} {
                         # inStream slice
                         set axis_regSlice_in [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_register_slice ${accName}_${instanceNum}/axis_regSlice_in_${::AIT::board_slr_master}_${slr}]
@@ -47,7 +49,8 @@ namespace eval AIT {
                         connect_bd_net [get_bd_pins $axis_regSlice_in/aclk] [get_bd_pins ${accName}_${instanceNum}/aclk]
                         connect_bd_net [get_bd_pins $axis_regSlice_in/aresetn] [get_bd_pins ${accName}_${instanceNum}/managed_aresetn]
 
-                        set intf_pin $axis_regSlice_in/S_AXIS
+                        # Return new outermost AXIS pin
+                        set intf_pin [get_bd_intf_pins $axis_regSlice_in/S_AXIS]
                     }
                 }
             }
