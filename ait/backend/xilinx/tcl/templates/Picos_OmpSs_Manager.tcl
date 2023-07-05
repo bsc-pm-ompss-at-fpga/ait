@@ -339,7 +339,7 @@ proc create_hier_cell_Hardware_Runtime { parentCell nameHier } {
     CONFIG.MAX_ACC_CREATORS [expr max(${::AIT::num_acc_creators}, 2)] \
     CONFIG.MAX_ACC_TYPES [expr max([llength ${::AIT::accs}], 2)] \
     CONFIG.MAX_ARGS_PER_TASK ${::AIT::max_args_per_task} \
-    CONFIG.MAX_COPIES_PER_TASK ${::AIT::max_copies_per_task} \
+    CONFIG.MAX_COPS_PER_TASK ${::AIT::max_copies_per_task} \
     CONFIG.MAX_DEPS_PER_TASK ${::AIT::max_deps_per_task} \
   ]
 
