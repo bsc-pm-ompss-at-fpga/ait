@@ -158,9 +158,10 @@ namespace eval AIT {
             # Assign memory address space
             if {(${::AIT::arch_device} eq "zynq") || (${::AIT::arch_device} eq "zynqmp")} {
                 set mem_size [dict get ${::AIT::address_map} "mem_size"]
-                # Zynq DDR address segment name format: /bridge_to_host/S_AXI_HPX/HPX_DDR_LOWOCM, being
+                # Zynq DDR address segment name format: /bridge_to_host/S_AXI_HPX/HPX_DDR_LOWOCM
+                # ZynqMP DDR address segment name format: /bridge_to_host/S_AXI_GPY/HPX_DDR_LOW, being
                 # S_AXI_HPX the AXI interface used
-                foreach addr_seg [get_bd_addr_segs -regexp ".*/S_AXI_HP[0-9]/HP[0-9]_DDR_LOWOCM"] {
+                foreach addr_seg [get_bd_addr_segs -regexp ".*/HP[0-9]_DDR_LOW.*"] {
                     assign_bd_address $addr_seg -offset $base_addr -range $mem_size
                 }
             } elseif {${::AIT::arch_device} eq "alveo"} {
