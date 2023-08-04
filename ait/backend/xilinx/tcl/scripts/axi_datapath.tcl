@@ -20,36 +20,107 @@
 
 namespace eval AIT {
     namespace eval AXI {
-        proc add_reg_slice {intf_pin intf_name accName instanceNum} {
-            if {!([dict exists ${::AIT::acc_placement} $accName] && ([llength [dict get ${::AIT::acc_placement} $accName]] > ${instanceNum}))} {
-                # No placement info is provided for this instance
-                AIT::utils::warning_msg "No placement info provided for instance ${instanceNum} of ${accName}. Slices for AXI pins will not be created"
-            } else {
-                set slr [lindex [dict get ${::AIT::acc_placement} $accName] ${instanceNum}]
 
-                if {$slr != ${::AIT::board_slr_master}} {
-                    # If the acc is in a different SLR
-                    #   * Create register slices for data pins
-                    # Register slices are named axi_regSlice_slr_acc_${pin_index}_${slr_orig}_${slr_dest}
-                    #   note that the slave side is close to the acc master axi pin
-                    # Task-creating accelerators will not have register slices as they do not use data pins
-                    set axiRegSlice [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_register_slice ${accName}_${instanceNum}/${intf_name}_regslice_slr_acc_${slr}_${::AIT::board_slr_master}]
+        # Adds a register slice to the intf_name interface of the ip_name IP
+        # If optional argument intf_pin is passed, the register slice will be
+        # connected to intf_pin (either slave or master) and left
+        # hanging from the other side
+        proc add_reg_slice {ip_name intf_name slr_master slr_slave {intf_pin ""} {num_pipeline_stages ""} {prefix ""}} {
+            # If the master and slave SLRs are different, create register slice for interface pins
+            # Register slices are named ${prefix}${intf_name}_regslice_slr_${slr_master}_${slr_slave}
+            if {$slr_master != $slr_slave} {
+                set ip_cell [get_bd_cells -hierarchical $ip_name]
+                set num_slr_crossings [expr {abs($slr_master - $slr_slave)}]
+
+                lassign [split $num_pipeline_stages ':'] num_master_stages num_middle_stages num_slave_stages
+                lassign [split ${::AIT::regslice_pipeline_stages} ':'] num_default_master_stages num_default_middle_stages num_default_slave_stages
+                if {$num_master_stages == ""} { set num_master_stages $num_default_master_stages }
+                if {$num_middle_stages == ""} { set num_middle_stages $num_default_middle_stages }
+                if {$num_slave_stages == ""} { set num_slave_stages $num_default_slave_stages }
+
+                set axiRegSlice [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_register_slice ${ip_cell}/${prefix}${intf_name}_regslice_slr_${slr_master}_${slr_slave}]
+                set_property -dict [ list \
+                    CONFIG.NUM_SLR_CROSSINGS ${num_slr_crossings} \
+                    CONFIG.REG_AR {15} \
+                    CONFIG.REG_AW {15} \
+                    CONFIG.REG_B {15} \
+                    CONFIG.REG_R {15} \
+                    CONFIG.REG_W {15} \
+                 ] $axiRegSlice
+
+                if {$num_master_stages == "auto"} {
+                    set_property CONFIG.USE_AUTOPIPELINING {1} $axiRegSlice
+                } else {
+                    # Decrement number of stages by one as the IP already assumes it
+                    incr num_master_stages -1
+                    incr num_middle_stages -1
+                    incr num_slave_stages -1
+
+                    # Master SLR
                     set_property -dict [ list \
-                        CONFIG.REG_AR {15} \
-                        CONFIG.REG_AW {15} \
-                        CONFIG.REG_B {15} \
-                        CONFIG.REG_R {15} \
-                        CONFIG.REG_W {15} \
-                        CONFIG.USE_AUTOPIPELINING {1} \
+                        CONFIG.PIPELINES_MASTER_AR ${num_master_stages} \
+                        CONFIG.PIPELINES_MASTER_AW ${num_master_stages} \
+                        CONFIG.PIPELINES_MASTER_B ${num_master_stages} \
+                        CONFIG.PIPELINES_MASTER_R ${num_master_stages} \
+                        CONFIG.PIPELINES_MASTER_W ${num_master_stages} \
+                        CONFIG.USE_AUTOPIPELINING {0} \
                      ] $axiRegSlice
-                    # Connect acc - slice
-                    connect_bd_intf_net [get_bd_intf_pins $axiRegSlice/S_AXI] $intf_pin
-                    connect_bd_net [get_bd_pins $axiRegSlice/aclk] [get_bd_pins ${accName}_${instanceNum}/aclk]
-                    connect_bd_net [get_bd_pins $axiRegSlice/aresetn] [get_bd_pins ${accName}_${instanceNum}/managed_aresetn]
 
-                    # Return new outermost AXI pin
-                    set intf_pin [get_bd_intf_pins $axiRegSlice/M_AXI]
+                    # Middle SLR
+                    if {$num_slr_crossings > 1} {
+                        set_property -dict [ list \
+                            CONFIG.PIPELINES_MIDDLE_AR ${num_middle_stages} \
+                            CONFIG.PIPELINES_MIDDLE_AW ${num_middle_stages} \
+                            CONFIG.PIPELINES_MIDDLE_B ${num_middle_stages} \
+                            CONFIG.PIPELINES_MIDDLE_R ${num_middle_stages} \
+                            CONFIG.PIPELINES_MIDDLE_W ${num_middle_stages} \
+                         ] $axiRegSlice
+                    }
+
+                    # Slave SLR
+                    if {$num_slr_crossings > 0} {
+                        set_property -dict [ list \
+                            CONFIG.PIPELINES_SLAVE_AR ${num_slave_stages} \
+                            CONFIG.PIPELINES_SLAVE_AW ${num_slave_stages} \
+                            CONFIG.PIPELINES_SLAVE_B ${num_slave_stages} \
+                            CONFIG.PIPELINES_SLAVE_R ${num_slave_stages} \
+                            CONFIG.PIPELINES_SLAVE_W ${num_slave_stages} \
+                         ] $axiRegSlice
+                    }
                 }
+
+                # If no intf_pin passed, we assume that we are adding a register slice on an already-connected 
+                # interface, so we must first delete the net and get both ends of the connection
+                if {$intf_pin eq ""} {
+                    set intf_pin [get_bd_intf_pins ${ip_cell}/${intf_name}]
+                    set net_intfs [get_bd_intf_pins -of_objects [get_bd_intf_nets -boundary_type lower -of_objects $intf_pin]]
+                    delete_bd_objs [get_bd_intf_nets -boundary_type lower -of_objects $intf_pin]
+
+                    if {[get_property MODE $intf_pin] == "Master"} {
+                        connect_bd_intf_net [get_bd_intf_pins $axiRegSlice/M_AXI] [lindex $net_intfs 1]
+                        set intf_pin [lindex $net_intfs 0]
+                    } elseif {[get_property MODE $intf_pin] == "Slave"} {
+                        connect_bd_intf_net [get_bd_intf_pins $axiRegSlice/S_AXI] [lindex $net_intfs 0]
+                        set intf_pin [lindex $net_intfs 1]
+                    }
+                }
+
+                # Connect interface pin accordingly and look for its clock and reset
+                if {[get_property MODE $intf_pin] == "Master"} {
+                    connect_bd_intf_net [get_bd_intf_pins $axiRegSlice/S_AXI] $intf_pin
+                    set new_intf_pin [get_bd_intf_pins $axiRegSlice/M_AXI]
+                } elseif {[get_property MODE $intf_pin] == "Slave"} {
+                    connect_bd_intf_net [get_bd_intf_pins $axiRegSlice/M_AXI] $intf_pin
+                    set new_intf_pin [get_bd_intf_pins $axiRegSlice/S_AXI]
+                }
+                set clk_pin [get_bd_pins -of_objects [get_bd_cells -of_objects $intf_pin] -filter "(TYPE == clk) && (CONFIG.ASSOCIATED_BUSIF =~ *[get_property NAME $intf_pin]*)"]
+                set rst_pin [get_bd_pins [get_bd_cells -of_objects $clk_pin]/[split [get_property CONFIG.ASSOCIATED_RESET $clk_pin] ':']]
+
+                connect_bd_net [get_bd_pins $axiRegSlice/aclk] $clk_pin
+                connect_bd_net [get_bd_pins $axiRegSlice/aresetn] $rst_pin
+
+                # Return new outermost AXI pin
+                set intf_pin $new_intf_pin
             }
             return $intf_pin
         }

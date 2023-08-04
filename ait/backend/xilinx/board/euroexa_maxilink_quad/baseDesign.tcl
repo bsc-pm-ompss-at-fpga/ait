@@ -232,18 +232,18 @@ proc create_hier_cell_DDR_3 { parentCell nameHier } {
   current_bd_instance $hier_obj
 
   # Create interface pins
-  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 DDR_SYS_CLK
+  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 SYS_CLK
 
-  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 DDR_S_AXI
+  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S_AXI
 
-  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 DDR_S_AXI_CTRL
+  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S_AXI_CTRL
 
-  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:ddr4_rtl:1.0 DDR_uDIMM
+  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:ddr4_rtl:1.0 SDRAM
 
 
   # Create pins
-  create_bd_pin -dir O -from 0 -to 0 -type rst DDR_peripheral_aresetn
-  create_bd_pin -dir O -type clk DDR_ui_clk
+  create_bd_pin -dir O -from 0 -to 0 -type rst peripheral_aresetn
+  create_bd_pin -dir O -type clk ui_clk
   create_bd_pin -dir I -type rst aux_reset_in
   create_bd_pin -dir O init_calib_complete
   create_bd_pin -dir I -type rst sys_rst
@@ -264,28 +264,28 @@ proc create_hier_cell_DDR_3 { parentCell nameHier } {
    CONFIG.C0.DDR4_TimePeriod {1250} \
  ] $DDR
 
-  # Create instance: DDR_S_AXI_regslice, and set properties
-  set DDR_S_AXI_regslice [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_register_slice DDR_S_AXI_regslice ]
+  # Create instance: S_AXI_regslice, and set properties
+  set S_AXI_regslice [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_register_slice S_AXI_regslice ]
 
-  # Create instance: DDR_proc_sys_reset, and set properties
-  set DDR_proc_sys_reset [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset DDR_proc_sys_reset ]
+  # Create instance: proc_sys_reset, and set properties
+  set proc_sys_reset [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset proc_sys_reset ]
   set_property -dict [ list \
    CONFIG.C_AUX_RESET_HIGH {0} \
- ] $DDR_proc_sys_reset
+ ] $proc_sys_reset
 
   # Create interface connections
-  connect_bd_intf_net -intf_net DDR_C0_DDR4 [get_bd_intf_pins DDR_uDIMM] [get_bd_intf_pins DDR/C0_DDR4]
-  connect_bd_intf_net -intf_net DDR_SYS_CLK_1 [get_bd_intf_pins DDR_SYS_CLK] [get_bd_intf_pins DDR/C0_SYS_CLK]
-  connect_bd_intf_net -intf_net DDR_S_AXI_1 [get_bd_intf_pins DDR_S_AXI] [get_bd_intf_pins DDR_S_AXI_regslice/S_AXI]
-  connect_bd_intf_net -intf_net DDR_S_AXI_CTRL_1 [get_bd_intf_pins DDR_S_AXI_CTRL] [get_bd_intf_pins DDR/C0_DDR4_S_AXI_CTRL]
-  connect_bd_intf_net -intf_net DDR_S_AXI_regslice_M_AXI [get_bd_intf_pins DDR/C0_DDR4_S_AXI] [get_bd_intf_pins DDR_S_AXI_regslice/M_AXI]
+  connect_bd_intf_net -intf_net DDR_C0_DDR4 [get_bd_intf_pins SDRAM] [get_bd_intf_pins DDR/C0_DDR4]
+  connect_bd_intf_net -intf_net SYS_CLK_1 [get_bd_intf_pins SYS_CLK] [get_bd_intf_pins DDR/C0_SYS_CLK]
+  connect_bd_intf_net -intf_net S_AXI_1 [get_bd_intf_pins S_AXI] [get_bd_intf_pins S_AXI_regslice/S_AXI]
+  connect_bd_intf_net -intf_net S_AXI_CTRL_1 [get_bd_intf_pins S_AXI_CTRL] [get_bd_intf_pins DDR/C0_DDR4_S_AXI_CTRL]
+  connect_bd_intf_net -intf_net S_AXI_regslice_M_AXI [get_bd_intf_pins DDR/C0_DDR4_S_AXI] [get_bd_intf_pins S_AXI_regslice/M_AXI]
 
   # Create port connections
-  connect_bd_net -net DDR_c0_ddr4_ui_clk [get_bd_pins DDR_ui_clk] [get_bd_pins DDR/c0_ddr4_ui_clk] [get_bd_pins DDR_S_AXI_regslice/aclk] [get_bd_pins DDR_proc_sys_reset/slowest_sync_clk]
-  connect_bd_net -net DDR_c0_ddr4_ui_clk_sync_rst [get_bd_pins DDR/c0_ddr4_ui_clk_sync_rst] [get_bd_pins DDR_proc_sys_reset/ext_reset_in]
-  connect_bd_net -net DDR_c0_init_calib_complete [get_bd_pins init_calib_complete] [get_bd_pins DDR/c0_init_calib_complete]
-  connect_bd_net -net DDR_proc_sys_reset_peripheral_aresetn [get_bd_pins DDR_peripheral_aresetn] [get_bd_pins DDR/c0_ddr4_aresetn] [get_bd_pins DDR_S_AXI_regslice/aresetn] [get_bd_pins DDR_proc_sys_reset/peripheral_aresetn]
-  connect_bd_net -net aux_reset_in_1 [get_bd_pins aux_reset_in] [get_bd_pins DDR_proc_sys_reset/aux_reset_in]
+  connect_bd_net -net c0_ddr4_ui_clk [get_bd_pins ui_clk] [get_bd_pins DDR/c0_ddr4_ui_clk] [get_bd_pins S_AXI_regslice/aclk] [get_bd_pins proc_sys_reset/slowest_sync_clk]
+  connect_bd_net -net c0_ddr4_ui_clk_sync_rst [get_bd_pins DDR/c0_ddr4_ui_clk_sync_rst] [get_bd_pins proc_sys_reset/ext_reset_in]
+  connect_bd_net -net c0_init_calib_complete [get_bd_pins init_calib_complete] [get_bd_pins DDR/c0_init_calib_complete]
+  connect_bd_net -net proc_sys_reset_peripheral_aresetn [get_bd_pins peripheral_aresetn] [get_bd_pins DDR/c0_ddr4_aresetn] [get_bd_pins S_AXI_regslice/aresetn] [get_bd_pins proc_sys_reset/peripheral_aresetn]
+  connect_bd_net -net aux_reset_in_1 [get_bd_pins aux_reset_in] [get_bd_pins proc_sys_reset/aux_reset_in]
   connect_bd_net -net sys_rst_1 [get_bd_pins sys_rst] [get_bd_pins DDR/sys_rst]
 
   # Restore current instance
@@ -327,18 +327,18 @@ proc create_hier_cell_DDR_2 { parentCell nameHier } {
   current_bd_instance $hier_obj
 
   # Create interface pins
-  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 DDR_SYS_CLK
+  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 SYS_CLK
 
-  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 DDR_S_AXI
+  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S_AXI
 
-  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 DDR_S_AXI_CTRL
+  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S_AXI_CTRL
 
-  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:ddr4_rtl:1.0 DDR_uDIMM
+  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:ddr4_rtl:1.0 SDRAM
 
 
   # Create pins
-  create_bd_pin -dir O -from 0 -to 0 -type rst DDR_peripheral_aresetn
-  create_bd_pin -dir O -type clk DDR_ui_clk
+  create_bd_pin -dir O -from 0 -to 0 -type rst peripheral_aresetn
+  create_bd_pin -dir O -type clk ui_clk
   create_bd_pin -dir I -type rst aux_reset_in
   create_bd_pin -dir O init_calib_complete
   create_bd_pin -dir I -type rst sys_rst
@@ -359,28 +359,28 @@ proc create_hier_cell_DDR_2 { parentCell nameHier } {
    CONFIG.C0.DDR4_TimePeriod {1250} \
  ] $DDR
 
-  # Create instance: DDR_S_AXI_regslice, and set properties
-  set DDR_S_AXI_regslice [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_register_slice DDR_S_AXI_regslice ]
+  # Create instance: S_AXI_regslice, and set properties
+  set S_AXI_regslice [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_register_slice S_AXI_regslice ]
 
-  # Create instance: DDR_proc_sys_reset, and set properties
-  set DDR_proc_sys_reset [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset DDR_proc_sys_reset ]
+  # Create instance: proc_sys_reset, and set properties
+  set proc_sys_reset [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset proc_sys_reset ]
   set_property -dict [ list \
    CONFIG.C_AUX_RESET_HIGH {0} \
- ] $DDR_proc_sys_reset
+ ] $proc_sys_reset
 
   # Create interface connections
-  connect_bd_intf_net -intf_net DDR_C0_DDR4 [get_bd_intf_pins DDR_uDIMM] [get_bd_intf_pins DDR/C0_DDR4]
-  connect_bd_intf_net -intf_net DDR_SYS_CLK_1 [get_bd_intf_pins DDR_SYS_CLK] [get_bd_intf_pins DDR/C0_SYS_CLK]
-  connect_bd_intf_net -intf_net DDR_S_AXI_1 [get_bd_intf_pins DDR_S_AXI] [get_bd_intf_pins DDR_S_AXI_regslice/S_AXI]
-  connect_bd_intf_net -intf_net DDR_S_AXI_CTRL_1 [get_bd_intf_pins DDR_S_AXI_CTRL] [get_bd_intf_pins DDR/C0_DDR4_S_AXI_CTRL]
-  connect_bd_intf_net -intf_net DDR_S_AXI_regslice_M_AXI [get_bd_intf_pins DDR/C0_DDR4_S_AXI] [get_bd_intf_pins DDR_S_AXI_regslice/M_AXI]
+  connect_bd_intf_net -intf_net C0_DDR4 [get_bd_intf_pins SDRAM] [get_bd_intf_pins DDR/C0_DDR4]
+  connect_bd_intf_net -intf_net SYS_CLK_1 [get_bd_intf_pins SYS_CLK] [get_bd_intf_pins DDR/C0_SYS_CLK]
+  connect_bd_intf_net -intf_net S_AXI_1 [get_bd_intf_pins S_AXI] [get_bd_intf_pins S_AXI_regslice/S_AXI]
+  connect_bd_intf_net -intf_net S_AXI_CTRL_1 [get_bd_intf_pins S_AXI_CTRL] [get_bd_intf_pins DDR/C0_DDR4_S_AXI_CTRL]
+  connect_bd_intf_net -intf_net S_AXI_regslice_M_AXI [get_bd_intf_pins DDR/C0_DDR4_S_AXI] [get_bd_intf_pins S_AXI_regslice/M_AXI]
 
   # Create port connections
-  connect_bd_net -net DDR_c0_ddr4_ui_clk [get_bd_pins DDR_ui_clk] [get_bd_pins DDR/c0_ddr4_ui_clk] [get_bd_pins DDR_S_AXI_regslice/aclk] [get_bd_pins DDR_proc_sys_reset/slowest_sync_clk]
-  connect_bd_net -net DDR_c0_ddr4_ui_clk_sync_rst [get_bd_pins DDR/c0_ddr4_ui_clk_sync_rst] [get_bd_pins DDR_proc_sys_reset/ext_reset_in]
-  connect_bd_net -net DDR_c0_init_calib_complete [get_bd_pins init_calib_complete] [get_bd_pins DDR/c0_init_calib_complete]
-  connect_bd_net -net DDR_proc_sys_reset_peripheral_aresetn [get_bd_pins DDR_peripheral_aresetn] [get_bd_pins DDR/c0_ddr4_aresetn] [get_bd_pins DDR_S_AXI_regslice/aresetn] [get_bd_pins DDR_proc_sys_reset/peripheral_aresetn]
-  connect_bd_net -net aux_reset_in_1 [get_bd_pins aux_reset_in] [get_bd_pins DDR_proc_sys_reset/aux_reset_in]
+  connect_bd_net -net c0_ddr4_ui_clk [get_bd_pins ui_clk] [get_bd_pins DDR/c0_ddr4_ui_clk] [get_bd_pins S_AXI_regslice/aclk] [get_bd_pins proc_sys_reset/slowest_sync_clk]
+  connect_bd_net -net c0_ddr4_ui_clk_sync_rst [get_bd_pins DDR/c0_ddr4_ui_clk_sync_rst] [get_bd_pins proc_sys_reset/ext_reset_in]
+  connect_bd_net -net c0_init_calib_complete [get_bd_pins init_calib_complete] [get_bd_pins DDR/c0_init_calib_complete]
+  connect_bd_net -net proc_sys_reset_peripheral_aresetn [get_bd_pins peripheral_aresetn] [get_bd_pins DDR/c0_ddr4_aresetn] [get_bd_pins S_AXI_regslice/aresetn] [get_bd_pins proc_sys_reset/peripheral_aresetn]
+  connect_bd_net -net aux_reset_in_1 [get_bd_pins aux_reset_in] [get_bd_pins proc_sys_reset/aux_reset_in]
   connect_bd_net -net sys_rst_1 [get_bd_pins sys_rst] [get_bd_pins DDR/sys_rst]
 
   # Restore current instance
@@ -422,18 +422,18 @@ proc create_hier_cell_DDR_1 { parentCell nameHier } {
   current_bd_instance $hier_obj
 
   # Create interface pins
-  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 DDR_SYS_CLK
+  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 SYS_CLK
 
-  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 DDR_S_AXI
+  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S_AXI
 
-  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 DDR_S_AXI_CTRL
+  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S_AXI_CTRL
 
-  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:ddr4_rtl:1.0 DDR_uDIMM
+  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:ddr4_rtl:1.0 SDRAM
 
 
   # Create pins
-  create_bd_pin -dir O -from 0 -to 0 -type rst DDR_peripheral_aresetn
-  create_bd_pin -dir O -type clk DDR_ui_clk
+  create_bd_pin -dir O -from 0 -to 0 -type rst peripheral_aresetn
+  create_bd_pin -dir O -type clk ui_clk
   create_bd_pin -dir I -type rst aux_reset_in
   create_bd_pin -dir O init_calib_complete
   create_bd_pin -dir I -type rst sys_rst
@@ -454,28 +454,28 @@ proc create_hier_cell_DDR_1 { parentCell nameHier } {
    CONFIG.C0.DDR4_TimePeriod {1250} \
  ] $DDR
 
-  # Create instance: DDR_S_AXI_regslice, and set properties
-  set DDR_S_AXI_regslice [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_register_slice DDR_S_AXI_regslice ]
+  # Create instance: S_AXI_regslice, and set properties
+  set S_AXI_regslice [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_register_slice S_AXI_regslice ]
 
-  # Create instance: DDR_proc_sys_reset, and set properties
-  set DDR_proc_sys_reset [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset DDR_proc_sys_reset ]
+  # Create instance: proc_sys_reset, and set properties
+  set proc_sys_reset [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset proc_sys_reset ]
   set_property -dict [ list \
    CONFIG.C_AUX_RESET_HIGH {0} \
- ] $DDR_proc_sys_reset
+ ] $proc_sys_reset
 
   # Create interface connections
-  connect_bd_intf_net -intf_net DDR_C0_DDR4 [get_bd_intf_pins DDR_uDIMM] [get_bd_intf_pins DDR/C0_DDR4]
-  connect_bd_intf_net -intf_net DDR_SYS_CLK_1 [get_bd_intf_pins DDR_SYS_CLK] [get_bd_intf_pins DDR/C0_SYS_CLK]
-  connect_bd_intf_net -intf_net DDR_S_AXI_1 [get_bd_intf_pins DDR_S_AXI] [get_bd_intf_pins DDR_S_AXI_regslice/S_AXI]
-  connect_bd_intf_net -intf_net DDR_S_AXI_CTRL_1 [get_bd_intf_pins DDR_S_AXI_CTRL] [get_bd_intf_pins DDR/C0_DDR4_S_AXI_CTRL]
-  connect_bd_intf_net -intf_net DDR_S_AXI_regslice_M_AXI [get_bd_intf_pins DDR/C0_DDR4_S_AXI] [get_bd_intf_pins DDR_S_AXI_regslice/M_AXI]
+  connect_bd_intf_net -intf_net C0_DDR4 [get_bd_intf_pins SDRAM] [get_bd_intf_pins DDR/C0_DDR4]
+  connect_bd_intf_net -intf_net SYS_CLK_1 [get_bd_intf_pins SYS_CLK] [get_bd_intf_pins DDR/C0_SYS_CLK]
+  connect_bd_intf_net -intf_net S_AXI_1 [get_bd_intf_pins S_AXI] [get_bd_intf_pins S_AXI_regslice/S_AXI]
+  connect_bd_intf_net -intf_net S_AXI_CTRL_1 [get_bd_intf_pins S_AXI_CTRL] [get_bd_intf_pins DDR/C0_DDR4_S_AXI_CTRL]
+  connect_bd_intf_net -intf_net S_AXI_regslice_M_AXI [get_bd_intf_pins DDR/C0_DDR4_S_AXI] [get_bd_intf_pins S_AXI_regslice/M_AXI]
 
   # Create port connections
-  connect_bd_net -net DDR_c0_ddr4_ui_clk [get_bd_pins DDR_ui_clk] [get_bd_pins DDR/c0_ddr4_ui_clk] [get_bd_pins DDR_S_AXI_regslice/aclk] [get_bd_pins DDR_proc_sys_reset/slowest_sync_clk]
-  connect_bd_net -net DDR_c0_ddr4_ui_clk_sync_rst [get_bd_pins DDR/c0_ddr4_ui_clk_sync_rst] [get_bd_pins DDR_proc_sys_reset/ext_reset_in]
-  connect_bd_net -net DDR_c0_init_calib_complete [get_bd_pins init_calib_complete] [get_bd_pins DDR/c0_init_calib_complete]
-  connect_bd_net -net DDR_proc_sys_reset_peripheral_aresetn [get_bd_pins DDR_peripheral_aresetn] [get_bd_pins DDR/c0_ddr4_aresetn] [get_bd_pins DDR_S_AXI_regslice/aresetn] [get_bd_pins DDR_proc_sys_reset/peripheral_aresetn]
-  connect_bd_net -net aux_reset_in_1 [get_bd_pins aux_reset_in] [get_bd_pins DDR_proc_sys_reset/aux_reset_in]
+  connect_bd_net -net c0_ddr4_ui_clk [get_bd_pins ui_clk] [get_bd_pins DDR/c0_ddr4_ui_clk] [get_bd_pins S_AXI_regslice/aclk] [get_bd_pins proc_sys_reset/slowest_sync_clk]
+  connect_bd_net -net c0_ddr4_ui_clk_sync_rst [get_bd_pins DDR/c0_ddr4_ui_clk_sync_rst] [get_bd_pins proc_sys_reset/ext_reset_in]
+  connect_bd_net -net c0_init_calib_complete [get_bd_pins init_calib_complete] [get_bd_pins DDR/c0_init_calib_complete]
+  connect_bd_net -net proc_sys_reset_peripheral_aresetn [get_bd_pins peripheral_aresetn] [get_bd_pins DDR/c0_ddr4_aresetn] [get_bd_pins S_AXI_regslice/aresetn] [get_bd_pins proc_sys_reset/peripheral_aresetn]
+  connect_bd_net -net aux_reset_in_1 [get_bd_pins aux_reset_in] [get_bd_pins proc_sys_reset/aux_reset_in]
   connect_bd_net -net sys_rst_1 [get_bd_pins sys_rst] [get_bd_pins DDR/sys_rst]
 
   # Restore current instance
@@ -780,9 +780,9 @@ proc create_hier_cell_memory { parentCell nameHier } {
   create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 DDR_2_SYS_CLK
   create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 DDR_3_SYS_CLK
 
-  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:ddr4_rtl:1.0 DDR_1_uDIMM
-  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:ddr4_rtl:1.0 DDR_2_uDIMM
-  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:ddr4_rtl:1.0 DDR_3_uDIMM
+  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:ddr4_rtl:1.0 DDR_1_SDRAM
+  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:ddr4_rtl:1.0 DDR_2_SDRAM
+  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:ddr4_rtl:1.0 DDR_3_SDRAM
 
   # Create pins
   create_bd_pin -dir O -type clk DDR_1_ui_clk
@@ -850,29 +850,29 @@ proc create_hier_cell_memory { parentCell nameHier } {
  ] $sys_rst_NOT
 
   # Create interface connections
-  connect_bd_intf_net -intf_net DDR_1_DDR_uDIMM [get_bd_intf_pins DDR_1_uDIMM] [get_bd_intf_pins DDR_1/DDR_uDIMM]
-  connect_bd_intf_net -intf_net DDR_1_SYS_CLK_1 [get_bd_intf_pins DDR_1_SYS_CLK] [get_bd_intf_pins DDR_1/DDR_SYS_CLK]
-  connect_bd_intf_net -intf_net DDR_1_S_AXI_1 [get_bd_intf_pins DDR_1_S_AXI] [get_bd_intf_pins DDR_1/DDR_S_AXI]
-  connect_bd_intf_net -intf_net DDR_1_S_AXI_CTRL_1 [get_bd_intf_pins DDR_1_S_AXI_CTRL] [get_bd_intf_pins DDR_1/DDR_S_AXI_CTRL]
-  connect_bd_intf_net -intf_net DDR_2_DDR_uDIMM [get_bd_intf_pins DDR_2_uDIMM] [get_bd_intf_pins DDR_2/DDR_uDIMM]
-  connect_bd_intf_net -intf_net DDR_2_SYS_CLK_1 [get_bd_intf_pins DDR_2_SYS_CLK] [get_bd_intf_pins DDR_2/DDR_SYS_CLK]
-  connect_bd_intf_net -intf_net DDR_2_S_AXI_1 [get_bd_intf_pins DDR_2_S_AXI] [get_bd_intf_pins DDR_2/DDR_S_AXI]
-  connect_bd_intf_net -intf_net DDR_2_S_AXI_CTRL_1 [get_bd_intf_pins DDR_2_S_AXI_CTRL] [get_bd_intf_pins DDR_2/DDR_S_AXI_CTRL]
-  connect_bd_intf_net -intf_net DDR_3_DDR_uDIMM [get_bd_intf_pins DDR_3_uDIMM] [get_bd_intf_pins DDR_3/DDR_uDIMM]
-  connect_bd_intf_net -intf_net DDR_3_SYS_CLK_1 [get_bd_intf_pins DDR_3_SYS_CLK] [get_bd_intf_pins DDR_3/DDR_SYS_CLK]
-  connect_bd_intf_net -intf_net DDR_3_S_AXI_1 [get_bd_intf_pins DDR_3_S_AXI] [get_bd_intf_pins DDR_3/DDR_S_AXI]
-  connect_bd_intf_net -intf_net DDR_3_S_AXI_CTRL_1 [get_bd_intf_pins DDR_3_S_AXI_CTRL] [get_bd_intf_pins DDR_3/DDR_S_AXI_CTRL]
+  connect_bd_intf_net -intf_net DDR_1_SDRAM [get_bd_intf_pins DDR_1_SDRAM] [get_bd_intf_pins DDR_1/SDRAM]
+  connect_bd_intf_net -intf_net DDR_1_SYS_CLK_1 [get_bd_intf_pins DDR_1_SYS_CLK] [get_bd_intf_pins DDR_1/SYS_CLK]
+  connect_bd_intf_net -intf_net DDR_1_S_AXI_1 [get_bd_intf_pins DDR_1_S_AXI] [get_bd_intf_pins DDR_1/S_AXI]
+  connect_bd_intf_net -intf_net DDR_1_S_AXI_CTRL_1 [get_bd_intf_pins DDR_1_S_AXI_CTRL] [get_bd_intf_pins DDR_1/S_AXI_CTRL]
+  connect_bd_intf_net -intf_net DDR_2_SDRAM [get_bd_intf_pins DDR_2_SDRAM] [get_bd_intf_pins DDR_2/SDRAM]
+  connect_bd_intf_net -intf_net DDR_2_SYS_CLK_1 [get_bd_intf_pins DDR_2_SYS_CLK] [get_bd_intf_pins DDR_2/SYS_CLK]
+  connect_bd_intf_net -intf_net DDR_2_S_AXI_1 [get_bd_intf_pins DDR_2_S_AXI] [get_bd_intf_pins DDR_2/S_AXI]
+  connect_bd_intf_net -intf_net DDR_2_S_AXI_CTRL_1 [get_bd_intf_pins DDR_2_S_AXI_CTRL] [get_bd_intf_pins DDR_2/S_AXI_CTRL]
+  connect_bd_intf_net -intf_net DDR_3_SDRAM [get_bd_intf_pins DDR_3_SDRAM] [get_bd_intf_pins DDR_3/SDRAM]
+  connect_bd_intf_net -intf_net DDR_3_SYS_CLK_1 [get_bd_intf_pins DDR_3_SYS_CLK] [get_bd_intf_pins DDR_3/SYS_CLK]
+  connect_bd_intf_net -intf_net DDR_3_S_AXI_1 [get_bd_intf_pins DDR_3_S_AXI] [get_bd_intf_pins DDR_3/S_AXI]
+  connect_bd_intf_net -intf_net DDR_3_S_AXI_CTRL_1 [get_bd_intf_pins DDR_3_S_AXI_CTRL] [get_bd_intf_pins DDR_3/S_AXI_CTRL]
   connect_bd_intf_net -intf_net S_AXI_aux_rst_gpio_1 [get_bd_intf_pins S_AXI_aux_rst_gpio] [get_bd_intf_pins DDR_aux_rst_gpio/S_AXI]
 
   # Create port connections
-  connect_bd_net -net DDR_1_DDR_ui_clk [get_bd_pins DDR_1_ui_clk] [get_bd_pins DDR_1/DDR_ui_clk]
+  connect_bd_net -net DDR_1_ui_clk [get_bd_pins DDR_1_ui_clk] [get_bd_pins DDR_1/ui_clk]
   connect_bd_net -net DDR_1_init_calib_complete [get_bd_pins DDR_1/init_calib_complete] [get_bd_pins init_calib_complete_concat/In0]
-  connect_bd_net -net DDR_1_peripheral_aresetn [get_bd_pins DDR_1_peripheral_aresetn] [get_bd_pins DDR_1/DDR_peripheral_aresetn]
-  connect_bd_net -net DDR_2_DDR_peripheral_aresetn [get_bd_pins DDR_2_peripheral_aresetn] [get_bd_pins DDR_2/DDR_peripheral_aresetn]
-  connect_bd_net -net DDR_2_DDR_ui_clk [get_bd_pins DDR_2_ui_clk] [get_bd_pins DDR_2/DDR_ui_clk]
+  connect_bd_net -net DDR_1_peripheral_aresetn [get_bd_pins DDR_1_peripheral_aresetn] [get_bd_pins DDR_1/peripheral_aresetn]
+  connect_bd_net -net DDR_2_peripheral_aresetn [get_bd_pins DDR_2_peripheral_aresetn] [get_bd_pins DDR_2/peripheral_aresetn]
+  connect_bd_net -net DDR_2_ui_clk [get_bd_pins DDR_2_ui_clk] [get_bd_pins DDR_2/ui_clk]
   connect_bd_net -net DDR_2_init_calib_complete [get_bd_pins DDR_2/init_calib_complete] [get_bd_pins init_calib_complete_concat/In1]
-  connect_bd_net -net DDR_3_DDR_peripheral_aresetn [get_bd_pins DDR_3_peripheral_aresetn] [get_bd_pins DDR_3/DDR_peripheral_aresetn]
-  connect_bd_net -net DDR_3_DDR_ui_clk [get_bd_pins DDR_3_ui_clk] [get_bd_pins DDR_3/DDR_ui_clk]
+  connect_bd_net -net DDR_3_peripheral_aresetn [get_bd_pins DDR_3_peripheral_aresetn] [get_bd_pins DDR_3/peripheral_aresetn]
+  connect_bd_net -net DDR_3_ui_clk [get_bd_pins DDR_3_ui_clk] [get_bd_pins DDR_3/ui_clk]
   connect_bd_net -net DDR_3_init_calib_complete [get_bd_pins DDR_3/init_calib_complete] [get_bd_pins init_calib_complete_concat/In2]
   connect_bd_net -net DDR_aux_rst_gpio_io_o [get_bd_pins DDR_aux_rst_gpio/gpio_io_o] [get_bd_pins aux_rst_1_slice/Din] [get_bd_pins aux_rst_2_slice/Din] [get_bd_pins aux_rst_3_slice/Din]
   connect_bd_net -net aux_rst_1_slice_Dout [get_bd_pins DDR_1/aux_reset_in] [get_bd_pins aux_rst_1_slice/Dout]
@@ -925,9 +925,9 @@ proc create_hier_cell_bridge_to_host { parentCell nameHier } {
   # Create interface pins
   create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 M_AXI
   create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 JTAG_M_AXI
-  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:ddr4_rtl:1.0 DDR_1_uDIMM
-  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:ddr4_rtl:1.0 DDR_2_uDIMM
-  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:ddr4_rtl:1.0 DDR_3_uDIMM
+  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:ddr4_rtl:1.0 DDR_1_SDRAM
+  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:ddr4_rtl:1.0 DDR_2_SDRAM
+  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:ddr4_rtl:1.0 DDR_3_SDRAM
 
   create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S_AXI
   create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 DDR_1_SYS_CLK
@@ -1049,9 +1049,9 @@ proc create_hier_cell_bridge_to_host { parentCell nameHier } {
   connect_bd_intf_net -intf_net DDR_1_S_AXI_1 [get_bd_intf_pins memory/DDR_1_S_AXI] [get_bd_intf_pins DDR_S_AXI_Inter/M00_AXI]
   connect_bd_intf_net -intf_net DDR_2_S_AXI_1 [get_bd_intf_pins memory/DDR_2_S_AXI] [get_bd_intf_pins DDR_S_AXI_Inter/M01_AXI]
   connect_bd_intf_net -intf_net DDR_3_S_AXI_1 [get_bd_intf_pins memory/DDR_3_S_AXI] [get_bd_intf_pins DDR_S_AXI_Inter/M02_AXI]
-  connect_bd_intf_net -intf_net DDR_1_uDIMM_1 [get_bd_intf_pins DDR_1_uDIMM] [get_bd_intf_pins memory/DDR_1_uDIMM]
-  connect_bd_intf_net -intf_net DDR_2_uDIMM_1 [get_bd_intf_pins DDR_2_uDIMM] [get_bd_intf_pins memory/DDR_2_uDIMM]
-  connect_bd_intf_net -intf_net DDR_3_uDIMM_1 [get_bd_intf_pins DDR_3_uDIMM] [get_bd_intf_pins memory/DDR_3_uDIMM]
+  connect_bd_intf_net -intf_net DDR_1_SDRAM_1 [get_bd_intf_pins DDR_1_SDRAM] [get_bd_intf_pins memory/DDR_1_SDRAM]
+  connect_bd_intf_net -intf_net DDR_2_SDRAM_1 [get_bd_intf_pins DDR_2_SDRAM] [get_bd_intf_pins memory/DDR_2_SDRAM]
+  connect_bd_intf_net -intf_net DDR_3_SDRAM_1 [get_bd_intf_pins DDR_3_SDRAM] [get_bd_intf_pins memory/DDR_3_SDRAM]
   connect_bd_intf_net -intf_net S_AXI_1 [get_bd_intf_pins S_AXI] [get_bd_intf_pins DDR_S_AXI_Inter/S01_AXI]
   connect_bd_intf_net -intf_net S_AXI_BRAM_1 [get_bd_intf_pins maxilink_Inter/M04_AXI] [get_bd_intf_pins peripherals/S_AXI_BRAM]
   connect_bd_intf_net -intf_net S_AXI_gpio_1 [get_bd_intf_pins maxilink_Inter/M05_AXI] [get_bd_intf_pins peripherals/S_AXI_gpio]
@@ -1142,26 +1142,26 @@ proc create_root_design { parentCell } {
    CONFIG.FREQ_HZ {100000000} \
    ] $Q225_REFCLK0
 
-  set uDIMM_DDR4_C1 [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:ddr4_rtl:1.0 uDIMM_DDR4_C1 ]
+  set DDR4_SDRAM_C1 [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:ddr4_rtl:1.0 DDR4_SDRAM_C1 ]
 
-  set uDIMM_DDR4_C1_REFCLK [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 uDIMM_DDR4_C1_REFCLK ]
+  set DDR4_REFCLK_C1 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 DDR4_REFCLK_C1 ]
   set_property -dict [ list \
    CONFIG.FREQ_HZ {300000000} \
-   ] $uDIMM_DDR4_C1_REFCLK
+   ] $DDR4_REFCLK_C1
 
-  set uDIMM_DDR4_C2 [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:ddr4_rtl:1.0 uDIMM_DDR4_C2 ]
+  set DDR4_SDRAM_C2 [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:ddr4_rtl:1.0 DDR4_SDRAM_C2 ]
 
-  set uDIMM_DDR4_C2_REFCLK [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 uDIMM_DDR4_C2_REFCLK ]
+  set DDR4_REFCLK_C2 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 DDR4_REFCLK_C2 ]
   set_property -dict [ list \
    CONFIG.FREQ_HZ {300000000} \
-   ] $uDIMM_DDR4_C2_REFCLK
+   ] $DDR4_REFCLK_C2
 
-  set uDIMM_DDR4_C3 [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:ddr4_rtl:1.0 uDIMM_DDR4_C3 ]
+  set DDR4_SDRAM_C3 [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:ddr4_rtl:1.0 DDR4_SDRAM_C3 ]
 
-  set uDIMM_DDR4_C3_REFCLK [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 uDIMM_DDR4_C3_REFCLK ]
+  set DDR4_REFCLK_C3 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 DDR4_REFCLK_C3 ]
   set_property -dict [ list \
    CONFIG.FREQ_HZ {300000000} \
-   ] $uDIMM_DDR4_C3_REFCLK
+   ] $DDR4_REFCLK_C3
 
   set vu9_logic_clock [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 vu9_logic_clock ]
   set_property -dict [ list \
@@ -1250,15 +1250,15 @@ proc create_root_design { parentCell } {
 
   # Create interface connections
   connect_bd_intf_net -intf_net CLK_IN_D_1 [get_bd_intf_ports Q225_REFCLK0] [get_bd_intf_pins bridge_to_host/Q225_REFCLK0]
-  connect_bd_intf_net -intf_net DDR_uDIMM_DDR4_C1 [get_bd_intf_ports uDIMM_DDR4_C1] [get_bd_intf_pins bridge_to_host/DDR_1_uDIMM]
-  connect_bd_intf_net -intf_net DDR_uDIMM_DDR4_C2 [get_bd_intf_ports uDIMM_DDR4_C2] [get_bd_intf_pins bridge_to_host/DDR_2_uDIMM]
-  connect_bd_intf_net -intf_net DDR_uDIMM_DDR4_C3 [get_bd_intf_ports uDIMM_DDR4_C3] [get_bd_intf_pins bridge_to_host/DDR_3_uDIMM]
+  connect_bd_intf_net -intf_net DDR4_SDRAM_C1 [get_bd_intf_ports DDR4_SDRAM_C1] [get_bd_intf_pins bridge_to_host/DDR_1_SDRAM]
+  connect_bd_intf_net -intf_net DDR4_SDRAM_C2 [get_bd_intf_ports DDR4_SDRAM_C2] [get_bd_intf_pins bridge_to_host/DDR_2_SDRAM]
+  connect_bd_intf_net -intf_net DDR4_SDRAM_C3 [get_bd_intf_ports DDR4_SDRAM_C3] [get_bd_intf_pins bridge_to_host/DDR_3_SDRAM]
   connect_bd_intf_net -intf_net S00_AXI_1 [get_bd_intf_pins M_AXI_Inter/S00_AXI] [get_bd_intf_pins bridge_to_host/M_AXI]
   connect_bd_intf_net -intf_net S_AXI_Inter_M00_AXI [get_bd_intf_pins S_AXI_Inter/M00_AXI] [get_bd_intf_pins bridge_to_host/S_AXI]
   connect_bd_intf_net -intf_net bridge_to_host_JTAG_M_AXI [get_bd_intf_pins bridge_to_host/JTAG_M_AXI] [get_bd_intf_pins clock_generator/s_axi_lite]
-  connect_bd_intf_net -intf_net uDIMM_DDR4_C1_REFCLK_1 [get_bd_intf_ports uDIMM_DDR4_C1_REFCLK] [get_bd_intf_pins bridge_to_host/DDR_1_SYS_CLK]
-  connect_bd_intf_net -intf_net uDIMM_DDR4_C2_REFCLK_1 [get_bd_intf_ports uDIMM_DDR4_C2_REFCLK] [get_bd_intf_pins bridge_to_host/DDR_2_SYS_CLK]
-  connect_bd_intf_net -intf_net uDIMM_DDR4_C3_REFCLK_1 [get_bd_intf_ports uDIMM_DDR4_C3_REFCLK] [get_bd_intf_pins bridge_to_host/DDR_3_SYS_CLK]
+  connect_bd_intf_net -intf_net DDR4_REFCLK_C1_1 [get_bd_intf_ports DDR4_REFCLK_C1] [get_bd_intf_pins bridge_to_host/DDR_1_SYS_CLK]
+  connect_bd_intf_net -intf_net DDR4_REFCLK_C2_1 [get_bd_intf_ports DDR4_REFCLK_C2] [get_bd_intf_pins bridge_to_host/DDR_2_SYS_CLK]
+  connect_bd_intf_net -intf_net DDR4_REFCLK_C3_1 [get_bd_intf_ports DDR4_REFCLK_C3] [get_bd_intf_pins bridge_to_host/DDR_3_SYS_CLK]
   connect_bd_intf_net -intf_net vu9_logic_clock_1 [get_bd_intf_ports vu9_logic_clock] [get_bd_intf_pins IBUFDS/CLK_IN_D]
 
   # Create port connections

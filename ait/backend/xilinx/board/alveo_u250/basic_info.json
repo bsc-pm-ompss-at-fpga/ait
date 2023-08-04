@@ -5,7 +5,12 @@
 	"board_part": "xilinx.com:au250",
 
 	"arch": {
-		"device": "alveo"
+		"device": "alveo",
+		"slr": {
+			"num": 4,
+			"hwruntime": 1,
+			"memory": 1
+		}
 	},
 
 	"frequency": {

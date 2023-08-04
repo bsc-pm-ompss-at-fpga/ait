@@ -88,6 +88,7 @@ def generate_Vivado_variables_tcl():
                                 + '\tvariable interconPriority {}\n'            .format(str(args.interconnect_priorities)) \
                                 + '\tvariable floorplanning_constr {}\n'        .format(str(args.floorplanning_constr)) \
                                 + '\tvariable slr_slices {}\n'                  .format(str(args.slr_slices)) \
+                                + '\tvariable regslice_pipeline_stages {}\n'    .format(args.regslice_pipeline_stages) \
                                 + '\n' \
                                 + '\t# {} board variables\n'                    .format(board.name) \
                                 + '\tvariable board {}\n'                       .format(board.name) \
@@ -99,8 +100,9 @@ def generate_Vivado_variables_tcl():
                                 + '\tvariable arch_device {}\n'                 .format(board.arch.device)
 
     if args.slr_slices is not None or args.floorplanning_constr is not None:
-        vivado_project_variables += '\tvariable board_slr_num {}\n'       .format(str(board.arch.slr.num)) \
-                                    + '\tvariable board_slr_master {}\n'  .format(str(board.arch.slr.master))
+        vivado_project_variables += '\tvariable board_slr_num {}\n'          .format(str(board.arch.slr.num)) \
+                                    + '\tvariable board_hwruntime_slr {}\n'  .format(str(board.arch.slr.hwruntime)) \
+                                    + '\tvariable board_memory_slr {}\n'     .format(str(board.arch.slr.memory))
 
     vivado_project_variables += '\tvariable address_map [dict create]\n' \
                                 + '\tdict set address_map "ompss_base_addr" {}\n'  .format(board.address_map.ompss_base_addr) \

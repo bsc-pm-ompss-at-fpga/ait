@@ -48,14 +48,6 @@ if {[catch {source -notrace tcl/scripts/axis_datapath.tcl}]} {
     AIT::utils::error_msg "Failed loading AXI-Stream datapath procedures"
 }
 
-# If available and enabled, load static register slices procedures
-if {[file exists board/${::AIT::board}/staticRegSlices.tcl] && ((${::AIT::slr_slices} eq "static") || (${::AIT::slr_slices} eq "all"))} {
-    AIT::utils::info_msg "Loading static register slices procedures"
-    if {[catch {source -notrace board/${::AIT::board}/staticRegSlices.tcl}]} {
-        AIT::utils::error_msg "Failed loading static logic register slices"
-    }
-}
-
 # If available, overwrite board-specific procedures
 if {[file exists board/${::AIT::board}/procs.tcl]} {
     AIT::utils::info_msg "Loading board-specific procedures"
@@ -271,7 +263,16 @@ foreach acc ${::AIT::accs} {
 
             # Add register slice to AXI pin
             if {(${::AIT::slr_slices} eq "acc") || (${::AIT::slr_slices} eq "all")} {
-                set hier_inner_axi_pin [AIT::AXI::add_reg_slice $hier_inner_axi_pin $pin_name $accName $instanceNum]
+                if {!([dict exists ${::AIT::acc_placement} $accName] && ([llength [dict get ${::AIT::acc_placement} $accName]] > ${instanceNum}))} {
+                    # No placement info is provided for this instance
+                    AIT::utils::warning_msg "No placement info provided for instance ${instanceNum} of ${accName}. Slices for AXI pins will not be created"
+                } else {
+                    set slr [lindex [dict get ${::AIT::acc_placement} $accName] ${instanceNum}]
+                    # AIT::AXI::add_reg_slice ip_name intf_name slr_master slr_slave {intf_pin} {num_pipelines} {prefix}
+                    # num_pipelines format: master:middle:slave
+                    # Pass unused optional arguments as ""
+                    set hier_inner_axi_pin [AIT::AXI::add_reg_slice ${accName}_${instanceNum} $pin_name $slr ${::AIT::board_memory_slr} $hier_inner_axi_pin ${::AIT::regslice_pipeline_stages} acc_]
+                }
             }
 
             # Add address interleaver to AXI pin
@@ -319,8 +320,14 @@ foreach acc ${::AIT::accs} {
 
         # Add register slice to AXI-Stream pins
         if {(${::AIT::slr_slices} eq "acc") || (${::AIT::slr_slices} eq "all")} {
-            set hier_inStream [AIT::AXIS::add_reg_slice $hier_inStream $accName $instanceNum]
-            set hier_outStream [AIT::AXIS::add_reg_slice $hier_outStream $accName $instanceNum]
+            if {!([dict exists ${::AIT::acc_placement} $accName] && ([llength [dict get ${::AIT::acc_placement} $accName]] > ${instanceNum}))} {
+                # No placement info is provided for this instance
+                AIT::utils::warning_msg "No placement info provided for instance ${instanceNum} of ${accName}. Slices for AXI-Stream pins will not be created"
+            } else {
+                set slr [lindex [dict get ${::AIT::acc_placement} $accName] ${instanceNum}]
+                set hier_inStream [AIT::AXIS::add_reg_slice ${accName}_${instanceNum} inStream ${::AIT::board_hwruntime_slr} $slr $hier_inStream ${::AIT::regslice_pipeline_stages} acc_]
+                set hier_outStream [AIT::AXIS::add_reg_slice ${accName}_${instanceNum} outStream $slr ${::AIT::board_hwruntime_slr} $hier_outStream ${::AIT::regslice_pipeline_stages} acc_]
+            }
         }
 
         ## Other interfaces
@@ -349,7 +356,16 @@ foreach acc ${::AIT::accs} {
                 set instr_pin_name [regsub -all {(^m_axi_|(_V)*$)} [get_property NAME $instr_inner_axi_pin] ""]
 
                 if {(${::AIT::slr_slices} eq "acc") || (${::AIT::slr_slices} eq "all")} {
-                    set instr_inner_axi_pin [AIT::AXI::add_reg_slice $instr_inner_axi_pin $instr_pin_name $accName $instanceNum]
+                    if {!([dict exists ${::AIT::acc_placement} $accName] && ([llength [dict get ${::AIT::acc_placement} $accName]] > ${instanceNum}))} {
+                        # No placement info is provided for this instance
+                        AIT::utils::warning_msg "No placement info provided for instance ${instanceNum} of ${accName}. Slices for AXI pins will not be created"
+                    } else {
+                        set slr [lindex [dict get ${::AIT::acc_placement} $accName] ${instanceNum}]
+                        # AIT::AXI::add_reg_slice ip_name intf_name slr_master slr_slave {intf_pin} {num_pipelines} {prefix}
+                        # num_pipelines format: master:middle:slave
+                        # Pass unused optional arguments as ""
+                        set instr_inner_axi_pin [AIT::AXI::add_reg_slice ${accName}_${instanceNum} $pin_name $slr ${::AIT::board_memory_slr} $instr_inner_axi_pin ${::AIT::regslice_pipeline_stages} acc_]
+                    }
                 }
 
                 # Connect instr_buffer pin
@@ -376,7 +392,7 @@ foreach acc ${::AIT::accs} {
 
         # Connect AXI-Stream pins
         connect_bd_intf_net [get_bd_intf_pins $acc_hier/inStream] $hier_inStream
-        connect_bd_intf_net [get_bd_intf_pins $acc_hier/outStream] $hier_outStream
+        connect_bd_intf_net $hier_outStream [get_bd_intf_pins $acc_hier/outStream]
         connect_bd_intf_net -boundary_type upper [get_bd_intf_pins $acc_hier/outStream] [get_bd_intf_pins Hardware_Runtime/hwr_inStream/S${accID}_AXIS]
         connect_bd_intf_net -boundary_type upper [get_bd_intf_pins $acc_hier/inStream] [get_bd_intf_pins Hardware_Runtime/hwr_outStream/M${accID}_AXIS]
 
@@ -454,9 +470,8 @@ if {${::AIT::hwcounter} || ${::AIT::hwinst}} {
 
 # Add slr constraints to static logic
 if {(${::AIT::slr_slices} eq "static") || (${::AIT::slr_slices} eq "all")} {
-    # From board's staticRegSlices.tcl
-    AIT::static_logic_register_slices
-    save_bd_design
+    # Should be defined in board's procs.tcl
+    AIT::board::static_logic_register_slices
 }
 
 AIT::board::cleanup_bd
@@ -642,14 +657,18 @@ if {[file isdirectory board/${::AIT::board}/constraints/]} {
     add_files -fileset constrs_1 -norecurse board/${::AIT::board}/constraints/
 }
 
-# Delete floorplanning constrains if requested
+# Delete floorplanning constrains if not needed
 # We should only keep board related constraints
 if {(${::AIT::floorplanning_constr} ne "static") && (${::AIT::floorplanning_constr} ne "all")} {
-    remove_files -fileset constrs_1 [get_files -quiet static_floorplan.xdc]
+    remove_files -fileset constrs_1 [get_files -quiet {static_common_floorplan.xdc static_board_floorplan.xdc}]
+} else {
+    reorder_files -fileset constrs_1 -back [get_files -quiet {static_common_floorplan.xdc}]
 }
 
 if {(${::AIT::floorplanning_constr} ne "acc") && (${::AIT::floorplanning_constr} ne "all")} {
-    remove_files -fileset constrs_1 [get_files -quiet acc_floorplan_common.xdc]
+    remove_files -fileset constrs_1 [get_files -quiet acc_common_floorplan.xdc]
+} else {
+    reorder_files -fileset constrs_1 -back [get_files -quiet {acc_common_floorplan.xdc}]
 }
 
 reorder_files -fileset constrs_1 -front [get_files -quiet create_pblocks.xdc]

@@ -232,6 +232,10 @@ namespace eval AIT {
             }
         }
 
+        proc static_logic_register_slices {} {
+            AIT::utils::warning_msg "Board ${::AIT::board} has no support for static logic register slices"
+        }
+
         # Creates and connects a tree of interconnects that allows an arbitrary number of AXI-stream slaves to connect to up to 16 AXI-stream masters
         proc create_inStream_Inter_tree { stream_name nmasters nslaves clk inter_rstn peri_rstn } {
             set ninter [expr {int(ceil($nslaves/16.))}]

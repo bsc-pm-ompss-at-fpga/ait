@@ -9,7 +9,8 @@
 		"slr": {
 			"_comment": "Use this for boards with SLRs",
 			"num": NUM_SLRS,
-			"master": MASTER_SLR
+			"hwruntime": HWRUNTIME_SLR,
+			"memory": MEMORY_SLR
 		}
 	},
 

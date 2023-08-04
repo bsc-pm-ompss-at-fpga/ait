@@ -23,6 +23,7 @@
 import argparse
 import json
 import math
+import re
 import os
 
 from ait.frontend.utils import decimalFromHumanReadable, decimalToHumanReadable, msg
@@ -31,6 +32,17 @@ from ait.frontend.utils import decimalFromHumanReadable, decimalToHumanReadable,
 class StoreChoiceValue(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
         setattr(namespace, self.dest, self.choices.index(values))
+
+
+# Custom argparse type representing the number of pipeline stages
+class PipelineStagesType:
+    def __call__(self, arg):
+        if re.match('[1-5](:[1-5]){2}', arg):
+            return str(arg)
+        elif arg == 'auto':
+            return arg
+        else:
+            raise argparse.ArgumentTypeError('must be an integer between 1 and 5 in the format x:y:z or \'auto\'')
 
 
 # Custom argparse type representing a path to a file
@@ -101,6 +113,7 @@ class ArgParser():
         self.parser.add_argument('--floorplanning_constr', help='built-in floorplanning constraints for accelerators and static logic\nacc: accelerator kernels are constrained to a SLR region\nstatic: each static logic IP is constrained to its relevant SLR\nall: enables both \'acc\' and \'static\' options\nBy default no floorplanning constraints are used', choices=['acc', 'static', 'all'], metavar='FLOORPLANNING_CONSTR')
         self.parser.add_argument('--placement_file', help='json file specifying accelerator placement', type=FileType())
         self.parser.add_argument('--slr_slices', help='enable SLR crossing register slices\nacc: create register slices for SLR crossing on accelerator-related interfaces\nstatic: create register slices for static logic IPs\nall: enable both \'acc\' and \'static\' options \nBy default they are disabled', choices=['acc', 'static', 'all'], metavar='SLR_SLICES')
+        self.parser.add_argument('--regslice_pipeline_stages', help='number of register slice pipeline stages per SLR\n\'x:y:z\': add between 1 and 5 stages in master:middle:slave SLRs\nauto: let Vivado choose the number of stages\n(def: auto)', type=PipelineStagesType(), default='auto')
         self.parser.add_argument('--interconnect_regslice', help='enable register slices on AXI interconnects\nall: enables them on all interconnects\nmem: enables them on interconnects in memory datapath\nhwruntime: enables them on the AXI-stream interconnects between the hwruntime and the accelerators\n', nargs='+', choices=['mem', 'hwruntime', 'all'], metavar='INTER_REGSLICE_LIST')
         self.parser.add_argument('--interconnect_opt', help='AXI interconnect optimization strategy: Minimize \'area\' or maximize \'performance\'\n(def: \'area\')', choices=['area', 'performance'], metavar='OPT_STRATEGY', action=StoreChoiceValue, default=0)
         self.parser.add_argument('--interconnect_priorities', help='enable priorities in the memory interconnect', action='store_true', default=False)
