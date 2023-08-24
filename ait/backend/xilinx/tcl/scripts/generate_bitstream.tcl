@@ -33,7 +33,7 @@ if {[catch {source -notrace tcl/projectVariables.tcl}]} {
 open_project ${::AIT::name_Project}/${::AIT::name_Project}.xpr
 
 # Check if previous step finished correctly
-if {[string match "*ERROR*" [get_property STATUS [get_runs *impl_1]]]} {
+if {[string match "*ERROR*" [get_property STATUS [get_runs impl_1]]]} {
     AIT::error_msg "Implementation step did not finished correctly. Cannot generate bitstream."
 }
 
@@ -57,7 +57,7 @@ launch_runs impl_1 -to_step write_bitstream -jobs ${::AIT::num_jobs}
 wait_on_run impl_1
 
 # Check if bitstream generation finished correctly
-if {[string match "*ERROR*" [get_property STATUS [get_runs *impl_1]]]} {
+if {[string match "*ERROR*" [get_property STATUS [get_runs impl_1]]]} {
     AIT::error_msg "Bitstream generation failed."
 }
 

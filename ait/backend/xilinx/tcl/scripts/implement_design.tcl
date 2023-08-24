@@ -33,7 +33,7 @@ if {[catch {source -notrace tcl/projectVariables.tcl}]} {
 open_project ${::AIT::name_Project}/${::AIT::name_Project}.xpr
 
 # Check if previous step finished correctly
-if {[string match "*ERROR*" [get_property STATUS [get_runs *synth_1]]]} {
+if {[string match "*ERROR*" [get_property STATUS [get_runs synth_1]]]} {
     AIT::error_msg "Synthesis step did not finished correctly. Cannot start implementation step."
 }
 
@@ -56,7 +56,7 @@ launch_runs impl_1 -jobs ${::AIT::num_jobs}
 wait_on_run impl_1
 
 # Check if implementation finished correctly
-if {[string match "*ERROR*" [get_property STATUS [get_runs *impl_1]]]} {
+if {[string match "*ERROR*" [get_property STATUS [get_runs impl_1]]]} {
     if {[catch {exec exec grep ^ERROR ${::AIT::name_Project}/${::AIT::name_Project}.runs/impl_1/runme.log}]} {
         AIT::info_msg "Failed impl_1 implementation"
     } else {

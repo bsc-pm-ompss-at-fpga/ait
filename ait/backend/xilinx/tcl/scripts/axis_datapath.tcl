@@ -75,7 +75,7 @@ namespace eval AIT {
                     CONFIG.C_EN_STRG_QUAL {1} \
                     CONFIG.C_PROBE0_MU_CNT {2} \
                     CONFIG.ALL_PROBE_SAME_MU_CNT {2} \
-                 ] [get_bd_cells -hierarchical -filter {VLNV =~ xilinx.com:ip:system_ila*}]
+                 ] [get_bd_cells -hierarchical -filter {VLNV =~ xilinx.com:ip:system_ila:*}]
 
                 # Add a line to debuginterfaces.txt
                 puts $debugInterfaces_file "$intf_pin"

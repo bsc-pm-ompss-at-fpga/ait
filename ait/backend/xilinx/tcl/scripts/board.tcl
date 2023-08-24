@@ -175,7 +175,7 @@ namespace eval AIT {
                 # Zynq DDR address segment name format: /bridge_to_host/S_AXI_HPX/HPX_DDR_LOWOCM
                 # ZynqMP DDR address segment name format: /bridge_to_host/S_AXI_GPY/HPX_DDR_LOW, being
                 # S_AXI_HPX the AXI interface used
-                foreach addr_seg [get_bd_addr_segs -regexp ".*/HP[0-9]_DDR_LOW.*"] {
+                foreach addr_seg [get_bd_addr_segs -regexp ".*/HP[0-9]_DDR_LOW(OCM)?"] {
                     assign_bd_address $addr_seg -offset $base_addr -range $mem_size
                 }
             } elseif {${::AIT::arch_device} eq "alveo"} {

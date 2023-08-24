@@ -80,7 +80,7 @@ set dataInterfaces_file [open ../${::AIT::name_Project}.datainterfaces.txt "w"]
 set bd_addr_segments [list \
     [dict create name cmdInQueue bd_seg_name Hardware_Runtime/cmdInQueue_BRAM_Ctrl/S_AXI/Mem0 size [expr ${::AIT::cmdInSubqueue_len}*${::AIT::num_accs}*8]] \
     [dict create name cmdOutQueue bd_seg_name Hardware_Runtime/cmdOutQueue_BRAM_Ctrl/S_AXI/Mem0 size [expr ${::AIT::cmdOutSubqueue_len}*${::AIT::num_accs}*8]] \
-    [dict create name managed_rstn bd_seg_name *managed_reset* size 4096] \
+    [dict create name managed_rstn bd_seg_name managed_reset/S_AXI/Reg size 4096] \
 ]
 if ${::AIT::enable_spawn_queues} {
     lappend bd_addr_segments [dict create name spawnInQueue bd_seg_name Hardware_Runtime/spawnInQueue_BRAM_Ctrl/S_AXI/Mem0 size [expr ${::AIT::spawnInQueue_len}*8]]
@@ -350,7 +350,7 @@ foreach acc ${::AIT::accs} {
                 # Connect to hwcounter
                 connect_bd_net [get_bd_pins $hwinst_counter/Q] [get_bd_pins $acc_hier/Adapter_instr/hwcounter]
 
-                set instr_inner_axi_pin [get_bd_intf_pins -quiet $acc_hier/Adapter_instr/m_axi* -filter {NAME =~ "*instr_buffer"}]
+                set instr_inner_axi_pin [get_bd_intf_pins -quiet -filter {NAME =~ *instr_buffer} $acc_hier/Adapter_instr/m_axi*]
 
                 if {(${::AIT::slr_slices} eq "acc") || (${::AIT::slr_slices} eq "all")} {
                     set instr_inner_axi_pin [AIT::AXI::add_reg_slice $instr_axi_pin $accName $instanceNum]
@@ -432,7 +432,7 @@ if {${::AIT::interleaving_stride} ne "None"} {
         set num_banks [expr int(pow(2, floor($lg)))]
     }
 
-    set addrInterleaver [get_bd_cell -hierarchical -filter {VLNV =~ *bsc_ompss_addrInterleaver*}]
+    set addrInterleaver [get_bd_cell -hierarchical -filter {VLNV =~ bsc:ompss:bsc_ompss_addrInterleaver:*}]
     set_property -dict [list \
         CONFIG.BANK_SIZE [dict get ${::AIT::address_map} "mem_bank_size"] \
         CONFIG.NUM_BANKS $num_banks \
@@ -475,11 +475,11 @@ save_bd_design
 # Mark custom interfaces for debug
 if {${::AIT::debugInterfaces} eq "custom"} {
     foreach intf ${::AIT::debugInterfaces_list} {
-        set_property HDL_ATTRIBUTE.DEBUG {true} [get_bd_intf_nets [get_bd_intf_nets -of_objects [get_bd_intf_pins $intf]]]
-        if {[llength [get_bd_intf_pins -quiet -filter {VLNV =~ *aximm_rtl*} $intf]]} {
-            AIT::AXI::mark_debug $intf
-        } elseif {[llength [get_bd_intf_pins -quiet -filter {VLNV =~ *axis_rtl*} $intf]]} {
-            AIT::AXIS::mark_debug $intf
+        set intf_pin [get_bd_intf_pins $intf]
+        if {[llength [get_bd_intf_pins -quiet -filter {VLNV =~ xilinx.com:interface:aximm_rtl:*} $intf_pin]]} {
+            AIT::AXI::mark_debug $intf_pin
+        } elseif {[llength [get_bd_intf_pins -quiet -filter {VLNV =~ xilinx.com:interface:axis_rtl:*} $intf_pin]]} {
+            AIT::AXIS::mark_debug $intf_pin
         } else {
             AIT::error_msg "Interface type not recognized ($intf)"
         }
@@ -549,7 +549,7 @@ if ${::AIT::simplify_interconnection} {
 
 # Map bitinfo BRAM to address space
 if {(${::AIT::arch_device} ne "simulation") && (${::AIT::arch_device} ne "shell")} {
-    assign_bd_address [get_bd_addr_segs *bitInfo_BRAM_Ctrl*] -range 4K -offset $addr_bitInfo
+    assign_bd_address [get_bd_addr_segs bitInfo_BRAM_Ctrl/S_AXI/Mem0] -range 4K -offset $addr_bitInfo
 }
 
 # Store real PS frequency in xtasks config file
@@ -603,7 +603,7 @@ if ${::AIT::task_creation} {
         CONFIG.SCHED_COUNT 0x[AIT::long_int_to_hex 128 $sched_count] \
         CONFIG.SCHED_ACCID 0x[AIT::long_int_to_hex 128 $sched_accid] \
         CONFIG.SCHED_TTYPE 0x[AIT::long_int_to_hex 512 $sched_ttype] \
-     ] [get_bd_cells */Picos_OmpSs_Manager]
+     ] [get_bd_cells -hierarchical Picos_OmpSs_Manager]
 }
 
 set bitInfo_intlv_stride 0
@@ -677,7 +677,7 @@ set_property -dict [list \
 
 # Update outdated IPs
 update_ip_catalog -rebuild -scan_changes
-upgrade_ip -quiet [get_ips -filter UPGRADE_VERSIONS!={}]
+upgrade_ip -quiet [get_ips -filter UPGRADE_VERSIONS != {}]
 
 # If exists, add constraints file
 if {[file isdirectory board/${::AIT::board}/constraints/]} {
@@ -705,7 +705,7 @@ if {[file exists tcl/scripts/userPostDesign.tcl]} {
 
 # If enabled, configure register slices on AXI Interconnects
 if ${::AIT::interconRegSlice_all} {
-    set interconnects [get_bd_cells -hierarchical -regexp -filter {VLNV =~ xilinx.com:ip:axi_interconnect.*} .*]
+    set interconnects [get_bd_cells -hierarchical -filter {VLNV =~ xilinx.com:ip:axi_interconnect:*}]
 
     foreach inter $interconnects {
         for {set i 0} {$i < [get_property CONFIG.NUM_MI $inter]} {incr i} {
@@ -716,7 +716,7 @@ if ${::AIT::interconRegSlice_all} {
         }
     }
 } elseif ${::AIT::interconRegSlice_mem} {
-    set interconnects [get_bd_cells -hierarchical -regexp -filter {VLNV =~ xilinx.com:ip:axi_interconnect.* && NAME =~ {S_AXI(_[0-9]*)?_Inter}} .*]
+    set interconnects [get_bd_cells -hierarchical -regexp -filter {VLNV =~ xilinx.com:ip:axi_interconnect:.* && NAME =~ {S_AXI(_[0-9]*)?_Inter}} .*]
 
     foreach inter $interconnects {
         for {set i 0} {$i < [get_property CONFIG.NUM_MI $inter]} {incr i} {
