@@ -619,8 +619,8 @@ set dynamic_field_offsets [list]
 # Variable-length fields are appended next to the fixed-length fields which take 31 slots
 set offset 31
 foreach size $dynamic_field_sizes {
-   lappend dynamic_field_offsets $offset
-   incr offset [expr int(ceil($size/4.))]
+    lappend dynamic_field_offsets $offset
+    incr offset [expr int(ceil($size/4.))]
 }
 set bitinfo_len $offset
 if {$bitinfo_len > 1024} {
@@ -659,7 +659,7 @@ append bitInfo_coe [string range $addr_pom_axilite 2 9]\n
 append bitInfo_coe 0\n
 append bitInfo_coe 0\n
 for {set i 0} {$i < [llen $dynamic_field_sizes]} {incr i} {
-   append bitInfo_coe [format %08X [expr [lindex $dynamic_field_sizes $i] | ([lindex $dynamic_field_offsets $i] << 16)]]\n
+    append bitInfo_coe [format %08X [expr [lindex $dynamic_field_sizes $i] | ([lindex $dynamic_field_offsets $i] << 16)]]\n
 }
 append bitInfo_coe $xtasks_bin_str
 append bitInfo_coe [AIT::ascii2hex ${::AIT::ait_call}]
