@@ -84,7 +84,7 @@ namespace eval AIT {
         }
 
         proc add_stream_adapter {intf_pin accName instanceNum {accID '0x0'}} {
-            set intf_name [regsub -all {(^m_axi_|(_V)*$)} [get_property NAME $intf_pin] ""]
+            set intf_name [regsub -all {(^mcxx_|(_V)*$)} [get_property NAME $intf_pin] ""]
             set dir [get_property DIR $intf_pin]
             if {$dir eq "O"} {
                 set stream_adapter [create_bd_cell -type module -reference bsc_ompss_hsToStreamAdapter ${accName}_${instanceNum}/Adapter_${intf_name}]

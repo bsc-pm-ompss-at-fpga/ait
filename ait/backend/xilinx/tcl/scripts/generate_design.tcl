@@ -65,9 +65,6 @@ if {[file exists board/${::AIT::board}/procs.tcl]} {
 }
 
 ## Variables
-# BitInfo feature bitmap
-variable bitmap_bitInfo 0x00000000
-set bitmap_bitInfo [format 0x%08x [expr {$bitmap_bitInfo | ((${::AIT::interconOpt} - 1)<<2)}]]
 
 # Cleanup files
 file delete ../${::AIT::name_Project}.datainterfaces.txt
@@ -454,10 +451,6 @@ if {${::AIT::hwcounter} || ${::AIT::hwinst}} {
 
     AIT::board::connect_clock [get_bd_pins HW_Counter/s_axi_aclk]
 
-    if {${::AIT::hwinst}} {
-        set bitmap_bitInfo [format 0x%08x [expr {$bitmap_bitInfo | 0x1<<0}]]
-    }
-    set bitmap_bitInfo [format 0x%08x [expr {$bitmap_bitInfo | 0x1<<1}]]
     save_bd_design
 }
 
@@ -501,14 +494,6 @@ append ompss_at_fpga_node "\t};\n};"
 puts $ompss_at_fpga_DeviceTree_file $ompss_at_fpga_node
 close $ompss_at_fpga_DeviceTree_file
 
-set bitmap_bitInfo [format 0x%08x [expr {$bitmap_bitInfo | 0x1<<9}]]
-if {${::AIT::task_creation}} {
-    set bitmap_bitInfo [format 0x%08x [expr {$bitmap_bitInfo | 0x1<<7}]]
-}
-if {${::AIT::simplify_interconnection}} {
-    set bitmap_bitInfo [format 0x%08x [expr {$bitmap_bitInfo | 0x1<<3}]]
-}
-
 # Wipe clean address map
 delete_bd_objs [get_bd_addr_segs]
 
@@ -522,30 +507,6 @@ foreach bd_addr_seg $bd_addr_segments {
     set bd_seg_name [dict get $bd_addr_seg bd_seg_name]
     AIT::info_msg "Assign $name BD address, range $range address $addr"
     assign_bd_address [get_bd_addr_segs $bd_seg_name] -range $range -offset $addr
-}
-
-if {${::AIT::task_creation}} {
-    set bitmap_bitInfo [format 0x%08x [expr {$bitmap_bitInfo | 0x1<<5}]]
-}
-
-if {${::AIT::deps_hwruntime}} {
-    set bitmap_bitInfo [format 0x%08x [expr {$bitmap_bitInfo | 0x1<<6}]]
-}
-
-if {${::AIT::enable_spawn_queues}} {
-    set bitmap_bitInfo [format 0x%08x [expr {$bitmap_bitInfo | 0x1<<8}]]
-}
-
-if {${::AIT::lock_hwruntime}} {
-    set bitmap_bitInfo [format 0x%08x [expr {$bitmap_bitInfo | 0x1<<7}]]
-}
-
-if {${::AIT::enable_pom_axilite}} {
-    set bitmap_bitInfo [format 0x%08x [expr {$bitmap_bitInfo | 0x1<<4}]]
-}
-
-if {${::AIT::simplify_interconnection}} {
-    set bitmap_bitInfo [format 0x%08x [expr {$bitmap_bitInfo | 0x1<<3}]]
 }
 
 # Map bitinfo BRAM to address space
@@ -633,7 +594,7 @@ set bitInfo_file [open ${::AIT::name_Project}/bitInfo.coe "w"]
 set bitInfo_coe "memory_initialization_radix=16;\nmemory_initialization_vector=\n"
 append bitInfo_coe [format %08x ${::AIT::version_bitInfo}]\n
 append bitInfo_coe [format %08x ${::AIT::num_accs}]\n
-append bitInfo_coe [format %08x $bitmap_bitInfo]\n
+append bitInfo_coe [format %08x [AIT::board::generate_bitmap_bitinfo]]\n
 append bitInfo_coe [format %08x [expr {${::AIT::version_major_ait}<<22 | ${::AIT::version_minor_ait}<<11 | ${::AIT::version_patch_ait}}]]\n
 append bitInfo_coe [format %08x ${::AIT::version_wrapper}]\n
 append bitInfo_coe [format %08x [AIT::board::get_base_freq]]\n

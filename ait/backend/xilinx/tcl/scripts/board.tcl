@@ -586,6 +586,23 @@ namespace eval AIT {
             return $baseFreq
         }
 
+        # Generate bitinfo features bitmap
+        proc generate_bitmap_bitinfo {} {
+            variable bitmap_bitInfo 0x0
+
+            set bitmap_bitInfo [expr {$bitmap_bitInfo | (${::AIT::hwinst} == True)<<0}]
+            set bitmap_bitInfo [expr {$bitmap_bitInfo | (${::AIT::hwinst} || ${::AIT::hwcounter})<<1}]
+            set bitmap_bitInfo [expr {$bitmap_bitInfo | ((${::AIT::interconOpt} - 1)<<2)}]
+            set bitmap_bitInfo [expr {$bitmap_bitInfo | (${::AIT::simplify_interconnection} == True)<<3}]
+            set bitmap_bitInfo [expr {$bitmap_bitInfo | (${::AIT::enable_pom_axilite} == True)<<4}]
+            set bitmap_bitInfo [expr {$bitmap_bitInfo | (${::AIT::task_creation} == True)<<5}]
+            set bitmap_bitInfo [expr {$bitmap_bitInfo | (${::AIT::deps_hwruntime} == True)<<6}]
+            set bitmap_bitInfo [expr {$bitmap_bitInfo | (${::AIT::lock_hwruntime} == True)<<7}]
+            set bitmap_bitInfo [expr {$bitmap_bitInfo | (${::AIT::enable_spawn_queues} == True)<<8}]
+            #set bitmap_bitInfo [expr {$bitmap_bitInfo | (${::AIT::power_monitor} == True)<<9}]
+
+            return [format 0x%08x $bitmap_bitInfo]
+        }
 
         # Generates HDL wrapper
         proc generate_wrapper {} {
