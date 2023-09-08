@@ -178,6 +178,14 @@ namespace eval AIT {
                 foreach addr_seg [get_bd_addr_segs -regexp {.*/HP[0-9]_DDR_LOW(OCM)?}] {
                     assign_bd_address $addr_seg -offset $base_addr -range $mem_size
                 }
+
+                # Exclude unused DDR address segments
+                foreach excl_seg [list {DDR_HIGH} {QSPI} {LPS_OCM} {PCIE_LOW}] {
+                    foreach addr_seg [get_bd_addr_segs -regexp "/bridge_to_host/.*/HP\[0-9\]_${excl_seg}"] {
+                        assign_bd_address -quiet $addr_seg
+                        exclude_bd_addr_seg [get_bd_addr_segs -regexp ".*/SEG_bridge_to_host_HP\[0-9\]_${excl_seg}"]
+                    }
+                }
             } elseif {${::AIT::arch_device} eq "alveo"} {
                 set bank_size [dict get ${::AIT::address_map} "mem_bank_size"]
                 set num_banks [dict get ${::AIT::address_map} "mem_num_banks"]
@@ -188,6 +196,14 @@ namespace eval AIT {
                     foreach addr_seg [get_bd_addr_segs -regexp {.*/DDR_[0-9]/.*/C0_DDR4_ADDRESS_BLOCK}] {
                         assign_bd_address $addr_seg -offset [expr {$base_addr + $bank_size*$bank_num}] -range $bank_size
                         incr bank_num
+                    }
+
+                    # Exclude unused DDR_CTRL segments
+                    # DDR_CTRL address segment name format: /bridge_to_host/memory/DDR_X/DDR/C0_DDR4_MEMORY_MAP_CTRL/C0_REG, being
+                    # DDR_X each DDR bank
+                    foreach addr_seg [get_bd_addr_segs -regexp {/bridge_to_host/memory/DDR_[0-9]/DDR/C0_DDR4_MEMORY_MAP_CTRL/C0_REG}] {
+                        assign_bd_address -quiet $addr_seg
+                        exclude_bd_addr_seg [get_bd_addr_segs -regexp {/bridge_to_host/.*/SEG_DDR_C0_REG[0-9]?}]
                     }
                 } elseif {$mem_type eq "hbm"} {
                     set bank_num 0
