@@ -30,13 +30,13 @@ namespace eval AIT {
             set num_banks [dict get ${::AIT::address_map} "mem_num_banks"]
 
             assign_bd_address [get_bd_addr_segs -regexp ".*DDR_1.*_DDR4_ADDRESS_BLOCK"] -range 16G -offset $base_addr
-            assign_bd_address [get_bd_addr_segs -regexp ".*DDR_1.*/C0_DDR4_MEMORY_MAP_CTRL/C0_REG"] -offset [expr [dict get ${::AIT::address_map} "ompss_base_addr"] + 0x100000] -range 1M
-            assign_bd_address [get_bd_addr_segs -regexp ".*DDR_2.*_DDR4_ADDRESS_BLOCK"] -range 8G -offset [expr $base_addr + $bank_size*2]
-            assign_bd_address [get_bd_addr_segs -regexp ".*DDR_2.*/C0_DDR4_MEMORY_MAP_CTRL/C0_REG"] -offset [expr [dict get ${::AIT::address_map} "ompss_base_addr"] + 0x100000*2] -range 1M
-            assign_bd_address [get_bd_addr_segs -regexp ".*DDR_3.*_DDR4_ADDRESS_BLOCK"] -range 8G -offset [expr $base_addr + $bank_size*3]
-            assign_bd_address [get_bd_addr_segs -regexp ".*DDR_3.*/C0_DDR4_MEMORY_MAP_CTRL/C0_REG"] -offset [expr [dict get ${::AIT::address_map} "ompss_base_addr"] + 0x100000*3] -range 1M
+            assign_bd_address [get_bd_addr_segs -regexp ".*DDR_1.*/C0_DDR4_MEMORY_MAP_CTRL/C0_REG"] -offset [expr {[dict get ${::AIT::address_map} "ompss_base_addr"] + 0x100000}] -range 1M
+            assign_bd_address [get_bd_addr_segs -regexp ".*DDR_2.*_DDR4_ADDRESS_BLOCK"] -range 8G -offset [expr {$base_addr + $bank_size*2}]
+            assign_bd_address [get_bd_addr_segs -regexp ".*DDR_2.*/C0_DDR4_MEMORY_MAP_CTRL/C0_REG"] -offset [expr {[dict get ${::AIT::address_map} "ompss_base_addr"] + 0x100000*2}] -range 1M
+            assign_bd_address [get_bd_addr_segs -regexp ".*DDR_3.*_DDR4_ADDRESS_BLOCK"] -range 8G -offset [expr {$base_addr + $bank_size*3}]
+            assign_bd_address [get_bd_addr_segs -regexp ".*DDR_3.*/C0_DDR4_MEMORY_MAP_CTRL/C0_REG"] -offset [expr {[dict get ${::AIT::address_map} "ompss_base_addr"] + 0x100000*3}] -range 1M
 
-            assign_bd_address [get_bd_addr_segs "*DDR_aux_rst_gpio/S_AXI/Reg"] -offset [expr [dict get ${::AIT::address_map} "ompss_base_addr"] + [expr 0x100000*$num_banks]] -range 64K
+            assign_bd_address [get_bd_addr_segs "*DDR_aux_rst_gpio/S_AXI/Reg"] -offset [expr {[dict get ${::AIT::address_map} "ompss_base_addr"] + 0x100000*$num_banks}] -range 64K
 
             # Assign rest of peripherals
             assign_bd_address -offset 0x003000400000 -range 0x00010000 -target_address_space [get_bd_addr_spaces bridge_to_host/maxilink/maxilink/maxi_zu9m] [get_bd_addr_segs bridge_to_host/memory/DDR_aux_rst_gpio/S_AXI/Reg] -force

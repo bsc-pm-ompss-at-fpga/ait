@@ -48,12 +48,12 @@ namespace eval AIT {
     proc dec2bin {i width} {
         set res {}
         while {$i > 0} {
-            set res [expr $i%2]$res
-            set i [expr $i/2]
+            set res [expr {$i%2}]$res
+            set i [expr {$i/2}]
         }
         if {$res eq {}} {set res 0}
 
-        set res [string repeat 0 [expr $width - [string length $res]]]$res
+        set res [string repeat 0 [expr {$width - [string length $res]}]]$res
         return $res
     }
 
@@ -62,11 +62,11 @@ namespace eval AIT {
         set len [string length $str]
         # Force the string length to be multiple of 4
         if {$len%4} {
-            append str [string repeat "\0" [expr 4 - $len%4]]
+            append str [string repeat "\0" [expr {4 - $len%4}]]
         }
         set str_out ""
         for {set i 0} {$i < $len} {incr i 4} {
-            foreach char [split [string reverse [string range $str $i [expr $i+3]]] ""] {
+            foreach char [split [string reverse [string range $str $i [expr {$i + 3}]]] ""] {
                 append str_out [format %02X [scan $char %c]]
             }
             append str_out "\n"
@@ -89,10 +89,10 @@ namespace eval AIT {
     # This implementation assumes bits is divisible by 64
     proc long_int_to_hex {bits num} {
         set result ""
-        set div [expr $bits/64]
+        set div [expr {$bits/64}]
         for {set i 0} {$i < $div} {incr i} {
-            append result [format %016llX [expr ($num >> ($div-$i-1)*64) & 0xFFFFFFFFFFFFFFFF]]
+            append result [format %016llX [expr {($num >> ($div - $i - 1)*64) & 0xFFFFFFFFFFFFFFFF}]]
         }
         return $result
-   }
+    }
 }

@@ -50,7 +50,7 @@ if {(${::AIT::arch_device} eq "zynq") || (${::AIT::arch_device} eq "zynqmp")} {
 AIT::info_msg "Launching implementation run with ${::AIT::num_jobs} jobs"
 
 # Launch implementation
-reset_run impl_1
+reset_runs impl_1
 launch_runs impl_1 -jobs ${::AIT::num_jobs}
 
 wait_on_run impl_1

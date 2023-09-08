@@ -11,7 +11,7 @@ set_property CONFIG.ASSOCIATED_RESET {rstn} [get_bd_ports /clk]
 set_property CONFIG.ASSOCIATED_BUSIF {hwruntime_m_axi} [get_bd_ports /clk]
 
 set axi_stub [create_bd_cell -type ip -vlnv bsc:ompss:axi_stub:1.0 axi_stub_0]
-set_property -dict [list CONFIG.AXI_ID_WIDTH [expr max(int(ceil(log(${::AIT::num_accs})/log(2))), 1)]] $axi_stub
+set_property -dict [list CONFIG.AXI_ID_WIDTH [expr {max(int(ceil(log(${::AIT::num_accs})/log(2))), 1)}]] $axi_stub
 
 connect_bd_net [get_bd_ports clk] [get_bd_pins axi_stub_0/aclk]
 connect_bd_net [get_bd_ports rstn] [get_bd_pins axi_stub_0/aresetn]

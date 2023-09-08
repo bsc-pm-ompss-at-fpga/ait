@@ -149,11 +149,11 @@ proc create_hier_cell_hwr_inStream { parentCell nameHier } {
       create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 S${i}_AXIS
   }
   create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 cmdout_in
-  if ${::AIT::task_creation} {
+  if {${::AIT::task_creation}} {
       create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 spawn_in
       create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 taskwait_in
   }
-  if ${::AIT::lock_hwruntime} {
+  if {${::AIT::lock_hwruntime}} {
       create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 lock_in
   }
 
@@ -205,11 +205,11 @@ proc create_hier_cell_hwr_outStream { parentCell nameHier } {
       create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 M${i}_AXIS
   }
   create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 cmdin_out
-  if ${::AIT::task_creation} {
+  if {${::AIT::task_creation}} {
       create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 spawn_out
       create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 taskwait_out
   }
-  if ${::AIT::lock_hwruntime} {
+  if {${::AIT::lock_hwruntime}} {
       create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 lock_out
   }
 
@@ -275,14 +275,14 @@ proc create_hier_cell_Hardware_Runtime { parentCell nameHier } {
   set GP_Inter [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect GP_Inter ]
   set nmasters 2
   set GP_Inter_config [list CONFIG.M00_HAS_REGSLICE 4 CONFIG.M01_HAS_REGSLICE 4 CONFIG.S00_HAS_REGSLICE 4 CONFIG.STRATEGY 1]
-  if ${::AIT::enable_spawn_queues} {
+  if {${::AIT::enable_spawn_queues}} {
     set spawn_out_m $nmasters
     incr nmasters
     set spawn_in_m $nmasters
     incr nmasters
     lappend GP_Inter_config CONFIG.M0${spawn_out_m}_HAS_REGSLICE 4 CONFIG.M0${spawn_in_m}_HAS_REGSLICE 4
   }
-  if ${::AIT::enable_pom_axilite} {
+  if {${::AIT::enable_pom_axilite}} {
     set pom_axilite_m $nmasters
     incr nmasters
     lappend GP_Inter_config CONFIG.M0${pom_axilite_m}_HAS_REGSLICE 4
@@ -298,7 +298,7 @@ proc create_hier_cell_Hardware_Runtime { parentCell nameHier } {
    CONFIG.TID_REMAP "1'b0"
   ] $axis_cmdin_TID
 
-  if ${::AIT::task_creation} {
+  if {${::AIT::task_creation}} {
     # Create instance: axis_spawn_TID, and set properties
     set axis_spawn_TID [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_subset_converter axis_spawn_TID]
     set_property -dict [ list \
@@ -316,7 +316,7 @@ proc create_hier_cell_Hardware_Runtime { parentCell nameHier } {
     ] $axis_taskwait_TID
   }
 
-  if ${::AIT::lock_hwruntime} {
+  if {${::AIT::lock_hwruntime}} {
     # Create instance: axis_lock_TID, and set properties
     set axis_lock_TID [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_subset_converter axis_lock_TID]
     set_property -dict [ list \
@@ -335,15 +335,15 @@ proc create_hier_cell_Hardware_Runtime { parentCell nameHier } {
     CONFIG.ENABLE_SPAWN_QUEUES ${::AIT::enable_spawn_queues} \
     CONFIG.ENABLE_TASK_CREATION ${::AIT::task_creation} \
     CONFIG.LOCK_SUPPORT ${::AIT::lock_hwruntime} \
-    CONFIG.MAX_ACCS [expr max(${::AIT::num_accs}, 2)] \
-    CONFIG.MAX_ACC_CREATORS [expr max(${::AIT::num_acc_creators}, 2)] \
-    CONFIG.MAX_ACC_TYPES [expr max([llength ${::AIT::accs}], 2)] \
+    CONFIG.MAX_ACCS [expr {max(${::AIT::num_accs}, 2)}] \
+    CONFIG.MAX_ACC_CREATORS [expr {max(${::AIT::num_acc_creators}, 2)}] \
+    CONFIG.MAX_ACC_TYPES [expr {max([llength ${::AIT::accs}], 2)}] \
     CONFIG.MAX_ARGS_PER_TASK ${::AIT::max_args_per_task} \
     CONFIG.MAX_COPS_PER_TASK ${::AIT::max_copies_per_task} \
     CONFIG.MAX_DEPS_PER_TASK ${::AIT::max_deps_per_task} \
   ]
 
-  if ${::AIT::enable_spawn_queues} {
+  if {${::AIT::enable_spawn_queues}} {
     lappend POM_Config \
       CONFIG.SPAWNIN_QUEUE_LEN ${::AIT::spawnInQueue_len} \
       CONFIG.SPAWNOUT_QUEUE_LEN ${::AIT::spawnOutQueue_len} \
@@ -384,7 +384,7 @@ proc create_hier_cell_Hardware_Runtime { parentCell nameHier } {
    CONFIG.Use_Byte_Write_Enable {true} \
    CONFIG.Use_RSTA_Pin {false} \
    CONFIG.Use_RSTB_Pin {true} \
-   CONFIG.Write_Depth_A [expr ${::AIT::cmdInSubqueue_len}*max(${::AIT::num_accs}, 2)] \
+   CONFIG.Write_Depth_A [expr {${::AIT::cmdInSubqueue_len}*max(${::AIT::num_accs}, 2)}] \
    CONFIG.Write_Width_A {64} \
    CONFIG.Write_Width_B {32} \
    CONFIG.use_bram_block {Stand_Alone} \
@@ -417,7 +417,7 @@ proc create_hier_cell_Hardware_Runtime { parentCell nameHier } {
    CONFIG.Use_Byte_Write_Enable {true} \
    CONFIG.Use_RSTA_Pin {false} \
    CONFIG.Use_RSTB_Pin {true} \
-   CONFIG.Write_Depth_A [expr ${::AIT::cmdOutSubqueue_len}*max(${::AIT::num_accs}, 2)] \
+   CONFIG.Write_Depth_A [expr {${::AIT::cmdOutSubqueue_len}*max(${::AIT::num_accs}, 2)}] \
    CONFIG.Write_Width_A {64} \
    CONFIG.Write_Width_B {32} \
    CONFIG.use_bram_block {Stand_Alone} \
@@ -429,7 +429,7 @@ proc create_hier_cell_Hardware_Runtime { parentCell nameHier } {
    CONFIG.SINGLE_PORT_BRAM {1} \
  ] $cmdOutQueue_BRAM_Ctrl
 
-if ${::AIT::enable_spawn_queues} {
+if {${::AIT::enable_spawn_queues}} {
     # Create instance: spawnInQueue, and set properties
     set spawnInQueue [ create_bd_cell -type ip -vlnv xilinx.com:ip:blk_mem_gen spawnInQueue ]
     set_property -dict [ list \
@@ -501,7 +501,7 @@ if ${::AIT::enable_spawn_queues} {
   connect_bd_intf_net [get_bd_intf_pins Picos_OmpSs_Manager/cmdout_in] [get_bd_intf_pins hwr_inStream/cmdout_in]
   connect_bd_intf_net [get_bd_intf_pins Picos_OmpSs_Manager/cmdin_out] [get_bd_intf_pins axis_cmdin_TID/S_AXIS]
   connect_bd_intf_net [get_bd_intf_pins hwr_outStream/cmdin_out] [get_bd_intf_pins axis_cmdin_TID/M_AXIS]
-  if ${::AIT::task_creation} {
+  if {${::AIT::task_creation}} {
     connect_bd_intf_net [get_bd_intf_pins Picos_OmpSs_Manager/spawn_in] [get_bd_intf_pins hwr_inStream/spawn_in]
     connect_bd_intf_net [get_bd_intf_pins Picos_OmpSs_Manager/spawn_out] [get_bd_intf_pins axis_spawn_TID/S_AXIS]
     connect_bd_intf_net [get_bd_intf_pins hwr_outStream/spawn_out] [get_bd_intf_pins axis_spawn_TID/M_AXIS]
@@ -509,7 +509,7 @@ if ${::AIT::enable_spawn_queues} {
     connect_bd_intf_net [get_bd_intf_pins Picos_OmpSs_Manager/taskwait_out] [get_bd_intf_pins axis_taskwait_TID/S_AXIS]
     connect_bd_intf_net [get_bd_intf_pins hwr_outStream/taskwait_out] [get_bd_intf_pins axis_taskwait_TID/M_AXIS]
   }
-  if ${::AIT::lock_hwruntime} {
+  if {${::AIT::lock_hwruntime}} {
     connect_bd_intf_net [get_bd_intf_pins Picos_OmpSs_Manager/lock_in] [get_bd_intf_pins hwr_inStream/lock_in]
     connect_bd_intf_net [get_bd_intf_pins Picos_OmpSs_Manager/lock_out] [get_bd_intf_pins axis_lock_TID/S_AXIS]
     connect_bd_intf_net [get_bd_intf_pins hwr_outStream/lock_out] [get_bd_intf_pins axis_lock_TID/M_AXIS]
@@ -521,7 +521,7 @@ if ${::AIT::enable_spawn_queues} {
   connect_bd_intf_net -intf_net S_AXI_GP_1 [get_bd_intf_pins S_AXI_GP] [get_bd_intf_pins GP_Inter/S00_AXI]
   connect_bd_intf_net -intf_net cmdInQueue_BRAM_Ctrl_BRAM_PORTA [get_bd_intf_pins cmdInQueue/BRAM_PORTB] [get_bd_intf_pins cmdInQueue_BRAM_Ctrl/BRAM_PORTA]
   connect_bd_intf_net -intf_net cmdOutQueue_BRAM_Ctrl_BRAM_PORTA [get_bd_intf_pins cmdOutQueue/BRAM_PORTB] [get_bd_intf_pins cmdOutQueue_BRAM_Ctrl/BRAM_PORTA]
-  if ${::AIT::enable_spawn_queues} {
+  if {${::AIT::enable_spawn_queues}} {
     connect_bd_intf_net -intf_net Picos_OmpSs_Manager_spawnInQueue [get_bd_intf_pins Picos_OmpSs_Manager/spawnin_queue] [get_bd_intf_pins spawnInQueue/BRAM_PORTA]
     connect_bd_intf_net -intf_net Picos_OmpSs_Manager_spawnOutQueue [get_bd_intf_pins Picos_OmpSs_Manager/spawnout_queue] [get_bd_intf_pins spawnOutQueue/BRAM_PORTA]
     connect_bd_intf_net -intf_net spawnInQueue_BRAM_Ctrl_BRAM_PORTA [get_bd_intf_pins spawnInQueue/BRAM_PORTB] [get_bd_intf_pins spawnInQueue_BRAM_Ctrl/BRAM_PORTA]
@@ -531,7 +531,7 @@ if ${::AIT::enable_spawn_queues} {
     connect_bd_net [get_bd_pins aclk] [get_bd_pins spawnInQueue_BRAM_Ctrl/s_axi_aclk] [get_bd_pins spawnOutQueue_BRAM_Ctrl/s_axi_aclk]
     connect_bd_net [get_bd_pins peripheral_aresetn] [get_bd_pins spawnInQueue_BRAM_Ctrl/s_axi_aresetn] [get_bd_pins spawnOutQueue_BRAM_Ctrl/s_axi_aresetn]
   }
-  if ${::AIT::enable_pom_axilite} {
+  if {${::AIT::enable_pom_axilite}} {
     connect_bd_intf_net -intf_net GP_Inter_pom_axilite [get_bd_intf_pins GP_Inter/M0${pom_axilite_m}_AXI] [get_bd_intf_pins Picos_OmpSs_Manager/axilite]
   }
 
@@ -541,19 +541,19 @@ if ${::AIT::enable_spawn_queues} {
   connect_bd_net -net peripheral_aresetn_1 [get_bd_pins peripheral_aresetn] [get_bd_pins GP_Inter/M00_ARESETN] [get_bd_pins GP_Inter/M01_ARESETN] [get_bd_pins GP_Inter/S00_ARESETN] [get_bd_pins cmdInQueue_BRAM_Ctrl/s_axi_aresetn] [get_bd_pins cmdOutQueue_BRAM_Ctrl/s_axi_aresetn] [get_bd_pins hwr_inStream/peripheral_aresetn] [get_bd_pins hwr_outStream/peripheral_aresetn]
   connect_bd_net [get_bd_pins managed_aresetn] [get_bd_pins Picos_OmpSs_Manager/rstn] [get_bd_pins axis_cmdin_TID/aresetn]
 
-  if ${::AIT::task_creation} {
+  if {${::AIT::task_creation}} {
     connect_bd_net [get_bd_pins aclk] [get_bd_pins axis_spawn_TID/aclk] [get_bd_pins axis_taskwait_TID/aclk]
     connect_bd_net [get_bd_pins managed_aresetn] [get_bd_pins axis_spawn_TID/aresetn] [get_bd_pins axis_taskwait_TID/aresetn]
   }
-  if ${::AIT::enable_spawn_queues} {
+  if {${::AIT::enable_spawn_queues}} {
     connect_bd_net [get_bd_pins aclk] [get_bd_pins GP_Inter/M0${spawn_out_m}_ACLK] [get_bd_pins GP_Inter/M0${spawn_in_m}_ACLK]
     connect_bd_net [get_bd_pins peripheral_aresetn] [get_bd_pins GP_Inter/M0${spawn_out_m}_ARESETN] [get_bd_pins GP_Inter/M0${spawn_in_m}_ARESETN]
   }
-  if ${::AIT::enable_pom_axilite} {
+  if {${::AIT::enable_pom_axilite}} {
     connect_bd_net [get_bd_pins aclk] [get_bd_pins GP_Inter/M0${pom_axilite_m}_ACLK]
     connect_bd_net [get_bd_pins peripheral_aresetn] [get_bd_pins GP_Inter/M0${pom_axilite_m}_ARESETN]
   }
-  if ${::AIT::lock_hwruntime} {
+  if {${::AIT::lock_hwruntime}} {
     connect_bd_net [get_bd_pins aclk] [get_bd_pins axis_lock_TID/aclk]
     connect_bd_net [get_bd_pins managed_aresetn] [get_bd_pins axis_lock_TID/aresetn]
   }

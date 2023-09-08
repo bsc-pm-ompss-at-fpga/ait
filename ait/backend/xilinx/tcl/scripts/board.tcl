@@ -133,13 +133,13 @@ namespace eval AIT {
             variable board_axi_intfs
             set board_axi_intfs {}
 
-            set interconnect_list [get_bd_cells -regexp (M|S)_AXI(_([0-9])*)?_Inter]
+            set interconnect_list [get_bd_cells -regexp {(M|S)_AXI(_([0-9])*)?_Inter}]
             foreach interconnect $interconnect_list {
-                set mode [string trim [regsub -all {_AXI_.+$} $interconnect ""] "/"]
-                set counter [expr [get_property CONFIG.NUM_${mode}I $interconnect] - 1]
+                set mode [regsub -all {_AXI_.+$} [get_property NAME $interconnect] ""]
+                set counter [expr {[get_property CONFIG.NUM_${mode}I $interconnect] - 1}]
                 set capacity 16
                 if {$counter < $capacity} {
-                    lappend board_axi_intfs "$mode [string trim $interconnect "/"] $counter $capacity"
+                    lappend board_axi_intfs "$mode [get_property NAME $interconnect] $counter $capacity"
                 }
             }
 
@@ -154,7 +154,7 @@ namespace eval AIT {
             foreach intf $board_axi_intfs {
                 foreach {mode name counter capacity} $intf {
                     if {$mode eq "S"} {
-                        incr available_axi_intfs [expr $capacity - $counter]
+                        incr available_axi_intfs [expr {$capacity - $counter}]
                     }
                 }
             }
@@ -175,7 +175,7 @@ namespace eval AIT {
                 # Zynq DDR address segment name format: /bridge_to_host/S_AXI_HPX/HPX_DDR_LOWOCM
                 # ZynqMP DDR address segment name format: /bridge_to_host/S_AXI_GPY/HPX_DDR_LOW, being
                 # S_AXI_HPX the AXI interface used
-                foreach addr_seg [get_bd_addr_segs -regexp ".*/HP[0-9]_DDR_LOW(OCM)?"] {
+                foreach addr_seg [get_bd_addr_segs -regexp {.*/HP[0-9]_DDR_LOW(OCM)?}] {
                     assign_bd_address $addr_seg -offset $base_addr -range $mem_size
                 }
             } elseif {${::AIT::arch_device} eq "alveo"} {
@@ -185,8 +185,8 @@ namespace eval AIT {
                     set bank_num 0
                     # DDR address segment name format: /bridge_to_host/memory/DDR_X/DDR/C0_DDR4_MEMORY_MAP/C0_DDR4_ADDRESS_BLOCK, being
                     # DDR_X each DDR bank
-                    foreach addr_seg [get_bd_addr_segs -regexp ".*/DDR_[0-9]/.*/C0_DDR4_ADDRESS_BLOCK"] {
-                        assign_bd_address $addr_seg -offset [expr $base_addr + $bank_size*$bank_num] -range $bank_size
+                    foreach addr_seg [get_bd_addr_segs -regexp {.*/DDR_[0-9]/.*/C0_DDR4_ADDRESS_BLOCK}] {
+                        assign_bd_address $addr_seg -offset [expr {$base_addr + $bank_size*$bank_num}] -range $bank_size
                         incr bank_num
                     }
                 } elseif {$mem_type eq "hbm"} {
@@ -194,8 +194,8 @@ namespace eval AIT {
                     # HBM address segment name format: /bridge_to_host/memory/HBM/SAXI_XX[_8HI]/HBM_MEMYY, being
                     # SAXI_XX[_8HI] the AXI interface used
                     # HBM_MEMYY each HBM bank
-                    foreach addr_seg [get_bd_addr_segs -regexp ".*/SAXI_[0-9]{2}(_8HI)?/HBM_MEM[0-9]{2}"] {
-                        assign_bd_address $addr_seg -offset [expr 0x0 + ($bank_num%$num_banks)*$bank_size] -range $bank_size
+                    foreach addr_seg [get_bd_addr_segs -regexp {.*/SAXI_[0-9]{2}(_8HI)?/HBM_MEM[0-9]{2}}] {
+                        assign_bd_address $addr_seg -offset [expr {($bank_num%$num_banks)*$bank_size}] -range $bank_size
                         incr bank_num
                     }
                 }
@@ -204,7 +204,7 @@ namespace eval AIT {
 
         # Creates and connects a tree of interconnects that allows an arbitrary number of AXI-stream slaves to connect to up to 16 AXI-stream masters
         proc create_inStream_Inter_tree { stream_name nmasters nslaves clk inter_rstn peri_rstn } {
-            set ninter [expr int(ceil($nslaves/16.))]
+            set ninter [expr {int(ceil($nslaves/16.))}]
             set prev_ninter $nslaves
             set inter_level 0
             set inter_stride 1
@@ -215,7 +215,7 @@ namespace eval AIT {
 
                 # Last interconnect may need less slaves
                 if {($i == $ninter-1) && ($prev_ninter%16)} {
-                    set num_si [expr $prev_ninter%16]
+                    set num_si [expr {$prev_ninter%16}]
                 } else {
                     set num_si 16
                 }
@@ -246,7 +246,7 @@ namespace eval AIT {
             }
 
             set prev_ninter $ninter
-            set ninter [expr int(ceil($ninter/16.))]
+            set ninter [expr {int(ceil($ninter/16.))}]
             incr inter_level
 
             while {$ninter < $prev_ninter} {
@@ -257,7 +257,7 @@ namespace eval AIT {
 
                         # Last interconnect may need less slaves
                         if {($i == $ninter-1) && ($prev_ninter%16)} {
-                            set num_si [expr $prev_ninter%16]
+                            set num_si [expr {$prev_ninter%16}]
                         } else {
                             set num_si 16
                         }
@@ -287,8 +287,8 @@ namespace eval AIT {
                         connect_bd_net $peri_rstn [get_bd_pins $inter_name/M00_AXIS_ARESETN]
 
                         for {set j 0} {$j < $num_si} {incr j} {
-                            set master_inter_num [expr $i*16 + $j]
-                            set master_inter_level [expr $inter_level-1]
+                            set master_inter_num [expr {$i*16 + $j}]
+                            set master_inter_level [expr {$inter_level - 1}]
                             if {$inter_level == 1} {
                                 set master_inf [format %02u $m]
                                 set master_inter ${stream_name}_lvl${master_inter_level}_$master_inter_num
@@ -296,21 +296,21 @@ namespace eval AIT {
                                 set master_inf 00
                                 set master_inter ${stream_name}_lvl${master_inter_level}_m${m}_$master_inter_num
                             }
-                            set slave [format %02u [expr $j%16]]
+                            set slave [format %02u [expr {$j%16}]]
                             connect_bd_intf_net [get_bd_intf_pins $master_inter/M${master_inf}_AXIS] [get_bd_intf_pins $inter_name/S${slave}_AXIS]
                         }
                     }
                 }
                 set prev_ninter $ninter
-                set ninter [expr int(ceil($ninter/16.))]
+                set ninter [expr {int(ceil($ninter/16.))}]
                 incr inter_level
             }
-            return [expr $inter_level-1]
+            return [expr {$inter_level - 1}]
         }
 
         # Creates and connects a tree of interconnects that allows up to 16 AXI-stream masters to connect with an arbitrary number of AXI-stream slaves
         proc create_outStream_Inter_tree { stream_name nslaves nmasters clk inter_rstn peri_rstn } {
-            set ninter [expr int(ceil($nmasters/16.))]
+            set ninter [expr {int(ceil($nmasters/16.))}]
             set prev_ninter $nmasters
             set inter_level 0
             set stride 1
@@ -328,7 +328,7 @@ namespace eval AIT {
 
                 # Last interconnect may need less masters
                 if {($i == $ninter-1) && ($prev_ninter%16)} {
-                    set num_mi [expr $prev_ninter%16]
+                    set num_mi [expr {$prev_ninter%16}]
                 } else {
                     set num_mi 16
                 }
@@ -339,8 +339,8 @@ namespace eval AIT {
 
                 for {set j 0} {$j < $num_mi} {incr j} {
                     set master_num [format %02u $j]
-                    set base_dest [format "32\'d%d" [expr $i*$stride*16 + $j*$stride]]
-                    set high_dest [format "32\'d%d" [expr $i*$stride*16 + ($j+1)*$stride - 1]]
+                    set base_dest [format "32\'d%d" [expr {$i*$stride*16 + $j*$stride}]]
+                    set high_dest [format "32\'d%d" [expr {$i*$stride*16 + ($j+1)*$stride - 1}]]
                     lappend inter_conf CONFIG.M${master_num}_AXIS_BASETDEST $base_dest CONFIG.M${master_num}_AXIS_HIGHTDEST $high_dest
                 }
 
@@ -361,8 +361,8 @@ namespace eval AIT {
             }
 
             set prev_ninter $ninter
-            set ninter [expr int(ceil($ninter/16.))]
-            set stride [expr $stride*16]
+            set ninter [expr {int(ceil($ninter/16.))}]
+            set stride [expr {$stride*16}]
             incr inter_level
 
             while {$ninter < $prev_ninter} {
@@ -373,7 +373,7 @@ namespace eval AIT {
 
                         # Last interconnect may need less masters
                         if {($i == $ninter-1) && ($prev_ninter%16)} {
-                            set num_mi [expr $prev_ninter%16]
+                            set num_mi [expr {$prev_ninter%16}]
                         } else {
                             set num_mi 16
                         }
@@ -383,8 +383,8 @@ namespace eval AIT {
 
                         for {set j 0} {$j < $num_mi} {incr j} {
                             set master_num [format %02u $j]
-                            set base_dest [format "32\'d%d" [expr $i*$stride*16 + $j*$stride]]
-                            set high_dest [format "32\'d%d" [expr $i*$stride*16 + ($j+1)*$stride - 1]]
+                            set base_dest [format "32\'d%d" [expr {$i*$stride*16 + $j*$stride}]]
+                            set high_dest [format "32\'d%d" [expr {$i*$stride*16 + ($j+1)*$stride - 1}]]
                             lappend inter_conf CONFIG.M${master_num}_AXIS_BASETDEST $base_dest CONFIG.M${master_num}_AXIS_HIGHTDEST $high_dest
                         }
 
@@ -401,8 +401,8 @@ namespace eval AIT {
                         connect_bd_net $peri_rstn [get_bd_pins $inter_name/S00_AXIS_ARESETN]
 
                         for {set j 0} {$j < $num_mi} {incr j} {
-                            set slave_inter_num [expr $i*16+$j]
-                            set slave_inter_level [expr $inter_level-1]
+                            set slave_inter_num [expr {$i*16 + $j}]
+                            set slave_inter_level [expr {$inter_level - 1}]
                             set master [format %02u $j]
                             if {$inter_level == 1} {
                                 set slave_inf [format %02u $s]
@@ -416,11 +416,11 @@ namespace eval AIT {
                     }
                 }
                 set prev_ninter $ninter
-                set ninter [expr int(ceil($ninter/16.))]
-                set stride [expr $stride*16]
+                set ninter [expr {int(ceil($ninter/16.))}]
+                set stride [expr {$stride*16}]
                 incr inter_level
             }
-            return [expr $inter_level-1]
+            return [expr {$inter_level - 1}]
         }
 
         # Creates and connects a nested interconnect
@@ -432,10 +432,10 @@ namespace eval AIT {
             AIT::info_msg "Creating $num nested interconnects for $parent_inter"
 
             set parent_inter_slaves [get_property CONFIG.NUM_SI [get_bd_cells $parent_inter]]
-            set_property CONFIG.NUM_SI [expr $parent_inter_slaves + $num - 1] [get_bd_cells $parent_inter]
+            set_property CONFIG.NUM_SI [expr {$parent_inter_slaves + $num - 1}] [get_bd_cells $parent_inter]
             for {set i 0} {$i < $num} {incr i} {
                 set nested_inter "${parent_inter}_$i"
-                set intf_num [format %02u [expr $parent_inter_slaves + $i - 1]]
+                set intf_num [format %02u [expr {$parent_inter_slaves + $i - 1}]]
 
                 # Create new nested interconnect and configure it
                 set nested_inter [create_bd_cell -vlnv xilinx.com:ip:axi_interconnect $nested_inter]
@@ -457,7 +457,7 @@ namespace eval AIT {
                 connect_clock [get_bd_pins $parent_inter/S${intf_num}_ACLK]
                 connect_reset [get_bd_pins $parent_inter/S${intf_num}_ARESETN] "peripheral"
 
-                lappend board_axi_intfs "S [string trim $nested_inter "/"] 0 16"
+                lappend board_axi_intfs "S [get_property NAME $nested_inter] 0 16"
             }
             set board_axi_intfs [lsort -integer -index 2 -increasing $board_axi_intfs]
         }
@@ -467,11 +467,11 @@ namespace eval AIT {
             variable board_axi_intfs
 
             # Look for src in dataInterfaces_map
-            set index [lsearch -regexp ${::AIT::dataInterfaces_map} [string trim $src "/"]]
+            set index [lsearch -regexp ${::AIT::dataInterfaces_map} [get_property NAME $src]]
             if {$index != -1} {
                 set intf [lindex [lindex ${::AIT::dataInterfaces_map} $index] 1]
                 # Interface must be 'S_AXI_X' where X is the value we need for $num
-                regsub {S_AXI_} $intf "" num
+                set num [regsub {S_AXI_} $intf ""]
             }
 
             # Get AXI interface by num or the least occupied
@@ -504,7 +504,7 @@ namespace eval AIT {
 
             set intf ${mode}[format %02u $counter]
 
-            set_property CONFIG.NUM_${mode}I [expr $counter + 1] $dst
+            set_property CONFIG.NUM_${mode}I [expr {$counter + 1}] $dst
             set_property -quiet CONFIG.STRATEGY ${::AIT::interconOpt} $dst
 
             if {($mode eq "S") && ${::AIT::interconPriority}} {
@@ -521,7 +521,7 @@ namespace eval AIT {
                 set_property -dict [list \
                     CONFIG.ENABLE_ADVANCED_OPTIONS {1} \
                     CONFIG.XBAR_DATA_WIDTH.VALUE_SRC {PROPAGATED} \
-                    CONFIG.${intf}_ARB_PRIORITY [expr 15 - ($counter%16)] \
+                    CONFIG.${intf}_ARB_PRIORITY [expr {15 - ($counter%16)}] \
                     CONFIG.XBAR_DATA_WIDTH $data_width \
                  ] $dst
             }
@@ -567,7 +567,7 @@ namespace eval AIT {
             AIT::info_msg "Using generic set_and_get_freq procedure"
 
             set_property CONFIG.CLKOUT1_REQUESTED_OUT_FREQ $targetFreq [get_bd_cells clock_generator]
-            set actFreq [expr [get_property CONFIG.FREQ_HZ [get_bd_pins clock_generator/clk_out1]]/1000000]
+            set actFreq [expr {[get_property CONFIG.FREQ_HZ [get_bd_pins clock_generator/clk_out1]]/1000000}]
 
             return $actFreq
         }
@@ -605,7 +605,7 @@ namespace eval AIT {
                     if {$counter == 0} {
                         set mem_type [dict get ${::AIT::address_map} "mem_type"]
                         if {$mem_type eq "hbm"} {
-                            set intf [string trim [string trim $name {_Inter}] {S_AXI_}]
+                            set intf [regsub -all {(^S_AXI_|_Inter$)} $name ""]
                             set_property CONFIG.USER_SAXI_$intf {false} [get_bd_cells -hierarchical HBM]
                             delete_bd_objs [get_bd_intf_pins bridge_to_host/memory/S${intf}_AXI]
                             delete_bd_objs [get_bd_intf_pins bridge_to_host/S${intf}_AXI]

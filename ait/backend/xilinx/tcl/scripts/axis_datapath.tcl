@@ -84,12 +84,12 @@ namespace eval AIT {
         }
 
         proc add_stream_adapter {intf_pin accName instanceNum {accID '0x0'}} {
-            set intf_name [string trimright [string replace [string range $intf_pin [expr [string last / $intf_pin] + 1] end] 0 [expr [string length "mcxx_"] - 1]] "_V"]
+            set intf_name [regsub -all {(^m_axi_|(_V)*$)} [get_property NAME $intf_pin] ""]
             set dir [get_property DIR $intf_pin]
             if {$dir eq "O"} {
                 set stream_adapter [create_bd_cell -type module -reference bsc_ompss_hsToStreamAdapter ${accName}_${instanceNum}/Adapter_${intf_name}]
                 set_property -dict [list \
-                    CONFIG.TID_WIDTH [expr max(int(ceil(log(${::AIT::num_accs})/log(2))), 1)] \
+                    CONFIG.TID_WIDTH [expr {max(int(ceil(log(${::AIT::num_accs})/log(2))), 1)}] \
                     CONFIG.ACCID $accID \
                  ] $stream_adapter
                 connect_bd_net [get_bd_pins $stream_adapter/in_hs_ap_vld] [get_bd_pins -regexp ${intf_pin}_ap_vld]
@@ -126,7 +126,7 @@ namespace eval AIT {
         }
 
         proc add_tid_subset_converter {intf_pin accID accName instanceNum} {
-            set accIDWidth [expr max(int(ceil(log(${::AIT::num_accs})/log(2))), 1)]
+            set accIDWidth [expr {max(int(ceil(log(${::AIT::num_accs})/log(2))), 1)}]
 
             # We need to insert accID to the new_task_spawner TID AXI-Stream signal
             set tidSubsetConv [create_bd_cell -type module -reference bsc_ompss_axis_subset_converter ${accName}_${instanceNum}/TID_subset_converter]

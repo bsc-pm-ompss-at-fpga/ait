@@ -51,7 +51,7 @@ if {(${::AIT::arch_device} eq "zynq") || (${::AIT::arch_device} eq "zynqmp")} {
 AIT::info_msg "Launching bitstream run with ${::AIT::num_jobs} jobs"
 
 # Write bitstream
-reset_run impl_1 -from_step write_bitstream
+reset_runs impl_1 -from_step write_bitstream
 launch_runs impl_1 -to_step write_bitstream -jobs ${::AIT::num_jobs}
 
 wait_on_run impl_1
