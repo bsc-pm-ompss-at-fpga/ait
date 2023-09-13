@@ -349,9 +349,10 @@ foreach acc ${::AIT::accs} {
                 connect_bd_net [get_bd_pins $hwinst_counter/Q] [get_bd_pins $acc_hier/Adapter_instr/hwcounter]
 
                 set instr_inner_axi_pin [get_bd_intf_pins -quiet -filter {NAME =~ *instr_buffer} $acc_hier/Adapter_instr/m_axi*]
+                set instr_pin_name [regsub -all {(^m_axi_|(_V)*$)} [get_property NAME $instr_inner_axi_pin] ""]
 
                 if {(${::AIT::slr_slices} eq "acc") || (${::AIT::slr_slices} eq "all")} {
-                    set instr_inner_axi_pin [AIT::AXI::add_reg_slice $instr_axi_pin $accName $instanceNum]
+                    set instr_inner_axi_pin [AIT::AXI::add_reg_slice $instr_inner_axi_pin $instr_pin_name $accName $instanceNum]
                 }
 
                 # Connect instr_buffer pin
