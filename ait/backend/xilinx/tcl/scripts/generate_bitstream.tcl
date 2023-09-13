@@ -26,7 +26,7 @@ if {[catch {source -notrace tcl/scripts/utils.tcl}]} {
 
 # Project variables
 if {[catch {source -notrace tcl/projectVariables.tcl}]} {
-    AIT::error_msg "Failed sourcing project variables"
+    AIT::utils::error_msg "Failed sourcing project variables"
 }
 
 # Open Vivado project
@@ -34,7 +34,7 @@ open_project ${::AIT::name_Project}/${::AIT::name_Project}.xpr
 
 # Check if previous step finished correctly
 if {[string match "*ERROR*" [get_property STATUS [get_runs impl_1]]]} {
-    AIT::error_msg "Implementation step did not finished correctly. Cannot generate bitstream."
+    AIT::utils::error_msg "Implementation step did not finished correctly. Cannot generate bitstream."
 }
 
 # Open and validate Block Design
@@ -48,7 +48,7 @@ if {(${::AIT::arch_device} eq "zynq") || (${::AIT::arch_device} eq "zynqmp")} {
     set_property STEPS.WRITE_BITSTREAM.ARGS.BIN_FILE {false} [get_runs impl_1]
 }
 
-AIT::info_msg "Launching bitstream run with ${::AIT::num_jobs} jobs"
+AIT::utils::info_msg "Launching bitstream run with ${::AIT::num_jobs} jobs"
 
 # Write bitstream
 reset_runs impl_1 -from_step write_bitstream
@@ -58,7 +58,7 @@ wait_on_run impl_1
 
 # Check if bitstream generation finished correctly
 if {[string match "*ERROR*" [get_property STATUS [get_runs impl_1]]]} {
-    AIT::error_msg "Bitstream generation failed."
+    AIT::utils::error_msg "Bitstream generation failed."
 }
 
 file mkdir ${::AIT::name_Project}/${::AIT::name_Project}.sdk

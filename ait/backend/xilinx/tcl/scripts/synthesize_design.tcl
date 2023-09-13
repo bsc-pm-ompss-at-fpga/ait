@@ -26,7 +26,7 @@ if {[catch {source -notrace tcl/scripts/utils.tcl}]} {
 
 # Project variables
 if {[catch {source -notrace tcl/projectVariables.tcl}]} {
-    AIT::error_msg "Failed sourcing project variables"
+    AIT::utils::error_msg "Failed sourcing project variables"
 }
 
 # Open Vivado project
@@ -38,7 +38,7 @@ open_bd_design ${::AIT::name_Project}/${::AIT::name_Project}.srcs/sources_1/bd/$
 # Generate output products
 generate_target all [get_files ${::AIT::name_Project}/${::AIT::name_Project}.srcs/sources_1/bd/${::AIT::name_Design}/${::AIT::name_Design}.bd]
 
-AIT::info_msg "Launching synthesis run with ${::AIT::num_jobs} jobs"
+AIT::utils::info_msg "Launching synthesis run with ${::AIT::num_jobs} jobs"
 
 # Launch synthesis
 reset_runs synth_1
@@ -53,10 +53,10 @@ wait_on_run synth_1
 if {[string match "*ERROR*" [get_property STATUS [get_runs *synth_1]]]} {
     foreach {index} [lsearch -all [get_property STATUS [get_runs *synth_1]] *ERROR*] {
         if {[catch {exec grep ^ERROR ${::AIT::name_Project}/${::AIT::name_Project}.runs/[lindex [get_runs *synth_1] $index]/runme.log}]} {
-            AIT::info_msg "Failed OOC synthesis [lindex [get_runs *synth_1] $index]"
+            AIT::utils::info_msg "Failed OOC synthesis [lindex [get_runs *synth_1] $index]"
         } else {
-            AIT::info_msg "Failed OOC synthesis [lindex [get_runs *synth_1] $index]: [exec grep ^ERROR ${::AIT::name_Project}/${::AIT::name_Project}.runs/[lindex [get_runs *synth_1] $index]/runme.log]"
+            AIT::utils::info_msg "Failed OOC synthesis [lindex [get_runs *synth_1] $index]: [exec grep ^ERROR ${::AIT::name_Project}/${::AIT::name_Project}.runs/[lindex [get_runs *synth_1] $index]/runme.log]"
         }
     }
-    AIT::error_msg "Hardware synthesis failed."
+    AIT::utils::error_msg "Hardware synthesis failed."
 }

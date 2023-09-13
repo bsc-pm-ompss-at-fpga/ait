@@ -164,7 +164,7 @@ namespace eval AIT {
 
         # Maps board memory to address map
         proc configure_address_map {} {
-            AIT::info_msg "Using generic configure_address_map procedure"
+            AIT::utils::info_msg "Using generic configure_address_map procedure"
 
             set mem_type [dict get ${::AIT::address_map} "mem_type"]
             set base_addr [dict get ${::AIT::address_map} "mem_base_addr"]
@@ -445,7 +445,7 @@ namespace eval AIT {
             set index [lsearch -regexp $board_axi_intfs $parent_inter]
             set board_axi_intfs [lreplace $board_axi_intfs $index $index]
 
-            AIT::info_msg "Creating $num nested interconnects for $parent_inter"
+            AIT::utils::info_msg "Creating $num nested interconnects for $parent_inter"
 
             set parent_inter_slaves [get_property CONFIG.NUM_SI [get_bd_cells $parent_inter]]
             set_property CONFIG.NUM_SI [expr {$parent_inter_slaves + $num - 1}] [get_bd_cells $parent_inter]
@@ -499,7 +499,7 @@ namespace eval AIT {
                     } elseif {$mode eq "M"} {
                         set mode "master"
                     }
-                    AIT::error_msg "Cannot connect $src to $mode interface $num. It does not exist"
+                    AIT::utils::error_msg "Cannot connect $src to $mode interface $num. It does not exist"
                 }
             } else {
                 set index [lsearch -index 0 $board_axi_intfs $mode]
@@ -513,7 +513,7 @@ namespace eval AIT {
 
             # Interconnect is full
             if {!($counter%$capacity) && ($counter > 0)} {
-                AIT::error_msg "${dst_name} interface occupation is 100%"
+                AIT::utils::error_msg "${dst_name} interface occupation is 100%"
             }
 
             set dst [get_bd_cells -hierarchical $dst_name]
@@ -580,7 +580,7 @@ namespace eval AIT {
 
         # Sets target frequency, retrieves actual achieved frequency and returns it
         proc set_and_get_freq {targetFreq} {
-            AIT::info_msg "Using generic set_and_get_freq procedure"
+            AIT::utils::info_msg "Using generic set_and_get_freq procedure"
 
             set_property CONFIG.CLKOUT1_REQUESTED_OUT_FREQ $targetFreq [get_bd_cells clock_generator]
             set actFreq [expr {[get_property CONFIG.FREQ_HZ [get_bd_pins clock_generator/clk_out1]]/1000000}]
@@ -622,7 +622,7 @@ namespace eval AIT {
 
         # Generates HDL wrapper
         proc generate_wrapper {} {
-            AIT::info_msg "Using generic generate_wrapper procedure"
+            AIT::utils::info_msg "Using generic generate_wrapper procedure"
 
             set_property target_language ${::AIT::target_lang} [current_project]
 

@@ -23,7 +23,7 @@ namespace eval AIT {
         proc add_reg_slice {intf_pin accName instanceNum} {
             if {!([dict exists ${::AIT::acc_placement} $accName] && ([llength [dict get ${::AIT::acc_placement} $accName]] > ${instanceNum}))} {
                 # No placement info is provided for this instance
-                AIT::warning_msg "No placement info provided for instance ${instanceNum} of ${accName}. Slices for AXI-Stream pins will not be created"
+                AIT::utils::warning_msg "No placement info provided for instance ${instanceNum} of ${accName}. Slices for AXI-Stream pins will not be created"
             } else {
                 set slr [lindex [dict get ${::AIT::acc_placement} $accName] ${instanceNum}]
 

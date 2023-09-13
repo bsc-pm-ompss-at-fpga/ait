@@ -26,7 +26,7 @@ if {[catch {source -notrace tcl/scripts/utils.tcl}]} {
 
 # Project variables
 if {[catch {source -notrace tcl/projectVariables.tcl}]} {
-    AIT::error_msg "Failed sourcing project variables"
+    AIT::utils::error_msg "Failed sourcing project variables"
 }
 
 # Open Vivado project
@@ -34,7 +34,7 @@ open_project ${::AIT::name_Project}/${::AIT::name_Project}.xpr
 
 # Check if previous step finished correctly
 if {[string match "*ERROR*" [get_property STATUS [get_runs synth_1]]]} {
-    AIT::error_msg "Synthesis step did not finished correctly. Cannot start implementation step."
+    AIT::utils::error_msg "Synthesis step did not finished correctly. Cannot start implementation step."
 }
 
 # Open Block Design
@@ -47,7 +47,7 @@ if {(${::AIT::arch_device} eq "zynq") || (${::AIT::arch_device} eq "zynqmp")} {
     set_property STEPS.WRITE_BITSTREAM.ARGS.BIN_FILE {false} [get_runs impl_1]
 }
 
-AIT::info_msg "Launching implementation run with ${::AIT::num_jobs} jobs"
+AIT::utils::info_msg "Launching implementation run with ${::AIT::num_jobs} jobs"
 
 # Launch implementation
 reset_runs impl_1
@@ -58,10 +58,10 @@ wait_on_run impl_1
 # Check if implementation finished correctly
 if {[string match "*ERROR*" [get_property STATUS [get_runs impl_1]]]} {
     if {[catch {exec exec grep ^ERROR ${::AIT::name_Project}/${::AIT::name_Project}.runs/impl_1/runme.log}]} {
-        AIT::info_msg "Failed impl_1 implementation"
+        AIT::utils::info_msg "Failed impl_1 implementation"
     } else {
-        AIT::info_msg "Failed impl_1 implementation: [exec grep ^ERROR ${::AIT::name_Project}/${::AIT::name_Project}.runs/impl_1/runme.log]"
+        AIT::utils::info_msg "Failed impl_1 implementation: [exec grep ^ERROR ${::AIT::name_Project}/${::AIT::name_Project}.runs/impl_1/runme.log]"
     }
-    AIT::error_msg "Hardware implementation failed."
+    AIT::utils::error_msg "Hardware implementation failed."
 }
 

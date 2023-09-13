@@ -25,42 +25,42 @@ if {[catch {source -notrace tcl/scripts/utils.tcl}]} {
 }
 
 # Project variables
-AIT::info_msg "Sourcing project variables"
+AIT::utils::info_msg "Sourcing project variables"
 if {[catch {source -notrace tcl/projectVariables.tcl}]} {
-    AIT::error_msg "Failed sourcing project variables"
+    AIT::utils::error_msg "Failed sourcing project variables"
 }
 
 # Load board-related procedures
-AIT::info_msg "Loading board-related procedures"
+AIT::utils::info_msg "Loading board-related procedures"
 if {[catch {source -notrace tcl/scripts/board.tcl}]} {
-    AIT::error_msg "Failed board-related procedures"
+    AIT::utils::error_msg "Failed board-related procedures"
 }
 
 # Load AXI datapath procedures
-AIT::info_msg "Loading AXI datapath procedures"
+AIT::utils::info_msg "Loading AXI datapath procedures"
 if {[catch {source -notrace tcl/scripts/axi_datapath.tcl}]} {
-    AIT::error_msg "Failed loading AXI datapath procedures"
+    AIT::utils::error_msg "Failed loading AXI datapath procedures"
 }
 
 # Load AXI-Stream datapath procedures
-AIT::info_msg "Loading AXI-Stream datapath procedures"
+AIT::utils::info_msg "Loading AXI-Stream datapath procedures"
 if {[catch {source -notrace tcl/scripts/axis_datapath.tcl}]} {
-    AIT::error_msg "Failed loading AXI-Stream datapath procedures"
+    AIT::utils::error_msg "Failed loading AXI-Stream datapath procedures"
 }
 
 # If available and enabled, load static register slices procedures
 if {[file exists board/${::AIT::board}/staticRegSlices.tcl] && ((${::AIT::slr_slices} eq "static") || (${::AIT::slr_slices} eq "all"))} {
-    AIT::info_msg "Loading static register slices procedures"
+    AIT::utils::info_msg "Loading static register slices procedures"
     if {[catch {source -notrace board/${::AIT::board}/staticRegSlices.tcl}]} {
-        AIT::error_msg "Failed loading static logic register slices"
+        AIT::utils::error_msg "Failed loading static logic register slices"
     }
 }
 
 # If available, overwrite board-specific procedures
 if {[file exists board/${::AIT::board}/procs.tcl]} {
-    AIT::info_msg "Loading board-specific procedures"
+    AIT::utils::info_msg "Loading board-specific procedures"
     if {[catch {source -notrace board/${::AIT::board}/procs.tcl}]} {
-        AIT::error_msg "Failed overwriting ${::AIT::board} board-specific procedures"
+        AIT::utils::error_msg "Failed overwriting ${::AIT::board} board-specific procedures"
     }
 }
 
@@ -91,7 +91,7 @@ if {${::AIT::enable_pom_axilite}} {
 }
 
 # Sort the segments in decreasing size to minimize fragmentation when assigning addresses
-set bd_addr_segments [lsort -decreasing -command AIT::comp_bd_addr_seg $bd_addr_segments]
+set bd_addr_segments [lsort -decreasing -command AIT::utils::comp_bd_addr_seg $bd_addr_segments]
 
 set addr_hwruntime_spawnInQueue 0x0000000000000000
 set addr_hwruntime_spawnOutQueue 0x0000000000000000
@@ -142,7 +142,7 @@ if {[info exists {::AIT::boardPart}]} {
     if {[llength [get_boards ${::AIT::boardPart}:*]]} {
         set_property board_part [get_board_parts -latest_file_version ${::AIT::boardPart}:*] [current_project]
     } else {
-        AIT::error_msg "Board part is missing, design will fail. Please add the corresponding board files to the Vivado installation"
+        AIT::utils::error_msg "Board part is missing, design will fail. Please add the corresponding board files to the Vivado installation"
     }
 }
 
@@ -167,11 +167,11 @@ if {[file isdirectory IPs]} {
     set_property ip_repo_paths "[get_property ip_repo_paths [current_project]] IPs" [current_project]
     update_ip_catalog
     foreach {IP} [glob -nocomplain IPs/*.zip] {
-        AIT::info_msg "Adding auxiliary IP $IP"
+        AIT::utils::info_msg "Adding auxiliary IP $IP"
         update_ip_catalog -add_ip $IP -repo_path IPs
     }
     foreach {IP} [glob -nocomplain IPs/*.{v,vhdl}] {
-        AIT::info_msg "Adding auxiliary IP $IP"
+        AIT::utils::info_msg "Adding auxiliary IP $IP"
         import_files -norecurse $IP
     }
     update_ip_catalog
@@ -192,7 +192,7 @@ update_ip_catalog
 # Generate board base design from template
 set argv ${::AIT::name_Project}
 if {[catch {source -notrace board/${::AIT::board}/baseDesign.tcl}]} {
-    AIT::error_msg "Failed sourcing board base design"
+    AIT::utils::error_msg "Failed sourcing board base design"
 }
 
 # Open Block Design
@@ -204,7 +204,7 @@ set_property synth_checkpoint_mode {Hierarchical} [get_files ${::AIT::name_Proje
 # If available, execute the user defined pre-design tcl script
 if {[file exists tcl/scripts/userPreDesign.tcl]} {
     if {[catch {source -notrace tcl/scripts/userPreDesign.tcl}]} {
-        AIT::error_msg "Failed sourcing board pre base design"
+        AIT::utils::error_msg "Failed sourcing board pre base design"
     }
 }
 
@@ -213,7 +213,7 @@ AIT::board::init_bd
 
 # Add OmpSs Manager template
 if {[catch {source -notrace tcl/templates/Picos_OmpSs_Manager.tcl}]} {
-    AIT::error_msg "Failed sourcing Picos_OmpSs_Manager template"
+    AIT::utils::error_msg "Failed sourcing Picos_OmpSs_Manager template"
 }
 
 if {(${::AIT::arch_device} eq "zynq") || (${::AIT::arch_device} eq "zynqmp")} {
@@ -235,7 +235,7 @@ if {${::AIT::hwruntime_interconnect} == "centralized"} {
 
 # Instantiate hwruntime interconnect tree
 if {[catch {source $hwruntime_interconnect_script}]} {
-    AIT::error_msg "Failed sourcing $hwruntime_interconnect_script"
+    AIT::utils::error_msg "Failed sourcing $hwruntime_interconnect_script"
 }
 
 # Set and get the actual PS frequency
@@ -406,7 +406,7 @@ if {(${::AIT::arch_device} eq "alveo") && ([dict get ${::AIT::address_map} "mem_
 
 # Check if there are enough available AXI interfaces to memory
 if {[llength $acc_axi_pins] > [AIT::board::get_available_axi_intfs]} {
-    AIT::error_msg "Insufficient available AXI interfaces to memory ([llength $acc_axi_pins] > [AIT::board::get_available_axi_intfs])"
+    AIT::utils::error_msg "Insufficient available AXI interfaces to memory ([llength $acc_axi_pins] > [AIT::board::get_available_axi_intfs])"
 }
 
 # Connect data pins to memory interconnection
@@ -475,7 +475,7 @@ if {${::AIT::debugInterfaces} eq "custom"} {
         } elseif {[llength [get_bd_intf_pins -quiet -filter {VLNV =~ xilinx.com:interface:axis_rtl:*} $intf_pin]]} {
             AIT::AXIS::mark_debug $intf_pin
         } else {
-            AIT::error_msg "Interface type not recognized ($intf)"
+            AIT::utils::error_msg "Interface type not recognized ($intf)"
         }
     }
     save_bd_design
@@ -505,7 +505,7 @@ foreach bd_addr_seg $bd_addr_segments {
     set addr [dict get $bd_addr_seg addr]
     set range [dict get $bd_addr_seg size]
     set bd_seg_name [dict get $bd_addr_seg bd_seg_name]
-    AIT::info_msg "Assign $name BD address, range $range address $addr"
+    AIT::utils::info_msg "Assign $name BD address, range $range address $addr"
     assign_bd_address [get_bd_addr_segs $bd_seg_name] -range $range -offset $addr
 }
 
@@ -548,7 +548,7 @@ foreach acc ${::AIT::accs} {
     # Max length is 31 characters, but there are 8 padding bits at the end
     append accName [string repeat " " [expr {32 - [string length $accName]}]]
     # Convert ascii to hexadecimal string
-    append xtasks_bin_str [AIT::ascii2hex $accName]
+    append xtasks_bin_str [AIT::utils::ascii2hex $accName]
 
     set sched_count [expr {$sched_count | (($accNumInstances-1) << $i*8)}]
     set sched_accid [expr {$sched_accid | ($accid << $i*8)}]
@@ -559,12 +559,12 @@ foreach acc ${::AIT::accs} {
 
 if {${::AIT::task_creation}} {
     if {[llength ${::AIT::accs}] > 16} {
-        AIT::error_msg "Max number of accelerator types supported by POM is 16, but design has [llength ${::AIT::accs}]"
+        AIT::utils::error_msg "Max number of accelerator types supported by POM is 16, but design has [llength ${::AIT::accs}]"
     }
     set_property -dict [list \
-        CONFIG.SCHED_COUNT 0x[AIT::long_int_to_hex 128 $sched_count] \
-        CONFIG.SCHED_ACCID 0x[AIT::long_int_to_hex 128 $sched_accid] \
-        CONFIG.SCHED_TTYPE 0x[AIT::long_int_to_hex 512 $sched_ttype] \
+        CONFIG.SCHED_COUNT 0x[AIT::utils::long_int_to_hex 128 $sched_count] \
+        CONFIG.SCHED_ACCID 0x[AIT::utils::long_int_to_hex 128 $sched_accid] \
+        CONFIG.SCHED_TTYPE 0x[AIT::utils::long_int_to_hex 512 $sched_ttype] \
      ] [get_bd_cells -hierarchical Picos_OmpSs_Manager]
 }
 
@@ -586,7 +586,7 @@ foreach size $dynamic_field_sizes {
 }
 set bitinfo_len $offset
 if {$bitinfo_len > 1024} {
-    AIT::error_msg "BitInfo length ($bitinfo_len) is greater than its mapped region (1024)"
+    AIT::utils::error_msg "BitInfo length ($bitinfo_len) is greater than its mapped region (1024)"
 }
 
 # Create bitInfo.coe file
@@ -624,9 +624,9 @@ for {set i 0} {$i < [llength $dynamic_field_sizes]} {incr i} {
     append bitInfo_coe [format %08X [expr {[lindex $dynamic_field_sizes $i] | ([lindex $dynamic_field_offsets $i] << 16)}]]\n
 }
 append bitInfo_coe $xtasks_bin_str
-append bitInfo_coe [AIT::ascii2hex ${::AIT::ait_call}]
-append bitInfo_coe [AIT::ascii2hex $hwruntime_vlnv]
-append bitInfo_coe [AIT::ascii2hex ${::AIT::bitInfo_note}]
+append bitInfo_coe [AIT::utils::ascii2hex ${::AIT::ait_call}]
+append bitInfo_coe [AIT::utils::ascii2hex $hwruntime_vlnv]
+append bitInfo_coe [AIT::utils::ascii2hex ${::AIT::bitInfo_note}]
 puts $bitInfo_file $bitInfo_coe
 close $bitInfo_file
 
@@ -661,7 +661,7 @@ reorder_files -fileset constrs_1 -front [get_files -quiet create_pblocks.xdc]
 # If available, execute the user defined post-design tcl script
 if {[file exists tcl/scripts/userPostDesign.tcl]} {
     if {[catch {source -notrace tcl/scripts/userPostDesign.tcl}]} {
-        AIT::error_msg "Failed sourcing board post base design"
+        AIT::utils::error_msg "Failed sourcing board post base design"
     }
 }
 
@@ -695,7 +695,7 @@ regenerate_bd_layout
 regenerate_bd_layout -routing
 if {[catch {validate_bd_design -force}]} {
     save_bd_design
-    AIT::error_msg "Block Design could not be validated"
+    AIT::utils::error_msg "Block Design could not be validated"
 }
 
 AIT::board::generate_wrapper
