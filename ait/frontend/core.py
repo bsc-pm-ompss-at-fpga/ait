@@ -151,6 +151,12 @@ def main():
     msg.setPrintTime(args.verbose_info)
     msg.setVerbose(args.verbose)
 
+    # Dump board info json and exit
+    if args.dump_board_info:
+        board = json.load(open(ait_path + '/backend/' + args.backend + '/board/' + args.board + '/basic_info.json'))
+        print(json.dumps(board, indent=4))
+        sys.exit(0)
+
     msg.info('Using ' + args.backend + ' backend')
 
     driver = importlib.import_module('ait.backend.{}.driver'.format(args.backend))

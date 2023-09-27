@@ -206,7 +206,7 @@ class ArgParser:
         # Required arguments
         required_args = self.parser.add_argument_group('Required')
         required_args.add_argument('-b', '--board', help='board model. Supported boards by vendor:\n' + '\n'.join(backend + ': ' + ', '.join(board for board in backends[backend]['boards']) for backend in backends), choices=[board for board in backends[backend]['boards'] for backend in backends], metavar='BOARD', type=str.lower, required=True)
-        required_args.add_argument('-n', '--name', help='project name', metavar='NAME', required=True)
+        required_args.add_argument('-n', '--name', help='project name', metavar='NAME', required='--dump_board_info' not in sys.argv)
 
         # Generation flow arguments
         flow_args = self.parser.add_argument_group('Generation flow')
@@ -266,6 +266,7 @@ class ArgParser:
         misc_args = self.parser.add_argument_group('Miscellaneous')
         misc_args.add_argument('-h', '--help', action='help', help='show this help message and exit')
         misc_args.add_argument('-i', '--verbose_info', help='print extra information messages', action='store_true', default=False)
+        misc_args.add_argument('--dump_board_info', help='dump board info json for the specified board', action='store_true', default=False)
         misc_args.add_argument('-j', '--jobs', help='specify the number of jobs to run simultaneously\nBy default it will use as many jobs as cores with at least 3GB of dedicated free memory, or the value returned by `nproc`, whichever is less.', type=IntRangeType(imin=1), default=getNumJobs())
         misc_args.add_argument('-k', '--keep_files', help='keep files on error', action='store_true', default=False)
         misc_args.add_argument('-v', '--verbose', help='print vendor backend messages', action='store_true', default=False)
@@ -323,14 +324,16 @@ class ArgParser:
 
     def check_required_args(self, args):
         # Validate required args
-        if re.search('(^[^A-Za-z])|(\W|__)|([^A-Za-z0-9]$)', args.name):
-            msg.error('Invalid project name. Must start with a letter, contain only letters, numbers or non-consecutive underscores, and end with a letter or number')
+        # Some arguments not required when --dump_board_info argument is present
+        if not args.dump_board_info:
+            if re.search('(^[^A-Za-z])|(\W|__)|([^A-Za-z0-9]$)', args.name):
+                msg.error('Invalid project name. Must start with a letter, contain only letters, numbers or non-consecutive underscores, and end with a letter or number')
 
-        if args.wrapper_version and args.wrapper_version < MIN_WRAPPER_VERSION:
-            msg.error('Unsupported wrapper version (' + str(args.wrapper_version) + '). Minimum version is ' + str(MIN_WRAPPER_VERSION))
+            if not os.path.exists(args.dir + '/' + args.name + '_ait'):
+                os.mkdir(args.dir + '/' + args.name + '_ait')
 
-        if not os.path.exists(args.dir + '/' + args.name + '_ait'):
-            os.mkdir(args.dir + '/' + args.name + '_ait')
+            if args.wrapper_version and args.wrapper_version < MIN_WRAPPER_VERSION:
+                msg.error('Unsupported wrapper version (' + str(args.wrapper_version) + '). Minimum version is ' + str(MIN_WRAPPER_VERSION))
 
     def check_flow_args(self, args):
         # Validate flow args
