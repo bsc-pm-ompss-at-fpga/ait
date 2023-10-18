@@ -133,6 +133,9 @@ class ArgParser():
             elif math.log2(decimalFromHumanReadable(board.mem.bank_size)) - math.log2(args.memory_interleaving_stride) < math.ceil(math.log2(board.mem.num_banks)):
                 msg.error('Max allowed interleaving stride in current board: ' + decimalToHumanReadable(2**(math.log2(decimalFromHumanReadable(board.mem.bank_size)) - math.ceil(math.log2(board.mem.num_banks))), 2))
 
+        if args.datainterfaces_map and (board.arch.device == 'alveo' and board.mem.type == 'ddr'):
+            msg.error('Custom data interface mapping is not available for DDR-based Alveo boards')
+
         if args.interconnect_priorities and (board.arch.device == 'zynq' or board.arch.device == 'zynqmp'):
             msg.error('Memory interconnect priorities are not available on neither Zynq nor ZynqMP boards')
 

@@ -209,7 +209,7 @@ def generate_Vivado_variables_tcl():
         with open(args.datainterfaces_map) as map_file:
             map_data = map_file.readlines()
             for map_line in map_data:
-                elems = map_line.strip().replace('\n', '').split('\t')
+                elems = map_line.strip().replace('\n', '').replace('\t', ' ').split(' ')
                 if len(elems) >= 2 and len(elems[0]) > 0 and elems[0][0] != '#':
                     vivado_project_variables += '\t {' + elems[0] + ' ' + elems[1] + '}'
 

@@ -70,9 +70,6 @@ if {[file exists board/${::AIT::board}/procs.tcl]} {
 file delete ../${::AIT::name_Project}.datainterfaces.txt
 file delete ../${::AIT::name_Project}.debuginterfaces.txt
 
-# Create .datainterfaces.txt file
-set dataInterfaces_file [open ../${::AIT::name_Project}.datainterfaces.txt "w"]
-
 # Compute addresses
 set bd_addr_segments [list \
     [dict create name cmdInQueue bd_seg_name Hardware_Runtime/cmdInQueue_BRAM_Ctrl/S_AXI/Mem0 size [expr {${::AIT::cmdInSubqueue_len}*${::AIT::num_accs}*8}]] \
@@ -461,8 +458,6 @@ if {(${::AIT::slr_slices} eq "static") || (${::AIT::slr_slices} eq "all")} {
     AIT::static_logic_register_slices
     save_bd_design
 }
-
-close $dataInterfaces_file
 
 AIT::board::cleanup_bd
 save_bd_design

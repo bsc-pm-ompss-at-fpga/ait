@@ -482,17 +482,20 @@ namespace eval AIT {
         proc connect_to_axi_intf {src mode {num ""}} {
             variable board_axi_intfs
 
+            # Open datainterfaces.txt file
+            set datainterfaces_file [open ../${::AIT::name_Project}.datainterfaces.txt "a"]
+
             # Look for src in dataInterfaces_map
-            set index [lsearch -regexp ${::AIT::dataInterfaces_map} [get_property NAME $src]]
+            set index [lsearch -regexp ${::AIT::dataInterfaces_map} ".*[string trimleft $src {/}].*"]
             if {$index != -1} {
                 set intf [lindex [lindex ${::AIT::dataInterfaces_map} $index] 1]
                 # Interface must be 'S_AXI_X' where X is the value we need for $num
-                set num [regsub {S_AXI_} $intf ""]
+                set num [regsub -all "(^(/)?${mode}_AXI_|(_Inter)?$)" $intf ""]
             }
 
             # Get AXI interface by num or the least occupied
             if {$num ne ""} {
-                set index [lsearch -exact $board_axi_intfs [lsearch -regexp -inline -index 1 [lsearch -all -inline -index 0 $board_axi_intfs $mode] .*_(0)?$num.*]]
+                set index [lsearch -exact $board_axi_intfs [lsearch -regexp -inline -index 1 [lsearch -all -inline -index 0 $board_axi_intfs $mode] "${mode}_AXI_(${num}|[format %02u $num])_Inter"]]
                 if {$index == -1} {
                     if {$mode eq "S"} {
                         set mode "slave"
@@ -510,6 +513,7 @@ namespace eval AIT {
             set counter [lindex [lindex $board_axi_intfs $index] 2]
             set capacity [lindex [lindex $board_axi_intfs $index] 3]
             set board_axi_intfs [lreplace $board_axi_intfs $index $index]
+            set intf_num [regsub -all {(^(/)?${mode}_AXI_|(_)?Inter(_[0-9]*)?$)} $dst_name ""]
 
             # Interconnect is full
             if {!($counter%$capacity) && ($counter > 0)} {
@@ -560,6 +564,10 @@ namespace eval AIT {
 
             lappend board_axi_intfs "$mode $dst_name $counter $capacity"
             set board_axi_intfs [lsort -integer -index 2 -increasing $board_axi_intfs]
+
+            # Add a line to datainterfaces.txt
+            puts $datainterfaces_file "$src\t$intf_num"
+            close $datainterfaces_file
 
             return [list "$dst_name" "${mode}_AXI"]
         }
