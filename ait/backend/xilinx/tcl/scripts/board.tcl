@@ -23,7 +23,7 @@
 
 namespace eval AIT {
     namespace eval board {
-        variable board_axi_intfs
+        variable board_axi_inters
 
         # Instantiates and connects required common IPs
         proc init_bd {} {
@@ -53,7 +53,7 @@ namespace eval AIT {
                 set_property name {S_AXI_Inter} [get_bd_cells DDR_S_AXI_Inter]
             }
 
-            get_board_axi_intfs
+            get_board_axi_inters
 
             # Create instance: bitInfo, and set properties
             set bitInfo [create_bd_cell -type ip -vlnv xilinx.com:ip:blk_mem_gen bitInfo]
@@ -128,30 +128,43 @@ namespace eval AIT {
             return [list $acc_hier $acc_ip]
         }
 
-        # Initializes board_axi_intfs variable with the available AXI interfaces along with their occupation
-        proc get_board_axi_intfs {} {
-            variable board_axi_intfs
-            set board_axi_intfs {}
+        # Initializes and returns board_axi_inters variable with the available AXI interconnects along with their occupation
+        proc get_board_axi_inters {{all False}} {
+            variable board_axi_inters
+            set board_axi_inters {}
 
-            set interconnect_list [get_bd_cells -regexp {(M|S)_AXI(_([0-9])*)?_Inter}]
-            foreach interconnect $interconnect_list {
-                set mode [regsub -all {_AXI_.+$} [get_property NAME $interconnect] ""]
-                set counter [expr {[get_property CONFIG.NUM_${mode}I $interconnect] - 1}]
-                set capacity 16
-                if {$counter < $capacity} {
-                    lappend board_axi_intfs "$mode [get_property NAME $interconnect] $counter $capacity"
+            if {$all} {
+                set axi_inter_list [get_bd_cells -regexp {(M|S)_AXI(_([0-9])*)?_Inter(_[0-9])?}]
+            } else {
+                set interconnect_list [get_bd_cells -regexp {(M|S)_AXI(_([0-9])*)?_Inter}]
+                foreach interconnect $interconnect_list {
+                    set nested_interconnect_list [get_bd_cells -quiet -regexp "${interconnect}_\[0-9\]"]
+                    if {[llength $nested_interconnect_list]} {
+                        set axi_inter_list [concat $axi_inter_list $nested_interconnect_list]
+                    } else {
+                        lappend axi_inter_list $interconnect
+                    }
                 }
             }
 
-            set board_axi_intfs [lsort -integer -index 2 -increasing $board_axi_intfs]
+            foreach axi_inter $axi_inter_list {
+                set mode [regsub -all {_AXI_.+$} [get_property NAME $axi_inter] ""]
+                set counter [expr {[get_property CONFIG.NUM_${mode}I $axi_inter] - 1}]
+                set capacity 16
+                if {$counter < $capacity} {
+                    lappend board_axi_inters "$mode [get_property NAME $axi_inter] $counter $capacity"
+                }
+            }
+            set board_axi_inters [lsort -integer -index 2 -increasing $board_axi_inters]
+            return $board_axi_inters
         }
 
         # Returns the total number of free AXI data interfaces
         proc get_available_axi_intfs {} {
-            variable board_axi_intfs
+            variable board_axi_inters
             set available_axi_intfs 0
 
-            foreach intf $board_axi_intfs {
+            foreach intf $board_axi_inters {
                 foreach {mode name counter capacity} $intf {
                     if {$mode eq "S"} {
                         incr available_axi_intfs [expr {$capacity - $counter}]
@@ -441,14 +454,14 @@ namespace eval AIT {
 
         # Creates and connects a nested interconnect
         proc create_nested_interconnect {parent_inter {num 1}} {
-            variable board_axi_intfs
-            set index [lsearch -regexp $board_axi_intfs $parent_inter]
-            set board_axi_intfs [lreplace $board_axi_intfs $index $index]
+            variable board_axi_inters
+            set index [lsearch -regexp $board_axi_inters [get_property NAME $parent_inter]]
+            set board_axi_inters [lreplace $board_axi_inters $index $index]
 
             AIT::utils::info_msg "Creating $num nested interconnects for $parent_inter"
 
-            set parent_inter_slaves [get_property CONFIG.NUM_SI [get_bd_cells $parent_inter]]
-            set_property CONFIG.NUM_SI [expr {$parent_inter_slaves + $num - 1}] [get_bd_cells $parent_inter]
+            set parent_inter_slaves [get_property CONFIG.NUM_SI $parent_inter]
+            set_property CONFIG.NUM_SI [expr {$parent_inter_slaves + $num - 1}] $parent_inter
             for {set i 0} {$i < $num} {incr i} {
                 set nested_inter "${parent_inter}_$i"
                 set intf_num [format %02u [expr {$parent_inter_slaves + $i - 1}]]
@@ -461,6 +474,24 @@ namespace eval AIT {
                     CONFIG.STRATEGY ${::AIT::interconOpt} \
                  ] $nested_inter
 
+                if {${::AIT::interconPriority}} {
+                    set data_width 32
+                    if {${::AIT::arch_device} eq "alveo"} {
+                        set data_width 512
+                    } elseif {${::AIT::arch_device} eq "zynqmp"} {
+                        set data_width 128
+                    } elseif {${::AIT::arch_device} eq "zynq"} {
+                        set data_width 64
+                    }
+
+                    set_property -dict [list \
+                        CONFIG.ENABLE_ADVANCED_OPTIONS {1} \
+                        CONFIG.XBAR_DATA_WIDTH.VALUE_SRC {PROPAGATED} \
+                        CONFIG.S${intf_num}_ARB_PRIORITY [expr {15 - ($intf_num%16)}] \
+                        CONFIG.XBAR_DATA_WIDTH $data_width \
+                     ] $parent_inter
+                }
+
                 # Connect clocks and resets
                 connect_clock [get_bd_pins $nested_inter/ACLK]
                 connect_clock [get_bd_pins $nested_inter/M00_ACLK]
@@ -472,15 +503,13 @@ namespace eval AIT {
 
                 connect_clock [get_bd_pins $parent_inter/S${intf_num}_ACLK]
                 connect_reset [get_bd_pins $parent_inter/S${intf_num}_ARESETN] "peripheral"
-
-                lappend board_axi_intfs "S [get_property NAME $nested_inter] 0 16"
             }
-            set board_axi_intfs [lsort -integer -index 2 -increasing $board_axi_intfs]
+            get_board_axi_inters
         }
 
         # Connects the IP to the host through the given interface
         proc connect_to_axi_intf {src mode {num ""}} {
-            variable board_axi_intfs
+            variable board_axi_inters
 
             # Open datainterfaces.txt file
             set datainterfaces_file [open ../${::AIT::name_Project}.datainterfaces.txt "a"]
@@ -495,7 +524,7 @@ namespace eval AIT {
 
             # Get AXI interface by num or the least occupied
             if {$num ne ""} {
-                set index [lsearch -exact $board_axi_intfs [lsearch -regexp -inline -index 1 [lsearch -all -inline -index 0 $board_axi_intfs $mode] "${mode}_AXI_(${num}|[format %02u $num])_Inter"]]
+                set index [lsearch -exact $board_axi_inters [lsearch -regexp -inline -index 1 [lsearch -all -inline -index 0 $board_axi_inters $mode] "${mode}_AXI_(${num}|[format %02u $num])_Inter"]]
                 if {$index == -1} {
                     if {$mode eq "S"} {
                         set mode "slave"
@@ -505,14 +534,14 @@ namespace eval AIT {
                     AIT::utils::error_msg "Cannot connect $src to $mode interface $num. It does not exist"
                 }
             } else {
-                set index [lsearch -index 0 $board_axi_intfs $mode]
+                set index [lsearch -index 0 $board_axi_inters $mode]
             }
 
-            set mode [lindex [lindex $board_axi_intfs $index] 0]
-            set dst_name [lindex [lindex $board_axi_intfs $index] 1]
-            set counter [lindex [lindex $board_axi_intfs $index] 2]
-            set capacity [lindex [lindex $board_axi_intfs $index] 3]
-            set board_axi_intfs [lreplace $board_axi_intfs $index $index]
+            set mode [lindex [lindex $board_axi_inters $index] 0]
+            set dst_name [lindex [lindex $board_axi_inters $index] 1]
+            set counter [lindex [lindex $board_axi_inters $index] 2]
+            set capacity [lindex [lindex $board_axi_inters $index] 3]
+            set board_axi_inters [lreplace $board_axi_inters $index $index]
             set intf_num [regsub -all {(^(/)?${mode}_AXI_|(_)?Inter(_[0-9]*)?$)} $dst_name ""]
 
             # Interconnect is full
@@ -562,8 +591,8 @@ namespace eval AIT {
 
             incr counter
 
-            lappend board_axi_intfs "$mode $dst_name $counter $capacity"
-            set board_axi_intfs [lsort -integer -index 2 -increasing $board_axi_intfs]
+            lappend board_axi_inters "$mode $dst_name $counter $capacity"
+            set board_axi_inters [lsort -integer -index 2 -increasing $board_axi_inters]
 
             # Add a line to datainterfaces.txt
             puts $datainterfaces_file "$src\t$intf_num"
@@ -639,9 +668,9 @@ namespace eval AIT {
 
         # Removes derelict and unused IPs
         proc cleanup_bd {} {
-            variable board_axi_intfs
+            variable board_axi_inters
 
-            foreach axi_intf $board_axi_intfs {
+            foreach axi_intf $board_axi_inters {
                 foreach {mode name counter capacity} $axi_intf {
                     if {$counter == 0} {
                         set mem_type [dict get ${::AIT::address_map} "mem_type"]

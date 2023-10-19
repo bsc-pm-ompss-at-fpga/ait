@@ -398,7 +398,7 @@ foreach acc ${::AIT::accs} {
 # If we are generating a design for a discrete FPGA that uses DDR, check for
 # available AXI interfaces to memory and instantiate a nested interconnect, if necessary
 if {(${::AIT::arch_device} eq "alveo") && ([dict get ${::AIT::address_map} "mem_type"] eq "ddr") && ([llength $acc_axi_pins] > [AIT::board::get_available_axi_intfs])} {
-    AIT::board::create_nested_interconnect S_AXI_Inter [dict get ${::AIT::address_map} "mem_num_banks"]
+    AIT::board::create_nested_interconnect [get_bd_cells S_AXI_Inter] [dict get ${::AIT::address_map} "mem_num_banks"]
     save_bd_design
 }
 
