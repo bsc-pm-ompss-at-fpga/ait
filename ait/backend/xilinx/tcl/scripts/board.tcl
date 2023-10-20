@@ -27,6 +27,8 @@ namespace eval AIT {
 
         # Instantiates and connects required common IPs
         proc init_bd {} {
+            variable board_axi_inters
+
             # If interconnect priorities are enabled, set PCIe master as max priority
             if {${::AIT::interconPriority}} {
                 set data_width 32
@@ -53,7 +55,7 @@ namespace eval AIT {
                 set_property name {S_AXI_Inter} [get_bd_cells DDR_S_AXI_Inter]
             }
 
-            get_board_axi_inters
+            set board_axi_inters [get_board_axi_inters]
 
             # Create instance: bitInfo, and set properties
             set bitInfo [create_bd_cell -type ip -vlnv xilinx.com:ip:blk_mem_gen bitInfo]
@@ -128,9 +130,8 @@ namespace eval AIT {
             return [list $acc_hier $acc_ip]
         }
 
-        # Initializes and returns board_axi_inters variable with the available AXI interconnects along with their occupation
+        # Returns a list with the available AXI interconnects along with their occupation, mode and capacity
         proc get_board_axi_inters {{all False}} {
-            variable board_axi_inters
             set board_axi_inters {}
 
             if {$all} {
@@ -504,7 +505,7 @@ namespace eval AIT {
                 connect_clock [get_bd_pins $parent_inter/S${intf_num}_ACLK]
                 connect_reset [get_bd_pins $parent_inter/S${intf_num}_ARESETN] "peripheral"
             }
-            get_board_axi_inters
+            set board_axi_inters [get_board_axi_inters]
         }
 
         # Connects the IP to the host through the given interface
