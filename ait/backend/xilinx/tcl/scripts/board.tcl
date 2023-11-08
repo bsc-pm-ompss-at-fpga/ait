@@ -150,10 +150,12 @@ namespace eval AIT {
 
             foreach axi_inter $axi_inter_list {
                 set mode [regsub -all {_AXI_.+$} [get_property NAME $axi_inter] ""]
-                set counter [expr {[get_property CONFIG.NUM_${mode}I $axi_inter] - 1}]
+                set num_intfs [get_property CONFIG.NUM_${mode}I $axi_inter]
+                set last_intf [get_bd_intf_pins $axi_inter/${mode}[format %02u [expr {$num_intfs - 1}]]_AXI]
+                set occupation [expr {$num_intfs - ![llength [get_bd_intf_nets -of_objects $last_intf]]}]
                 set capacity 16
-                if {$counter < $capacity} {
-                    lappend board_axi_inters "$mode [get_property NAME $axi_inter] $counter $capacity"
+                if {$occupation < $capacity} {
+                    lappend board_axi_inters "$mode [get_property NAME $axi_inter] $occupation $capacity"
                 }
             }
             set board_axi_inters [lsort -integer -index 2 -increasing $board_axi_inters]
@@ -166,9 +168,9 @@ namespace eval AIT {
             set available_axi_intfs 0
 
             foreach intf $board_axi_inters {
-                foreach {mode name counter capacity} $intf {
+                foreach {mode name occupation capacity} $intf {
                     if {$mode eq "S"} {
-                        incr available_axi_intfs [expr {$capacity - $counter}]
+                        incr available_axi_intfs [expr {$capacity - $occupation}]
                     }
                 }
             }
@@ -544,21 +546,21 @@ namespace eval AIT {
 
             set mode [lindex [lindex $board_axi_inters $index] 0]
             set dst_name [lindex [lindex $board_axi_inters $index] 1]
-            set counter [lindex [lindex $board_axi_inters $index] 2]
+            set occupation [lindex [lindex $board_axi_inters $index] 2]
             set capacity [lindex [lindex $board_axi_inters $index] 3]
             set board_axi_inters [lreplace $board_axi_inters $index $index]
             set intf_num [regsub -all {(^(/)?${mode}_AXI_|(_)?Inter(_[0-9]*)?$)} $dst_name ""]
 
             # Interconnect is full
-            if {!($counter%$capacity) && ($counter > 0)} {
+            if {!($occupation%$capacity) && ($occupation > 0)} {
                 AIT::utils::error_msg "${dst_name} interface occupation is 100%"
             }
 
             set dst [get_bd_cells -hierarchical $dst_name]
 
-            set intf ${mode}[format %02u $counter]
+            set intf ${mode}[format %02u $occupation]
 
-            set_property CONFIG.NUM_${mode}I [expr {$counter + 1}] $dst
+            set_property CONFIG.NUM_${mode}I [expr {$occupation + 1}] $dst
             set_property -quiet CONFIG.STRATEGY ${::AIT::interconOpt} $dst
 
             if {($mode eq "S") && ${::AIT::interconPriority}} {
@@ -575,7 +577,7 @@ namespace eval AIT {
                 set_property -dict [list \
                     CONFIG.ENABLE_ADVANCED_OPTIONS {1} \
                     CONFIG.XBAR_DATA_WIDTH.VALUE_SRC {PROPAGATED} \
-                    CONFIG.${intf}_ARB_PRIORITY [expr {15 - ($counter%16)}] \
+                    CONFIG.${intf}_ARB_PRIORITY [expr {15 - ($occupation%16)}] \
                     CONFIG.XBAR_DATA_WIDTH $data_width \
                  ] $dst
             }
@@ -594,9 +596,9 @@ namespace eval AIT {
             connect_reset $rst_pin "peripheral"
             connect_bd_intf_net -boundary_type upper $src $axi_pin
 
-            incr counter
+            incr occupation
 
-            lappend board_axi_inters "$mode $dst_name $counter $capacity"
+            lappend board_axi_inters "$mode $dst_name $occupation $capacity"
             set board_axi_inters [lsort -integer -index 2 -increasing $board_axi_inters]
 
             # Add a line to datainterfaces.txt
@@ -676,8 +678,8 @@ namespace eval AIT {
             variable board_axi_inters
 
             foreach axi_intf $board_axi_inters {
-                foreach {mode name counter capacity} $axi_intf {
-                    if {$counter == 0} {
+                foreach {mode name occupation capacity} $axi_intf {
+                    if {$occupation == 0} {
                         set mem_type [dict get ${::AIT::address_map} "mem_type"]
                         if {$mem_type eq "hbm"} {
                             set intf [regsub -all {(^S_AXI_|_Inter$)} $name ""]
