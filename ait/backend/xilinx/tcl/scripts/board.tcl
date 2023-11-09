@@ -50,8 +50,8 @@ namespace eval AIT {
 
             # If enabled, simplify interconnection to memory
             if {${::AIT::simplify_interconnection}} {
-                move_bd_cells [get_bd_cells /] [get_bd_cells bridge_to_host/DDR_S_AXI_Inter]
                 delete_bd_objs [get_bd_cells S_AXI_Inter]
+                move_bd_cells [get_bd_cells /] [get_bd_cells bridge_to_host/DDR_S_AXI_Inter]
                 set_property name {S_AXI_Inter} [get_bd_cells DDR_S_AXI_Inter]
             }
 
@@ -552,7 +552,7 @@ namespace eval AIT {
             set intf_num [regsub -all {(^(/)?${mode}_AXI_|(_)?Inter(_[0-9]*)?$)} $dst_name ""]
 
             # Interconnect is full
-            if {!($occupation%$capacity) && ($occupation > 0)} {
+            if {$occupation == $capacity} {
                 AIT::utils::error_msg "${dst_name} interface occupation is 100%"
             }
 
