@@ -212,8 +212,8 @@ if {(${::AIT::arch_device} eq "zynq") || (${::AIT::arch_device} eq "zynqmp")} {
 }
 
 AIT::board::connect_clock [get_bd_pins Hardware_Runtime/aclk]
-AIT::board::connect_reset [get_bd_pins Hardware_Runtime/interconnect_aresetn] "interconnect"
-AIT::board::connect_reset [get_bd_pins Hardware_Runtime/peripheral_aresetn] "peripheral"
+AIT::board::connect_reset [get_bd_pins Hardware_Runtime/interconnect_aresetn] [get_bd_pins /processor_system_reset/interconnect_aresetn]
+AIT::board::connect_reset [get_bd_pins Hardware_Runtime/peripheral_aresetn]
 connect_bd_net [get_bd_pins Hardware_Runtime/managed_aresetn] [get_bd_pins reset_AND/Res]
 
 if {${::AIT::hwruntime_interconnect} == "centralized"} {
@@ -462,8 +462,6 @@ if {${::AIT::hwcounter} || ${::AIT::hwinst}} {
     } else {
         AIT::board::connect_to_axi_intf [get_bd_intf_pins HW_Counter/S_AXI] M
     }
-
-    AIT::board::connect_clock [get_bd_pins HW_Counter/s_axi_aclk]
 
     save_bd_design
 }

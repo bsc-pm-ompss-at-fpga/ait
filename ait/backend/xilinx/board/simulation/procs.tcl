@@ -28,13 +28,13 @@ namespace eval AIT {
         }
 
         # Connects source pin received as argument to the output of the clock generator IP
-        proc connect_clock {srcPin} {
-            connect_bd_net -quiet [get_bd_pins $srcPin] [get_bd_pins /clk]
+        proc connect_clock {src_clk {dst_clk ""}} {
+            connect_bd_net -quiet [get_bd_pins $src_clk] [get_bd_pins /clk]
         }
 
         # Connects reset
-        proc connect_reset {rst_source rst_name} {
-            connect_bd_net -quiet $rst_source [get_bd_pins /rstn]
+        proc connect_reset {src_rst {dst_rst ""}} {
+            connect_bd_net -quiet $src_rst [get_bd_pins /rstn]
         }
 
         proc set_and_get_freq {targetFreq} {

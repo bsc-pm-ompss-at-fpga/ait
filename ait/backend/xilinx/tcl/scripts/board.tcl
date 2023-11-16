@@ -100,7 +100,7 @@ namespace eval AIT {
              ] $reset_AND
 
             connect_bd_net [get_bd_pins managed_reset/gpio_io_o] [get_bd_pins reset_AND/Op1]
-            connect_reset [get_bd_pins reset_AND/Op2] "peripheral"
+            connect_reset [get_bd_pins reset_AND/Op2]
 
             if {(${::AIT::arch_device} eq "zynq") || (${::AIT::arch_device} eq "zynqmp")} {
                 connect_to_axi_intf [get_bd_intf_pins bitInfo_BRAM_Ctrl/S_AXI] M 1
@@ -110,10 +110,6 @@ namespace eval AIT {
                 connect_to_axi_intf [get_bd_intf_pins managed_reset/S_AXI] M
             }
             connect_bd_intf_net [get_bd_intf_pins bitInfo/BRAM_PORTA] [get_bd_intf_pins bitInfo_BRAM_Ctrl/BRAM_PORTA]
-            connect_clock [get_bd_pins bitInfo_BRAM_Ctrl/s_axi_aclk]
-            connect_reset [get_bd_pins bitInfo_BRAM_Ctrl/s_axi_aresetn] "peripheral"
-            connect_clock [get_bd_pins managed_reset/s_axi_aclk]
-            connect_reset [get_bd_pins managed_reset/s_axi_aresetn] "peripheral"
         }
 
         proc create_acc_hier {accName instanceNum} {
@@ -152,7 +148,7 @@ namespace eval AIT {
                 set mode [regsub -all {_AXI_.+$} [get_property NAME $axi_inter] ""]
                 set num_intfs [get_property CONFIG.NUM_${mode}I $axi_inter]
                 set last_intf [get_bd_intf_pins $axi_inter/${mode}[format %02u [expr {$num_intfs - 1}]]_AXI]
-                set occupation [expr {$num_intfs - ![llength [get_bd_intf_nets -of_objects $last_intf]]}]
+                set occupation [expr {$num_intfs - ![llength [get_bd_intf_nets -quiet -of_objects $last_intf]]}]
                 set capacity 16
                 if {$occupation < $capacity} {
                     lappend board_axi_inters "$mode [get_property NAME $axi_inter] $occupation $capacity"
@@ -502,20 +498,20 @@ namespace eval AIT {
                 # Connect clocks and resets
                 connect_clock [get_bd_pins $nested_inter/ACLK]
                 connect_clock [get_bd_pins $nested_inter/M00_ACLK]
-                connect_reset [get_bd_pins $nested_inter/ARESETN] "interconnect"
-                connect_reset [get_bd_pins $nested_inter/M00_ARESETN] "peripheral"
+                connect_reset [get_bd_pins $nested_inter/ARESETN] [get_bd_pins /processor_system_reset/interconnect_aresetn]
+                connect_reset [get_bd_pins $nested_inter/M00_ARESETN]
 
                 # Connect nested interconnect to parent interconnect
                 connect_bd_intf_net -boundary_type upper [get_bd_intf_pins $parent_inter/S${intf_num}_AXI] [get_bd_intf_pins $nested_inter/M00_AXI]
 
                 connect_clock [get_bd_pins $parent_inter/S${intf_num}_ACLK]
-                connect_reset [get_bd_pins $parent_inter/S${intf_num}_ARESETN] "peripheral"
+                connect_reset [get_bd_pins $parent_inter/S${intf_num}_ARESETN]
             }
             set board_axi_inters [get_board_axi_inters]
         }
 
         # Connects the IP to the host through the given interface
-        proc connect_to_axi_intf {src mode {num ""}} {
+        proc connect_to_axi_intf {src mode {num ""} {clk ""} {rst ""}} {
             variable board_axi_inters
 
             # Open datainterfaces.txt file
@@ -592,8 +588,20 @@ namespace eval AIT {
                 connect_bd_net -quiet [get_bd_pins -quiet ${src}_awaddr_intlv] [get_bd_pins -quiet ${axi_pin}_awaddr] -boundary_type upper
             }
 
-            connect_clock $clk_pin
-            connect_reset $rst_pin "peripheral"
+            set src_path [regsub [get_property NAME $src] [get_property PATH $src] ""]
+            set src_clk_pin [filter -nocase [get_bd_pins -hierarchical] -regexp "TYPE == clk && CONFIG.ASSOCIATED_BUSIF =~ .*[get_property NAME $src].* && PATH =~ ${src_path}.*"]
+            set src_rst_pin [get_bd_pins -quiet -hierarchical -filter "TYPE == rst && PATH =~ ${src_path}*" [get_property -quiet CONFIG.ASSOCIATED_RESET $src_clk_pin]]
+
+            if {$src_clk_pin ne ""} {
+                connect_clock $src_clk_pin $clk
+            }
+
+            if {$src_rst_pin ne ""} {
+                connect_reset $src_rst_pin $rst
+            }
+
+            connect_clock $clk_pin $clk
+            connect_reset $rst_pin $rst
             connect_bd_intf_net -boundary_type upper $src $axi_pin
 
             incr occupation
@@ -608,17 +616,19 @@ namespace eval AIT {
             return [list "$dst_name" "${mode}_AXI"]
         }
 
-        # Connects source clock pin to the output of the clock generator IP
-        proc connect_clock {src_clk} {
+        # Connects src clock to dst clock, or to the default clock
+        proc connect_clock {src_clk {dst_clk ""}} {
+            if {$dst_clk eq ""} { set dst_clk clock_generator/clk_out1 }
             if {!([llength [get_bd_nets -quiet -of_objects $src_clk]])} {
-                connect_bd_net $src_clk [get_bd_pins clock_generator/clk_out1]
+                connect_bd_net $src_clk [get_bd_pins $dst_clk]
             }
         }
 
-        # Connects source reset to either interconnect or peripheral reset
-        proc connect_reset {src_rst dst_rst} {
+        # Connects src reset to dst reset, or to the default reset
+        proc connect_reset {src_rst {dst_rst ""}} {
+            if {$dst_rst eq ""} { set dst_rst processor_system_reset/peripheral_aresetn }
             if {!([llength [get_bd_nets -quiet -of_objects $src_rst]])} {
-                connect_bd_net $src_rst [get_bd_pins processor_system_reset/${dst_rst}_aresetn]
+                connect_bd_net $src_rst [get_bd_pins $dst_rst]
             }
         }
 
