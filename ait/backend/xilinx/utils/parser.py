@@ -118,6 +118,7 @@ class ArgParser():
         self.parser.add_argument('--interconnect_opt', help='AXI interconnect optimization strategy: Minimize \'area\' or maximize \'performance\'\n(def: \'area\')', choices=['area', 'performance'], metavar='OPT_STRATEGY', action=StoreChoiceValue, default=0)
         self.parser.add_argument('--interconnect_priorities', help='enable priorities in the memory interconnect', action='store_true', default=False)
         self.parser.add_argument('--simplify_interconnection', help='simplify interconnection between accelerators and memory. Might negatively impact timing', action='store_true', default=False)
+        self.parser.add_argument('--power_monitor', help='enable power monitoring infrastructure', action='store_true', default=False)
         self.parser.add_argument('--debug_intfs', help='choose which interfaces mark for debug and instantiate the correspondent ILA cores\nAXI: debug accelerator\'s AXI interfaces\nstream: debug accelerator\'s AXI-Stream interfaces\nboth: debug both accelerator\'s AXI and AXI-Stream interfaces\ncustom: debug user-defined interfaces\nnone: do not mark for debug any interface\n(def: \'none\')', choices=['AXI', 'stream', 'both', 'custom', 'none'], metavar='INTF_TYPE', default='none')
         self.parser.add_argument('--debug_intfs_list', help='path of file with the list of interfaces to debug', type=FileType())
         self.parser.add_argument('--ignore_eng_sample', help='ignore engineering sample status from chip part number', action='store_true', default=False)
@@ -162,6 +163,9 @@ class ArgParser():
 
         if (args.slr_slices is not None or args.floorplanning_constr is not None) and not hasattr(board.arch, 'slr'):
             msg.error('Use of placement constraints is only available for boards with SLRs')
+
+        if args.power_monitor and (board.arch.device == 'zynq' or board.arch.device == 'zynqmp'):
+            msg.error('Power monitoring is not available on neither Zynq nor ZynqMP boards')
 
 
 parser = ArgParser()

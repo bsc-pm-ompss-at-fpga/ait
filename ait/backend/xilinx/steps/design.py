@@ -89,6 +89,7 @@ def generate_Vivado_variables_tcl():
                                 + '\tvariable floorplanning_constr {}\n'        .format(str(args.floorplanning_constr)) \
                                 + '\tvariable slr_slices {}\n'                  .format(str(args.slr_slices)) \
                                 + '\tvariable regslice_pipeline_stages {}\n'    .format(args.regslice_pipeline_stages) \
+                                + '\tvariable power_monitor {}\n'               .format(str(args.power_monitor)) \
                                 + '\n' \
                                 + '\t# {} board variables\n'                    .format(board.name) \
                                 + '\tvariable board {}\n'                       .format(board.name) \

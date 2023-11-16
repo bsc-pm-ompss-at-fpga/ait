@@ -78,6 +78,9 @@ if {${::AIT::hwcounter} || ${::AIT::hwinst}} {
 if {${::AIT::enable_pom_axilite}} {
     lappend bd_addr_segments [dict create name pom_axilite bd_seg_name Hardware_Runtime/Picos_OmpSs_Manager/axilite/reg_0 size 16384]
 }
+if {${::AIT::power_monitor}} {
+    lappend bd_addr_segments [dict create name power_monitor bd_seg_name cms_subsystem/s_axi_ctrl/Mem* size [expr {256*1024}]]
+}
 
 # Sort the segments in decreasing size to minimize fragmentation when assigning addresses
 set bd_addr_segments [lsort -decreasing -command AIT::utils::comp_bd_addr_seg $bd_addr_segments]
@@ -86,6 +89,7 @@ set addr_hwruntime_spawnInQueue 0x0000000000000000
 set addr_hwruntime_spawnOutQueue 0x0000000000000000
 set addr_hwcounter 0x0000000000000000
 set addr_pom_axilite 0x0000000000000000
+set addr_power_monitor 0x0000000000000000
 
 set bitInfo_offset 0x0
 set addr [expr {$bitInfo_offset + 4096}]
@@ -119,6 +123,8 @@ for {set i 0} {$i < [llength $bd_addr_segments]} {incr i} {
         set addr_pom_axilite $format_addr
     } elseif {$name eq "managed_rstn"} {
         set addr_managed_reset $format_addr
+    } elseif {$name eq "power_monitor"} {
+        set addr_power_monitor $format_addr
     }
     incr addr $size
 }
@@ -626,9 +632,8 @@ append bitInfo_coe [string range $addr_hwcounter 10 17]\n
 append bitInfo_coe [string range $addr_hwcounter 2 9]\n
 append bitInfo_coe [string range $addr_pom_axilite 10 17]\n
 append bitInfo_coe [string range $addr_pom_axilite 2 9]\n
-# CMS AXI-Lite interface address
-append bitInfo_coe 0\n
-append bitInfo_coe 0\n
+append bitInfo_coe [string range $addr_power_monitor 10 17]\n
+append bitInfo_coe [string range $addr_power_monitor 2 9]\n
 for {set i 0} {$i < [llength $dynamic_field_sizes]} {incr i} {
     append bitInfo_coe [format %08X [expr {[lindex $dynamic_field_sizes $i] | ([lindex $dynamic_field_offsets $i] << 16)}]]\n
 }

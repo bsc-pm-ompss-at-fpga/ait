@@ -110,6 +110,12 @@ namespace eval AIT {
                 connect_to_axi_intf [get_bd_intf_pins managed_reset/S_AXI] M
             }
             connect_bd_intf_net [get_bd_intf_pins bitInfo/BRAM_PORTA] [get_bd_intf_pins bitInfo_BRAM_Ctrl/BRAM_PORTA]
+
+            if {${::AIT::power_monitor}} {
+                add_power_monitor
+            }
+
+            save_bd_design
         }
 
         proc create_acc_hier {accName instanceNum} {
@@ -230,8 +236,14 @@ namespace eval AIT {
             }
         }
 
+        # Placeholder for static register slices feature
         proc static_logic_register_slices {} {
             AIT::utils::warning_msg "Board ${::AIT::board} has no support for static logic register slices"
+        }
+
+        # Placeholder for power monitor feature
+        proc add_power_monitor {} {
+            AIT::utils::warning_msg "Board ${::AIT::board} has no support for power monitoring"
         }
 
         # Creates and connects a tree of interconnects that allows an arbitrary number of AXI-stream slaves to connect to up to 16 AXI-stream masters
@@ -669,7 +681,7 @@ namespace eval AIT {
             set bitmap_bitInfo [expr {$bitmap_bitInfo | (${::AIT::deps_hwruntime} == True)<<6}]
             set bitmap_bitInfo [expr {$bitmap_bitInfo | (${::AIT::lock_hwruntime} == True)<<7}]
             set bitmap_bitInfo [expr {$bitmap_bitInfo | (${::AIT::enable_spawn_queues} == True)<<8}]
-            #set bitmap_bitInfo [expr {$bitmap_bitInfo | (${::AIT::power_monitor} == True)<<9}]
+            set bitmap_bitInfo [expr {$bitmap_bitInfo | (${::AIT::power_monitor} == True)<<9}]
 
             return [format 0x%08x $bitmap_bitInfo]
         }
