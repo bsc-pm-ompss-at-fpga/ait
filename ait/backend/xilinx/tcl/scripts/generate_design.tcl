@@ -81,6 +81,9 @@ if {${::AIT::enable_pom_axilite}} {
 if {${::AIT::power_monitor}} {
     lappend bd_addr_segments [dict create name power_monitor bd_seg_name cms_subsystem/s_axi_ctrl/Mem* size [expr {256*1024}]]
 }
+if {${::AIT::thermal_monitor}} {
+    lappend bd_addr_segments [dict create name thermal_monitor bd_seg_name system_management/S_AXI_LITE/Reg size 4096]
+}
 
 # Sort the segments in decreasing size to minimize fragmentation when assigning addresses
 set bd_addr_segments [lsort -decreasing -command AIT::utils::comp_bd_addr_seg $bd_addr_segments]
@@ -90,6 +93,7 @@ set addr_hwruntime_spawnOutQueue 0x0000000000000000
 set addr_hwcounter 0x0000000000000000
 set addr_pom_axilite 0x0000000000000000
 set addr_power_monitor 0x0000000000000000
+set addr_thermal_monitor 0x0000000000000000
 
 set bitInfo_offset 0x0
 set addr [expr {$bitInfo_offset + 4096}]
@@ -125,6 +129,8 @@ for {set i 0} {$i < [llength $bd_addr_segments]} {incr i} {
         set addr_managed_reset $format_addr
     } elseif {$name eq "power_monitor"} {
         set addr_power_monitor $format_addr
+    } elseif {$name eq "thermal_monitor"} {
+        set addr_thermal_monitor $format_addr
     }
     incr addr $size
 }
@@ -589,23 +595,8 @@ if {${::AIT::interleaving_stride} ne "None"} {
 }
 
 set hwruntime_vlnv [get_property VLNV [get_bd_cells /Hardware_Runtime/Picos_OmpSs_Manager]]
-set xtasks_config_acc_size 44
-set dynamic_field_sizes [list [expr {$xtasks_config_acc_size*[llength ${::AIT::accs}]}] [string length ${::AIT::ait_call}] [string length $hwruntime_vlnv] [string length ${::AIT::bitInfo_note}]]
-set dynamic_field_offsets [list]
-# Calculate the bitinfo offset of each variable-length field
-# Variable-length fields are appended next to the fixed-length fields which take 31 slots
-set offset 31
-foreach size $dynamic_field_sizes {
-    lappend dynamic_field_offsets $offset
-    incr offset [expr {int(ceil($size/4.))}]
-}
-set bitinfo_len $offset
-if {$bitinfo_len > 1024} {
-    AIT::utils::error_msg "BitInfo length ($bitinfo_len) is greater than its mapped region (1024)"
-}
 
-# Create bitInfo.coe file
-set bitInfo_file [open ${::AIT::name_Project}/bitInfo.coe "w"]
+# Fixed-length fields
 set bitInfo_coe "memory_initialization_radix=16;\nmemory_initialization_vector=\n"
 append bitInfo_coe [format %08x ${::AIT::version_bitInfo}]\n
 append bitInfo_coe [format %08x ${::AIT::num_accs}]\n
@@ -634,6 +625,24 @@ append bitInfo_coe [string range $addr_pom_axilite 10 17]\n
 append bitInfo_coe [string range $addr_pom_axilite 2 9]\n
 append bitInfo_coe [string range $addr_power_monitor 10 17]\n
 append bitInfo_coe [string range $addr_power_monitor 2 9]\n
+append bitInfo_coe [string range $addr_thermal_monitor 10 17]\n
+append bitInfo_coe [string range $addr_thermal_monitor 2 9]\n
+
+# Calculate the bitinfo offset of each variable-length field
+# Variable-length fields are appended next to the fixed-length fields
+set xtasks_config_acc_size 44
+set dynamic_field_sizes [list [expr {$xtasks_config_acc_size*[llength ${::AIT::accs}]}] [string length ${::AIT::ait_call}] [string length $hwruntime_vlnv] [string length ${::AIT::bitInfo_note}]]
+set dynamic_field_offsets [list]
+set offset [expr {[llength [split $bitInfo_coe "\n"]] + 1}]
+foreach size $dynamic_field_sizes {
+    lappend dynamic_field_offsets $offset
+    incr offset [expr {int(ceil($size/4.))}]
+}
+set bitinfo_len $offset
+if {$bitinfo_len > 1024} {
+    AIT::utils::error_msg "BitInfo length ($bitinfo_len) is greater than its mapped region (1024)"
+}
+
 for {set i 0} {$i < [llength $dynamic_field_sizes]} {incr i} {
     append bitInfo_coe [format %08X [expr {[lindex $dynamic_field_sizes $i] | ([lindex $dynamic_field_offsets $i] << 16)}]]\n
 }
@@ -641,6 +650,9 @@ append bitInfo_coe $xtasks_bin_str
 append bitInfo_coe [AIT::utils::ascii2hex ${::AIT::ait_call}]
 append bitInfo_coe [AIT::utils::ascii2hex $hwruntime_vlnv]
 append bitInfo_coe [AIT::utils::ascii2hex ${::AIT::bitInfo_note}]
+
+# Create bitInfo.coe file
+set bitInfo_file [open ${::AIT::name_Project}/bitInfo.coe "w"]
 puts $bitInfo_file $bitInfo_coe
 close $bitInfo_file
 

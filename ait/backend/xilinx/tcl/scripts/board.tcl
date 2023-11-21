@@ -115,6 +115,10 @@ namespace eval AIT {
                 add_power_monitor
             }
 
+            if {${::AIT::thermal_monitor}} {
+                add_thermal_monitor
+            }
+
             save_bd_design
         }
 
@@ -244,6 +248,11 @@ namespace eval AIT {
         # Placeholder for power monitor feature
         proc add_power_monitor {} {
             AIT::utils::warning_msg "Board ${::AIT::board} has no support for power monitoring"
+        }
+
+        # Placeholder for thermal monitor feature
+        proc add_thermal_monitor {} {
+            AIT::utils::warning_msg "Board ${::AIT::board} has no support for thermal monitoring"
         }
 
         # Creates and connects a tree of interconnects that allows an arbitrary number of AXI-stream slaves to connect to up to 16 AXI-stream masters
@@ -682,6 +691,7 @@ namespace eval AIT {
             set bitmap_bitInfo [expr {$bitmap_bitInfo | (${::AIT::lock_hwruntime} == True)<<7}]
             set bitmap_bitInfo [expr {$bitmap_bitInfo | (${::AIT::enable_spawn_queues} == True)<<8}]
             set bitmap_bitInfo [expr {$bitmap_bitInfo | (${::AIT::power_monitor} == True)<<9}]
+            set bitmap_bitInfo [expr {$bitmap_bitInfo | (${::AIT::thermal_monitor} == True)<<10}]
 
             return [format 0x%08x $bitmap_bitInfo]
         }
