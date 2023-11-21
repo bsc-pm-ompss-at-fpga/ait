@@ -33,3 +33,7 @@ add_cells_to_pblock [get_pblocks slr0_pblock] [get_cells -hierarchical -regexp .
 # DDR 1
 add_cells_to_pblock [get_pblocks slr1_pblock] [get_cells -hierarchical -regexp .*/bridge_to_host/memory/DDR_1]
 
+# Improve QDMA floorplanning
+create_pblock qdma_pcie
+resize_pblock [get_pblocks qdma_pcie] -add {CLOCKREGION_X7Y3:CLOCKREGION_X7Y0}
+add_cells_to_pblock [get_pblocks qdma_pcie] [get_cells -hierarchical -filter NAME =~ */QDMA/QDMA/inst/pcie4c_ip_i]
