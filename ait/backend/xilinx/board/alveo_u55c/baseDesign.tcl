@@ -200,73 +200,6 @@ if { $bCheckIPsPassed != 1 } {
 ##################################################################
 
 
-# Hierarchical cell: S_AXI_QDMA
-proc create_hier_cell_S_AXI_QDMA { parentCell nameHier } {
-
-  variable script_folder
-
-  if { $parentCell eq "" || $nameHier eq "" } {
-     catch {common::send_gid_msg -ssname BD::TCL -id 2092 -severity "ERROR" "create_hier_cell_S_AXI_QDMA() - Empty argument(s)!"}
-     return
-  }
-
-  # Get object for parentCell
-  set parentObj [get_bd_cells $parentCell]
-  if { $parentObj == "" } {
-     catch {common::send_gid_msg -ssname BD::TCL -id 2090 -severity "ERROR" "Unable to find parent cell <$parentCell>!"}
-     return
-  }
-
-  # Make sure parentObj is hier blk
-  set parentType [get_property TYPE $parentObj]
-  if { $parentType ne "hier" } {
-     catch {common::send_gid_msg -ssname BD::TCL -id 2091 -severity "ERROR" "Parent <$parentObj> has TYPE = <$parentType>. Expected to be <hier>."}
-     return
-  }
-
-  # Save current instance; Restore later
-  set oldCurInst [current_bd_instance .]
-
-  # Set parent object as current
-  current_bd_instance $parentObj
-
-  # Create cell and set as current instance
-  set hier_obj [create_bd_cell -type hier $nameHier]
-  current_bd_instance $hier_obj
-
-  # Create interface pins
-  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 M_AXI
-
-  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S_AXI
-
-
-  # Create pins
-  create_bd_pin -dir I -type clk QDMA_aclk
-  create_bd_pin -dir I -type rst QDMA_peripheral_aresetn
-  create_bd_pin -dir I -from 63 -to 0 S_AXI_QDMA_araddr
-  create_bd_pin -dir I -from 63 -to 0 S_AXI_QDMA_awaddr
-
-  # Create instance: HBM_data_width_converter, and set properties
-  set HBM_data_width_converter [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_dwidth_converter HBM_data_width_converter ]
-
-  # Create instance: HBM_protocol_converter, and set properties
-  set HBM_protocol_converter [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_protocol_converter HBM_protocol_converter ]
-
-  # Create interface connections
-  connect_bd_intf_net -intf_net HBM_data_width_converter_M_AXI [get_bd_intf_pins HBM_data_width_converter/M_AXI] [get_bd_intf_pins HBM_protocol_converter/S_AXI]
-  connect_bd_intf_net -intf_net HBM_protocol_converter_M_AXI [get_bd_intf_pins M_AXI] [get_bd_intf_pins HBM_protocol_converter/M_AXI]
-  connect_bd_intf_net -intf_net S_AXI_QDMA [get_bd_intf_pins S_AXI] [get_bd_intf_pins HBM_data_width_converter/S_AXI]
-
-  # Create port connections
-  connect_bd_net -net S_AXI_QDMA_araddr_2 [get_bd_pins S_AXI_QDMA_araddr] [get_bd_pins HBM_data_width_converter/s_axi_araddr]
-  connect_bd_net -net S_AXI_QDMA_awaddr_2 [get_bd_pins S_AXI_QDMA_awaddr] [get_bd_pins HBM_data_width_converter/s_axi_awaddr]
-  connect_bd_net -net aclk_2 [get_bd_pins QDMA_aclk] [get_bd_pins HBM_data_width_converter/s_axi_aclk] [get_bd_pins HBM_protocol_converter/aclk]
-  connect_bd_net -net peripheral_aresetn_2 [get_bd_pins QDMA_peripheral_aresetn] [get_bd_pins HBM_data_width_converter/s_axi_aresetn] [get_bd_pins HBM_protocol_converter/aresetn]
-
-  # Restore current instance
-  current_bd_instance $oldCurInst
-}
-
 # Hierarchical cell: QDMA
 proc create_hier_cell_QDMA { parentCell nameHier } {
 
@@ -444,8 +377,13 @@ proc create_hier_cell_memory { parentCell nameHier } {
   create_bd_pin -dir I -type rst pcie_perstn
   create_bd_pin -dir I -type rst peripheral_aresetn
 
-  # Create instance: APB_ProcSysReset, and set properties
-  set APB_ProcSysReset [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset APB_ProcSysReset ]
+  # Create instance: HBM_CATTRIP_OR, and set properties
+  set HBM_CATTRIP_OR [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic HBM_CATTRIP_OR ]
+  set_property -dict [ list \
+   CONFIG.C_OPERATION {or} \
+   CONFIG.C_SIZE {1} \
+   CONFIG.LOGO_FILE {data/sym_orgate.png} \
+ ] $HBM_CATTRIP_OR
 
   # Create instance: HBM, and set properties
   set HBM [ create_bd_cell -type ip -vlnv xilinx.com:ip:hbm HBM ]
@@ -580,32 +518,27 @@ proc create_hier_cell_memory { parentCell nameHier } {
    CONFIG.USER_TEMP_POLL_CNT_1 {100000} \
  ] $HBM
 
-  # Create instance: HBM_CATTRIP_OR, and set properties
-  set HBM_CATTRIP_OR [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic HBM_CATTRIP_OR ]
-  set_property -dict [ list \
-   CONFIG.C_OPERATION {or} \
-   CONFIG.C_SIZE {1} \
-   CONFIG.LOGO_FILE {data/sym_orgate.png} \
- ] $HBM_CATTRIP_OR
+  # Create instance: APB_sys_reset, and set properties
+  set APB_sys_reset [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset APB_sys_reset ]
 
   # Create interface connections
   connect_bd_intf_net -intf_net HBM_SAXI_15_8HI_m_axi [get_bd_intf_pins HBM/SAXI_15_8HI] [get_bd_intf_pins S15_AXI]
 
   # Create port connections
-  connect_bd_net -net APB_PCLK_1 [get_bd_pins APB_PCLK] [get_bd_pins APB_ProcSysReset/slowest_sync_clk] [get_bd_pins HBM/APB_0_PCLK] [get_bd_pins HBM/APB_1_PCLK]
-  connect_bd_net -net APB_ProcSysReset_peripheral_aresetn [get_bd_pins APB_ProcSysReset/peripheral_aresetn] [get_bd_pins HBM/APB_0_PRESET_N] [get_bd_pins HBM/APB_1_PRESET_N]
+  connect_bd_net -net APB_PCLK_1 [get_bd_pins APB_PCLK] [get_bd_pins APB_sys_reset/slowest_sync_clk] [get_bd_pins HBM/APB_0_PCLK] [get_bd_pins HBM/APB_1_PCLK]
   connect_bd_net -net HBM_CATTRIP_OR_Res [get_bd_pins HBM_CATTRIP] [get_bd_pins HBM_CATTRIP_OR/Res]
   connect_bd_net -net HBM_DRAM_0_STAT_CATTRIP [get_bd_pins HBM_CATTRIP_OR/Op1] [get_bd_pins HBM/DRAM_0_STAT_CATTRIP]
   connect_bd_net -net HBM_DRAM_1_STAT_CATTRIP [get_bd_pins HBM_CATTRIP_OR/Op2] [get_bd_pins HBM/DRAM_1_STAT_CATTRIP]
   connect_bd_net -net HBM_REF_CLK_1 [get_bd_pins HBM_REF_CLK] [get_bd_pins HBM/HBM_REF_CLK_0] [get_bd_pins HBM/HBM_REF_CLK_1]
   connect_bd_net -net aclk_2 [get_bd_pins QDMA_aclk] [get_bd_pins HBM/AXI_15_ACLK]
-  connect_bd_net -net pcie_perstn_1 [get_bd_pins pcie_perstn] [get_bd_pins APB_ProcSysReset/ext_reset_in]
-  connect_bd_net -net peripheral_aresetn_2 [get_bd_pins QDMA_peripheral_aresetn] [get_bd_pins HBM/AXI_15_ARESET_N]
+  connect_bd_net -net peripheral_aresetn_1 [get_bd_pins peripheral_aresetn] [get_bd_pins APB_sys_reset/ext_reset_in]
+  connect_bd_net -net APB_peripheral_aresetn [get_bd_pins APB_sys_reset/peripheral_aresetn] [get_bd_pins HBM/APB_0_PRESET_N] [get_bd_pins HBM/APB_1_PRESET_N]
+  connect_bd_net -net QDMA_peripheral_aresetn [get_bd_pins QDMA_peripheral_aresetn] [get_bd_pins HBM/AXI_15_ARESET_N]
 
   for {set i 0} {$i < $num_banks} {incr i} {
     if {$i != $QDMA_port} {
       connect_bd_intf_net -intf_net SAXI_[format %02u $i]_8HI [get_bd_intf_pins S[format %02u $i]_AXI] [get_bd_intf_pins HBM/SAXI_[format %02u $i]_8HI]
-      connect_bd_net -net peripheral_aresetn_1 [get_bd_pins peripheral_aresetn] [get_bd_pins HBM/AXI_[format %02u $i]_ARESET_N]
+      connect_bd_net -net peripheral_aresetn_1 [get_bd_pins HBM/AXI_[format %02u $i]_ARESET_N]
       connect_bd_net -net aclk_1 [get_bd_pins aclk] [get_bd_pins HBM/AXI_[format %02u $i]_ACLK]
     }
   }
@@ -666,7 +599,6 @@ proc create_hier_cell_bridge_to_host { parentCell nameHier } {
   create_bd_pin -dir O -from 0 -to 0 HBM_CATTRIP
   create_bd_pin -dir I -type clk HBM_REF_CLK
   create_bd_pin -dir I -type clk aclk
-  create_bd_pin -dir I -type rst interconnect_aresetn
   create_bd_pin -dir I -type rst pcie_perstn
   create_bd_pin -dir I -type rst peripheral_aresetn
 
@@ -687,6 +619,9 @@ proc create_hier_cell_bridge_to_host { parentCell nameHier } {
   set_property -dict [ list \
    CONFIG.NUM_MI {1} \
  ] $QDMA_M_AXI_LITE_Inter
+
+  # Create instance: QDMA_sys_reset, and set properties
+  set QDMA_sys_reset [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset QDMA_sys_reset ]
 
   # Create instance: bridge_to_host_araddrInterleaver, and set properties
   set block_name bsc_ompss_addrInterleaver
@@ -724,13 +659,14 @@ proc create_hier_cell_bridge_to_host { parentCell nameHier } {
   connect_bd_net -net HBM_REF_CLK_1 [get_bd_pins HBM_REF_CLK] [get_bd_pins memory/HBM_REF_CLK]
   connect_bd_net -net QDMA_QDMA_m_axi_araddr [get_bd_pins QDMA/QDMA_m_axi_araddr] [get_bd_pins bridge_to_host_araddrInterleaver/in_addr]
   connect_bd_net -net QDMA_QDMA_m_axi_awaddr [get_bd_pins QDMA/QDMA_m_axi_awaddr] [get_bd_pins bridge_to_host_awaddrInterleaver/in_addr]
-  connect_bd_net -net QDMA_aclk [get_bd_pins memory/QDMA_aclk] [get_bd_pins QDMA/aclk] [get_bd_pins QDMA_M_AXI_LITE_Inter/S00_ACLK] [get_bd_pins QDMA_M_AXI_Inter/S00_ACLK] [get_bd_pins QDMA_M_AXI_Inter/M00_ACLK]
-  connect_bd_net -net QDMA_aresetn [get_bd_pins memory/QDMA_peripheral_aresetn] [get_bd_pins QDMA/aresetn] [get_bd_pins QDMA_M_AXI_LITE_Inter/S00_ARESETN] [get_bd_pins QDMA_M_AXI_Inter/S00_ARESETN] [get_bd_pins QDMA_M_AXI_Inter/M00_ARESETN]
+  connect_bd_net -net QDMA_aclk [get_bd_pins memory/QDMA_aclk] [get_bd_pins QDMA/aclk] [get_bd_pins QDMA_sys_reset/slowest_sync_clk] [get_bd_pins QDMA_M_AXI_Inter/ACLK] [get_bd_pins QDMA_M_AXI_LITE_Inter/ACLK] [get_bd_pins QDMA_M_AXI_LITE_Inter/S00_ACLK] [get_bd_pins QDMA_M_AXI_Inter/S00_ACLK] [get_bd_pins QDMA_M_AXI_Inter/M00_ACLK]
+  connect_bd_net -net QDMA_aresetn [get_bd_pins QDMA/aresetn] [get_bd_pins QDMA_sys_reset/ext_reset_in]
+  connect_bd_net -net QDMA_sys_reset_peripheral [get_bd_pins QDMA_sys_reset/peripheral_aresetn] [get_bd_pins memory/QDMA_peripheral_aresetn] [get_bd_pins QDMA_M_AXI_LITE_Inter/S00_ARESETN] [get_bd_pins QDMA_M_AXI_Inter/S00_ARESETN] [get_bd_pins QDMA_M_AXI_Inter/M00_ARESETN]
+  connect_bd_net -net QDMA_sys_reset_interconnect [get_bd_pins QDMA_sys_reset/interconnect_aresetn] [get_bd_pins QDMA_M_AXI_LITE_Inter/ARESETN] [get_bd_pins QDMA_M_AXI_Inter/ARESETN]
   connect_bd_net -net QDMA_s_axi_araddr [get_bd_pins QDMA_M_AXI_Inter/S00_AXI_araddr] [get_bd_pins bridge_to_host_araddrInterleaver/out_addr]
   connect_bd_net -net QDMA_s_axi_awaddr [get_bd_pins QDMA_M_AXI_Inter/S00_AXI_awaddr] [get_bd_pins bridge_to_host_awaddrInterleaver/out_addr]
-  connect_bd_net -net aclk_1 [get_bd_pins aclk] [get_bd_pins memory/aclk] [get_bd_pins QDMA_M_AXI_LITE_Inter/ACLK] [get_bd_pins QDMA_M_AXI_LITE_Inter/M00_ACLK] [get_bd_pins QDMA_M_AXI_Inter/ACLK]
-  connect_bd_net -net interconnect_aresetn_1 [get_bd_pins interconnect_aresetn] [get_bd_pins QDMA_M_AXI_LITE_Inter/ARESETN] [get_bd_pins QDMA_M_AXI_Inter/ARESETN]
-  connect_bd_net -net pcie_perstn_1 [get_bd_pins pcie_perstn] [get_bd_pins QDMA/pcie_perstn] [get_bd_pins memory/pcie_perstn]
+  connect_bd_net -net aclk_1 [get_bd_pins aclk] [get_bd_pins memory/aclk] [get_bd_pins QDMA_M_AXI_LITE_Inter/M00_ACLK]
+  connect_bd_net -net pcie_perstn_1 [get_bd_pins pcie_perstn] [get_bd_pins QDMA/pcie_perstn]
   connect_bd_net -net peripheral_aresetn_1 [get_bd_pins peripheral_aresetn] [get_bd_pins memory/peripheral_aresetn] [get_bd_pins QDMA_M_AXI_LITE_Inter/M00_ARESETN]
 
   for {set i 0} {$i < $num_banks} {incr i} {
@@ -857,7 +793,7 @@ proc create_root_design { parentCell } {
   connect_bd_net -net clock_generator_clk_out1 [get_bd_pins M_AXI_Inter/ACLK] [get_bd_pins M_AXI_Inter/S00_ACLK] [get_bd_pins bridge_to_host/aclk] [get_bd_pins clock_generator/clk_out1] [get_bd_pins processor_system_reset/slowest_sync_clk]
   connect_bd_net -net clock_generator_locked [get_bd_pins clock_generator/locked] [get_bd_pins processor_system_reset/dcm_locked]
   connect_bd_net -net pcie_perstn_1 [get_bd_ports pcie_perstn] [get_bd_pins bridge_to_host/pcie_perstn] [get_bd_pins clock_generator/resetn] [get_bd_pins processor_system_reset/ext_reset_in]
-  connect_bd_net -net processor_system_reset_interconnect_aresetn [get_bd_pins M_AXI_Inter/ARESETN] [get_bd_pins bridge_to_host/interconnect_aresetn] [get_bd_pins processor_system_reset/interconnect_aresetn]
+  connect_bd_net -net processor_system_reset_interconnect_aresetn [get_bd_pins M_AXI_Inter/ARESETN] [get_bd_pins processor_system_reset/interconnect_aresetn]
   connect_bd_net -net processor_system_reset_peripheral_aresetn [get_bd_pins M_AXI_Inter/S00_ARESETN] [get_bd_pins bridge_to_host/peripheral_aresetn] [get_bd_pins processor_system_reset/peripheral_aresetn]
   connect_bd_net -net sysclk1_ds_buf_IBUF_OUT [get_bd_pins bridge_to_host/HBM_REF_CLK] [get_bd_pins sysclk1_ds_buf/IBUF_OUT]
 
