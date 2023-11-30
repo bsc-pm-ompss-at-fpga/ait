@@ -44,5 +44,28 @@ namespace eval AIT {
             connect_bd_net [get_bd_pins bridge_to_host/memory/HBM/DRAM_0_STAT_TEMP] [get_bd_pins cms_subsystem/hbm_temp_1]
             connect_bd_net [get_bd_pins bridge_to_host/HBM_CATTRIP] [get_bd_pins cms_subsystem/interrupt_hbm_cattrip]
         }
+
+        proc add_thermal_monitor {} {
+            # Add System Management and its system reset
+            create_bd_cell -type ip -vlnv xilinx.com:ip:system_management_wiz system_management
+            create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset thermal_monitor_sys_rst
+
+            # Add an additional 100MHz clock for System Management
+            set num_out_clocks [get_property CONFIG.NUM_OUT_CLKS [get_bd_cells clock_generator]]
+            incr num_out_clocks
+            set_property -dict [list \
+              CONFIG.NUM_OUT_CLKS $num_out_clocks \
+              CONFIG.CLKOUT${num_out_clocks}_USED {true} \
+              CONFIG.CLKOUT${num_out_clocks}_REQUESTED_OUT_FREQ {100} \
+              CONFIG.CLK_OUT${num_out_clocks}_PORT {thermal_monitor_clk}
+            ] [get_bd_cells clock_generator]
+
+            # Connect System Management clock and reset
+            connect_clock [get_bd_pins thermal_monitor_sys_rst/slowest_sync_clk] [get_bd_pins clock_generator/thermal_monitor_clk]
+            connect_reset [get_bd_pins thermal_monitor_sys_rst/ext_reset_in] [get_bd_pins processor_system_reset/ext_reset_in]
+
+            # Connect System Management to the M_AXI interconnect
+            connect_to_axi_intf [get_bd_intf_pins system_management/S_AXI_LITE] M "" [get_bd_pins clock_generator/thermal_monitor_clk] [get_bd_pins thermal_monitor_sys_rst/peripheral_aresetn]
+        }
     }
 }
