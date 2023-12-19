@@ -24,9 +24,8 @@ import os
 
 NAME = 'xilinx'
 
-MIN_VITIS_HLS_VERSION = '2020.2'
-MIN_VIVADO_HLS_VERSION = '2018.3'
-MIN_VIVADO_VERSION = '2018.3'
+MIN_VITIS_HLS_VERSION = '2021.1'
+MIN_VIVADO_VERSION = '2021.1'
 
 
 def get_supported_boards():

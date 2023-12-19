@@ -24,7 +24,7 @@ import os
 import shutil
 import subprocess
 
-from ait.backend.xilinx.info import MIN_VITIS_HLS_VERSION, MIN_VIVADO_HLS_VERSION, MIN_VIVADO_VERSION
+from ait.backend.xilinx.info import MIN_VITIS_HLS_VERSION, MIN_VIVADO_VERSION
 from ait.frontend.utils import msg
 
 vivado_version = None
@@ -40,30 +40,6 @@ def check_vivado():
             msg.error('Installed Vivado version ({}) not supported (>= {})'.format(vivado_version, MIN_VIVADO_VERSION))
     else:
         msg.error('vivado not found. Please set PATH correctly')
-
-    return True
-
-
-def check_hls_tool():
-    if shutil.which('vivado_hls'):
-        check_vivado_hls()
-        return 'vivado_hls'
-    elif shutil.which('vitis_hls'):
-        check_vitis_hls()
-        return 'vitis_hls'
-    else:
-        msg.error('No HLS tool found. Please set PATH correctly')
-
-
-def check_vivado_hls():
-    global hls_version
-
-    if shutil.which('vivado_hls'):
-        hls_version = str(subprocess.check_output(['vivado_hls -version | head -n1 | sed "s/\(Vivado.\+v\)\(\([0-9]\|\.\)\+\).\+/\\2/"'], shell=True), 'utf-8').strip()
-        if hls_version < MIN_VIVADO_HLS_VERSION:
-            msg.error('Installed Vivado HLS version ({}) not supported (>= {})'.format(hls_version, MIN_VIVADO_HLS_VERSION))
-    else:
-        msg.warning('vivado_hls not found. Please set PATH correctly')
 
     return True
 
