@@ -1,1 +1,0 @@
-../../common/constraints/alveo_basic_constraints.xdc
