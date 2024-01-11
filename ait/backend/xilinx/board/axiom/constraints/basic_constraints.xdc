@@ -1,1 +1,0 @@
-../../common/constraints/zynqmp_basic_constraints.xdc
