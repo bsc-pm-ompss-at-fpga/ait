@@ -160,17 +160,15 @@ def generate_Vivado_variables_tcl():
     vivado_project_variables += '\t]\n'
 
     # Generate acc instance list with SLR info
-    # Placement info is only needed for registers, constraints are dumped into constraint file
-    if (args.slr_slices == 'acc') or (args.slr_slices == 'all'):
-        acc_pl_dict = 'set acc_placement [dict create '
-        for acc in accs[0:args.num_accs]:
-            if hasattr(acc, 'SLR'):
-                acc_pl_dict += ' ' + str(acc.name) + ' [list'
-                for slrnum in acc.SLR:
-                    acc_pl_dict += ' ' + str(slrnum)
-                acc_pl_dict += ']'
-        acc_pl_dict += ']'
-        vivado_project_variables += '\t' + acc_pl_dict + '\n'
+    acc_pl_dict = 'set acc_placement [dict create '
+    for acc in accs[0:args.num_accs]:
+        if hasattr(acc, 'SLR'):
+            acc_pl_dict += ' ' + str(acc.name) + ' [list'
+            for slrnum in acc.SLR:
+                acc_pl_dict += ' ' + str(slrnum)
+            acc_pl_dict += ']'
+    acc_pl_dict += ']'
+    vivado_project_variables += '\t' + acc_pl_dict + '\n'
 
     # Generate acc constraint file
     if (args.floorplanning_constr == 'acc') or (args.floorplanning_constr == 'all'):
