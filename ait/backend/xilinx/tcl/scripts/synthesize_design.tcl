@@ -29,6 +29,8 @@ if {[catch {source -notrace tcl/projectVariables.tcl}]} {
     AIT::utils::error_msg "Failed sourcing project variables"
 }
 
+set num_jobs [lindex $argv 0]
+
 # Open Vivado project
 open_project ${::AIT::name_Project}/${::AIT::name_Project}.xpr
 
@@ -38,14 +40,14 @@ open_bd_design ${::AIT::name_Project}/${::AIT::name_Project}.srcs/sources_1/bd/$
 # Generate output products
 generate_target all [get_files ${::AIT::name_Project}/${::AIT::name_Project}.srcs/sources_1/bd/${::AIT::name_Design}/${::AIT::name_Design}.bd]
 
-AIT::utils::info_msg "Launching synthesis run with ${::AIT::num_jobs} jobs"
+AIT::utils::info_msg "Launching synthesis run with $num_jobs jobs"
 
 # Launch synthesis
 reset_runs synth_1
 reset_target all [get_files ${::AIT::name_Project}/${::AIT::name_Project}.srcs/sources_1/bd/${::AIT::name_Design}/${::AIT::name_Design}.bd]
 export_ip_user_files -of_objects [get_files ${::AIT::name_Project}/${::AIT::name_Project}.srcs/sources_1/bd/${::AIT::name_Design}/${::AIT::name_Design}.bd] -sync -no_script -force -quiet
 delete_ip_run [get_files -of_objects [get_filesets sources_1] ${::AIT::name_Project}/${::AIT::name_Project}.srcs/sources_1/bd/${::AIT::name_Design}/${::AIT::name_Design}.bd]
-launch_runs synth_1 -jobs ${::AIT::num_jobs}
+launch_runs synth_1 -jobs $num_jobs
 
 wait_on_run synth_1
 

@@ -49,7 +49,6 @@ def generate_Vivado_variables_tcl():
                                + '\tvariable target_lang {}\n'            .format(args.target_language) \
                                + '\tvariable num_accs {}\n'               .format(str(args.num_instances)) \
                                + '\tvariable num_acc_creators {}\n'       .format(str(args.num_acc_creators)) \
-                               + '\tvariable num_jobs {}\n'               .format(str(args.jobs)) \
                                + '\tvariable ait_call "{}"\n'             .format(str(re.escape(os.path.basename(sys.argv[0]) + ' ' + ' '.join(sys.argv[1:])))) \
                                + '\tvariable bitInfo_note {}\n'           .format(str(re.escape(args.bitinfo_note))) \
                                + '\tvariable version_major_ait {}\n'      .format(str(VERSION_MAJOR)) \

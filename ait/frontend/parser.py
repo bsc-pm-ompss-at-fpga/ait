@@ -26,12 +26,11 @@ import json
 import math
 import os
 import re
-import subprocess
 import sys
 
 from ait.frontend.config import LONG_VERSION, MIN_WRAPPER_VERSION
 from ait.frontend.utils import backends, decimalFromHumanReadable, \
-    decimalToHumanReadable, msg
+    decimalToHumanReadable, getNumJobs, msg
 
 for backend in backends:
     importlib.import_module('ait.backend.%s.info' % (backend))
@@ -168,14 +167,6 @@ class CustomParser(argparse.ArgumentParser):
         sys.exit(2)
 
 
-def getNumJobs():
-    # NOTE: assuming at most 3GB of memory usage per job
-    procsByMem = int(subprocess.check_output(["free -b | grep 'Mem:' | awk {'print int(($7/1024^3)/3)'}"], shell=True))
-    nprocs = int(subprocess.check_output(['nproc']))
-
-    return max(1, min(procsByMem, nprocs))
-
-
 class ArgParser:
     defaults = dict()
     for backend in backends:
@@ -267,7 +258,7 @@ class ArgParser:
         misc_args.add_argument('-h', '--help', action='help', help='show this help message and exit')
         misc_args.add_argument('-i', '--verbose_info', help='print extra information messages', action='store_true', default=False)
         misc_args.add_argument('--dump_board_info', help='dump board info json for the specified board', action='store_true', default=False)
-        misc_args.add_argument('-j', '--jobs', help='specify the number of jobs to run simultaneously\nBy default it will use as many jobs as cores with at least 3GB of dedicated free memory, or the value returned by `nproc`, whichever is less.', type=IntRangeType(imin=1), default=getNumJobs())
+        misc_args.add_argument('-j', '--jobs', help='specify the number of jobs to run simultaneously\nBy default it will use as many jobs as cores with at least 5GB of dedicated free memory, or the value returned by `nproc`, whichever is less.', type=IntRangeType(imin=1), default=None)
         misc_args.add_argument('-k', '--keep_files', help='keep files on error', action='store_true', default=False)
         misc_args.add_argument('-v', '--verbose', help='print vendor backend messages', action='store_true', default=False)
         misc_args.add_argument('--version', help='print AIT version and exits', action='version', version=str(LONG_VERSION))
@@ -400,7 +391,7 @@ class ArgParser:
             msg.error('Invalid combination of --picos_hash_t_size and --picos_num_dcts, math.ceil(math.log2(args.picos_hash_t_size))+math.ceil(math.log2(args.picos_num_dcts)) <= 8')
 
     def check_misc_args(self, args):
-        if args.jobs > getNumJobs():
+        if args.jobs and args.jobs > getNumJobs():
             msg.warning('Using more Vivado jobs ({}) than the recommended default ({}). Performance of the compilation process might be affected'.format(args.jobs, getNumJobs()))
 
     def is_default(self, dest, backend):

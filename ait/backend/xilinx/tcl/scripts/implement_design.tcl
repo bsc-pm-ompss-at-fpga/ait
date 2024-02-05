@@ -29,6 +29,8 @@ if {[catch {source -notrace tcl/projectVariables.tcl}]} {
     AIT::utils::error_msg "Failed sourcing project variables"
 }
 
+set num_jobs [lindex $argv 0]
+
 # Open Vivado project
 open_project ${::AIT::name_Project}/${::AIT::name_Project}.xpr
 
@@ -47,11 +49,11 @@ if {(${::AIT::arch_device} eq "zynq") || (${::AIT::arch_device} eq "zynqmp")} {
     set_property STEPS.WRITE_BITSTREAM.ARGS.BIN_FILE {false} [get_runs impl_1]
 }
 
-AIT::utils::info_msg "Launching implementation run with ${::AIT::num_jobs} jobs"
+AIT::utils::info_msg "Launching implementation run with $num_jobs jobs"
 
 # Launch implementation
 reset_runs impl_1
-launch_runs impl_1 -jobs ${::AIT::num_jobs}
+launch_runs impl_1 -jobs $num_jobs
 
 wait_on_run impl_1
 

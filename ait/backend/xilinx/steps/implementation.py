@@ -25,7 +25,7 @@ import subprocess
 import sys
 
 import ait.backend.xilinx.utils.checkers as checkers
-from ait.frontend.utils import ait_path, msg
+from ait.frontend.utils import ait_path, getNumJobs, msg
 
 script_folder = os.path.basename(os.path.dirname(os.path.realpath(__file__)))
 
@@ -63,7 +63,8 @@ def run_step(project_args):
             retval = p.wait()
 
         p = subprocess.Popen('vivado -init -nojournal -nolog -notrace -mode batch -source '
-                             + project_backend_path + '/tcl/scripts/implement_design.tcl',
+                             + project_backend_path + '/tcl/scripts/implement_design.tcl '
+                             + '-tclargs ' + (str(args.jobs) if args.jobs is not None else str(getNumJobs())),
                              cwd=project_backend_path,
                              stdout=sys.stdout.subprocess,
                              stderr=sys.stdout.subprocess, shell=True)

@@ -24,6 +24,7 @@ import importlib
 import math
 import os
 import re
+import subprocess
 import sys
 import time
 
@@ -140,6 +141,14 @@ def secondsToHumanReadable(seconds):
         if amount > 0:
             parts.append('{} {}{}'.format(amount, unit, '' if amount == 1 else 's'))
     return ', '.join(parts)
+
+
+def getNumJobs():
+    # NOTE: assuming at most 5GB of memory usage per job
+    procsByMem = int(subprocess.check_output(["free -b | grep 'Mem:' | awk {'print int(($7/1024^3)/5)'}"], shell=True))
+    nprocs = int(subprocess.check_output(['nproc']))
+
+    return max(1, min(procsByMem, nprocs))
 
 
 ait_path = os.path.normpath(os.path.dirname(os.path.realpath(__file__)) + '/..')
