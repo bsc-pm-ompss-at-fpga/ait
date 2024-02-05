@@ -19,7 +19,7 @@ They are also available at [OmpSs@FPGA pre-built SD images](https://ompssatfpga.
  - [Python 3.7 or later](https://www.python.org)
  - [pip](https://pip.pypa.io)
  - Vendor backends:
-   - [Xilinx Vivado 2018.3 or later](https://www.xilinx.com/support/download/index.html/content/xilinx/en/downloadNav/vivado-design-tools/archive.html)
+   - [Xilinx Vivado 2021.1 or later](https://www.xilinx.com/support/download/index.html/content/xilinx/en/downloadNav/vivado-design-tools/archive.html)
 
 #### Git Large File Storage
 
@@ -31,11 +31,10 @@ Follow instructions on their website to install it.
 
 ##### Xilinx Vivado
 
-Follow installation instructions from Xilinx
-Vivado, Vivado HLS and SDK, as well as the device support for the devices you're working, should be enabled during setup.
+Follow installation instructions from Xilinx Vivado, Citis HLS and SDK, as well as the device support for the devices you're working, should be enabled during setup.
 However, components can be added or removed afterwards.
 
-Current version supports Vivado 2018.3 onwards.
+Current version supports Vivado 2021.1 onwards.
 
 # Installation
 
