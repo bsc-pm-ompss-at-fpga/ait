@@ -143,12 +143,11 @@ def secondsToHumanReadable(seconds):
     return ', '.join(parts)
 
 
-def getNumJobs():
-    # NOTE: assuming at most 5GB of memory usage per job
-    procsByMem = int(subprocess.check_output(["free -b | grep 'Mem:' | awk {'print int(($7/1024^3)/5)'}"], shell=True))
+def getNumJobs(mem_per_job):
+    available_mem = int(subprocess.check_output(["free -b | grep 'Mem:' | awk {'print $7'}"], shell=True))
     nprocs = int(subprocess.check_output(['nproc']))
 
-    return max(1, min(procsByMem, nprocs))
+    return max(1, min(int(available_mem / mem_per_job), nprocs))
 
 
 ait_path = os.path.normpath(os.path.dirname(os.path.realpath(__file__)) + '/..')

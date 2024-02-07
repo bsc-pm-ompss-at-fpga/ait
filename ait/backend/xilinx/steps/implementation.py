@@ -64,7 +64,7 @@ def run_step(project_args):
 
         p = subprocess.Popen('vivado -init -nojournal -nolog -notrace -mode batch -source '
                              + project_backend_path + '/tcl/scripts/implement_design.tcl '
-                             + '-tclargs ' + (str(args.jobs) if args.jobs is not None else str(getNumJobs())),
+                             + '-tclargs ' + (str(args.jobs) if args.jobs is not None else str(getNumJobs(args.mem_per_job))),
                              cwd=project_backend_path,
                              stdout=sys.stdout.subprocess,
                              stderr=sys.stdout.subprocess, shell=True)
