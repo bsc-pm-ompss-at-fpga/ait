@@ -89,13 +89,13 @@ def generate_Vivado_variables_tcl():
                                 + '\tvariable slr_slices {}\n'                  .format(str(args.slr_slices)) \
                                 + '\tvariable regslice_pipeline_stages {}\n'    .format(args.regslice_pipeline_stages) \
                                 + '\tvariable power_monitor {}\n'               .format(str(args.power_monitor)) \
-                                + '\tvariable thermal_monitor {}\n'               .format(str(args.thermal_monitor)) \
+                                + '\tvariable thermal_monitor {}\n'              .format(str(args.thermal_monitor)) \
                                 + '\n' \
                                 + '\t# {} board variables\n'                    .format(board.name) \
                                 + '\tvariable board {}\n'                       .format(board.name) \
                                 + '\tvariable chipPart {}\n'                    .format(chip_part)
     if board.board_part:
-        vivado_project_variables += '\tvariable boardPart {}\n'                 .format(str(board.board_part))
+        vivado_project_variables += '\tvariable boardPart [list {}]\n'          .format(' '.join(board.board_part))
 
     vivado_project_variables += '\tvariable clockFreq {}\n'                     .format(str(args.clock)) \
                                 + '\tvariable arch_device {}\n'                 .format(board.arch.device)

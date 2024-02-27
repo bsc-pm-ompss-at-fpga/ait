@@ -2,7 +2,7 @@
 	"name": "zcu102",
 	"chip_part": "xczu9eg-ffvb1156-2-e",
 	"es": "",
-	"board_part": "xilinx.com:zcu102",
+	"board_part": ["xilinx.com:zcu102"],
 
 	"arch": {
 		"device": "zynqmp"

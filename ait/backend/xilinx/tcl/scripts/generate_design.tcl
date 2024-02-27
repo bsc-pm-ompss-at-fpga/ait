@@ -140,10 +140,17 @@ variable addr_bitInfo [format 0x%016x [expr {[dict get ${::AIT::address_map} "om
 # Create project and set board files
 create_project -force ${::AIT::name_Project} ${::AIT::name_Project} -part ${::AIT::chipPart}
 if {[info exists {::AIT::boardPart}]} {
-    if {[llength [get_boards ${::AIT::boardPart}:*]]} {
-        set_property board_part [get_board_parts -latest_file_version ${::AIT::boardPart}:*] [current_project]
-    } else {
-        AIT::utils::error_msg "Board part is missing, design will fail. Please add the corresponding board files to the Vivado installation"
+    set board_found False
+    foreach board_name ${::AIT::boardPart} {
+        set board_part [get_board_parts -latest_file_version ${board_name}:*]
+        if {$board_part ne ""} {
+            set_property board_part $board_part [current_project]
+            set board_found True
+            break
+        }
+    }
+    if {! $board_found } {
+        AIT::utils::error_msg "Board part (${::AIT::boardPart}) is missing, design will fail. Please add the corresponding board files to the Vivado installation"
     }
 }
 

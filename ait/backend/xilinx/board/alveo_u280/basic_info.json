@@ -2,7 +2,7 @@
 	"name": "alveo_u280",
 	"chip_part": "xcu280-fsvh2892-2L-e",
 	"es": "",
-	"board_part": "xilinx.com:au280",
+	"board_part": ["xilinx.com:au280"],
 
 	"arch": {
 		"device": "alveo",

@@ -2,7 +2,7 @@
 	"name": "alveo_u55c",
 	"chip_part": "xcu55c-fsvh2892-2L-e",
 	"es": "",
-	"board_part": "xilinx.com:au55c",
+	"board_part": ["xilinx.com:au55c"],
 
 	"arch": {
 		"device": "alveo",

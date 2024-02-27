@@ -2,7 +2,7 @@
 	"name": "zedboard",
 	"chip_part": "xc7z020clg484-1",
 	"es": "",
-	"board_part": "digilentinc.com:zedboard",
+	"board_part": ["digilentinc.com:zedboard", "em.avnet.com:zed"],
 
 	"arch": {
 		"device": "zynq"
