@@ -159,8 +159,8 @@ class ArgParser():
         if args.simplify_interconnection and board.mem.type != 'ddr':
             msg.error('Simplify memory interconnection is only available for DDR memories')
 
-        if not int(board.frequency.min) <= args.clock <= int(board.frequency.max):
-            msg.error('Clock frequency requested (' + str(args.clock) + 'MHz) is not within the board range (' + str(board.frequency.min) + '-' + str(board.frequency.max) + 'MHz)')
+        if not board.frequency.min <= args.clock <= board.frequency.max:
+            msg.error('Clock frequency requested (' + str(args.clock) + ' MHz) is not within the board range (' + str(board.frequency.min) + '-' + str(board.frequency.max) + ' MHz)')
 
         if (args.slr_slices is not None or args.floorplanning_constr is not None) and not hasattr(board.arch, 'slr'):
             msg.error('Use of placement constraints is only available for boards with SLRs')

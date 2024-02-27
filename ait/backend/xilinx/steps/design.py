@@ -171,7 +171,7 @@ def generate_Vivado_variables_tcl():
 
     # Generate acc constraint file
     if (args.floorplanning_constr == 'acc') or (args.floorplanning_constr == 'all'):
-        accConstrFiles = open('{}/board/{}/constraints/acc_floorplan.xdc'.format(project_backend_path, board.name), 'w')
+        accConstrFiles = open(project_board_path + '/constraints/acc_floorplan.xdc', 'w')
         for acc in accs[0:args.num_accs]:
             if hasattr(acc, 'SLR'):
                 instancesToPlace = len(acc.SLR)
@@ -270,6 +270,7 @@ def run_step(project_args):
     global start_time
     global ait_backend_path
     global project_backend_path
+    global project_board_path
 
     args = project_args['args']
     board = project_args['board']
@@ -280,6 +281,7 @@ def run_step(project_args):
     chip_part = board.chip_part + ('-' + board.es if (board.es and not args.ignore_eng_sample) else '')
     ait_backend_path = ait_path + '/backend/' + args.backend
     project_backend_path = project_path + '/' + args.backend
+    project_board_path = project_backend_path + '/board/' + args.board
 
     # Check if Vivado requirements are met
     checkers.check_vivado()
@@ -290,16 +292,16 @@ def run_step(project_args):
     shutil.rmtree(project_backend_path + '/IPs', ignore_errors=True)
     shutil.copytree(ait_backend_path + '/IPs', project_backend_path + '/IPs')
     shutil.rmtree(project_backend_path + '/board', ignore_errors=True)
-    shutil.copytree(ait_backend_path + '/board/' + args.board, project_backend_path + '/board/' + args.board)
+    shutil.copytree(ait_backend_path + '/board/' + args.board, project_board_path)
 
     # Load accelerator placement info
     load_acc_placement(accs[0:args.num_accs], args)
 
     if args.memory_interleaving_stride is not None:
-        subprocess.check_output(['sed -i "s/\`undef __ENABLE__/\`define __ENABLE__/" ' + project_backend_path + '/IPs/bsc_ompss_addrInterleaver.v'], shell=True)
+        subprocess.check_output(['sed -i "s/\`undef __ENABLE__/\`define __ENABLE__/" {}/IPs/bsc_ompss_addrInterleaver.v'.format(project_backend_path)], shell=True)
 
     if args.user_constraints and os.path.exists(args.user_constraints):
-        constraints_path = project_backend_path + '/board/' + board.name + '/constraints'
+        constraints_path = project_board_path + '/constraints'
         if not os.path.exists(constraints_path):
             os.mkdir(constraints_path)
         if args.verbose_info:
@@ -333,8 +335,8 @@ def run_step(project_args):
 
     # Enable beta device on Vivado init script
     init_script_str = 'enable_beta_device {}'.format(chip_part)
-    if os.path.exists(project_backend_path + '/board/' + board.name + '/board_files'):
-        init_script_str += '\nset_param board.repoPaths [list {}]'.format(project_backend_path + '/board/' + board.name + '/board_files')
+    if os.path.exists(project_board_path + '/board_files'):
+        init_script_str += '\nset_param board.repoPaths [list {}]'.format(project_board_path + '/board_files')
 
     p = subprocess.Popen('echo {} > {}/vivado.tcl'.format(init_script_str, project_backend_path), shell=True)
     retval = p.wait()

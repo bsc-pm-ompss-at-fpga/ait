@@ -38,6 +38,7 @@ def run_step(project_args):
     global start_time
     global ait_backend_path
     global project_backend_path
+    global project_board_path
 
     args = project_args['args']
     board = project_args['board']
@@ -47,6 +48,7 @@ def run_step(project_args):
     chip_part = board.chip_part + ('-' + board.es if (board.es and not args.ignore_eng_sample) else '')
     ait_backend_path = ait_path + '/backend/' + args.backend
     project_backend_path = project_path + '/' + args.backend
+    project_board_path = project_backend_path + '/board/' + board.name
 
     # Check if the requirements are met
     checkers.check_vivado()
@@ -55,7 +57,7 @@ def run_step(project_args):
         # Generate random USERID to identify the bitstream
         user_id = str(hex(random.randrange(2**32)))
         msg.log('Setting bitstream user id: ' + user_id)
-        p = subprocess.Popen('sed -i s/BITSTREAM_USERID/' + user_id + '/ ' + project_backend_path + '/board/' + board.name + '/constraints/basic_constraints.xdc', shell=True)
+        p = subprocess.Popen('sed -i s/BITSTREAM_USERID/{}/ {}/constraints/basic_constraints.xdc'.format(user_id, project_board_path), shell=True)
         retval = p.wait()
 
         p = subprocess.Popen('vivado -init -nojournal -nolog -notrace -mode batch -source '
