@@ -1,0 +1,25 @@
+{
+	"name": "kv260",
+	"chip_part": "xck26-sfvc784-2LV-c",
+	"es": "",
+	"board_part": ["xilinx.com:kv260", "xilinx.com:kv260_som"],
+
+	"arch": {
+		"device": "zynqmp"
+	},
+
+	"frequency": {
+		"min": 7,
+		"max": 725
+	},
+
+	"mem": {
+		"type": "ddr",
+		"size": "4G"
+	},
+
+	"address_map": {
+		"mem_base_addr": "0x0",
+		"ompss_base_addr": "0xB0000000"
+	}
+}
