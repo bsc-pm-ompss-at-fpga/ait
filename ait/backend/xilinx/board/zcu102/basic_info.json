@@ -9,8 +9,8 @@
 	},
 
 	"frequency": {
-		"min": 10,
-		"max": 400
+		"min": 7,
+		"max": 775
 	},
 
 	"mem": {
