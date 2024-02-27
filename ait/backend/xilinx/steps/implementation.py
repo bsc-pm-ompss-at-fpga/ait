@@ -51,17 +51,6 @@ def run_step(project_args):
     checkers.check_vivado()
 
     if os.path.isfile(project_backend_path + '/' + args.name + '/' + args.name + '.xpr'):
-        # Enable beta device on Vivado init script
-        if board.board_part:
-            p = subprocess.Popen('echo "enable_beta_device ' + chip_part + '\nset_param board.repoPaths [list '
-                                 + project_backend_path + '/board/' + board.name + '/board_files]" > '
-                                 + project_backend_path + '/vivado.tcl', shell=True)
-            retval = p.wait()
-        else:
-            p = subprocess.Popen('echo "enable_beta_device ' + chip_part + '" > '
-                                 + project_backend_path + '/vivado.tcl', shell=True)
-            retval = p.wait()
-
         p = subprocess.Popen('vivado -init -nojournal -nolog -notrace -mode batch -source '
                              + project_backend_path + '/tcl/scripts/implement_design.tcl '
                              + '-tclargs ' + (str(args.jobs) if args.jobs is not None else str(getNumJobs(args.mem_per_job))),

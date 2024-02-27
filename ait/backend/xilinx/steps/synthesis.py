@@ -52,17 +52,6 @@ def run_step(project_args):
     checkers.check_vivado()
 
     if os.path.isfile(project_backend_path + '/' + args.name + '/' + args.name + '.xpr'):
-        # Enable beta device on Vivado init script
-        if board.board_part:
-            p = subprocess.Popen('echo "enable_beta_device ' + chip_part + '\nset_param board.repoPaths [list '
-                                 + project_backend_path + '/board/' + board.name + '/board_files]" > '
-                                 + project_backend_path + '/vivado.tcl', shell=True)
-            retval = p.wait()
-        else:
-            p = subprocess.Popen('echo "enable_beta_device ' + chip_part + '" > '
-                                 + project_backend_path + '/vivado.tcl', shell=True)
-            retval = p.wait()
-
         # Generate random USERID to identify the bitstream
         user_id = str(hex(random.randrange(2**32)))
         msg.log('Setting bitstream user id: ' + user_id)

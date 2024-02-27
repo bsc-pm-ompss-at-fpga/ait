@@ -332,15 +332,12 @@ def run_step(project_args):
     generate_Vivado_variables_tcl()
 
     # Enable beta device on Vivado init script
+    init_script_str = 'enable_beta_device {}'.format(chip_part)
     if os.path.exists(project_backend_path + '/board/' + board.name + '/board_files'):
-        p = subprocess.Popen('echo "enable_beta_device ' + chip_part + '\nset_param board.repoPaths [list '
-                             + project_backend_path + '/board/' + board.name + '/board_files]" > '
-                             + project_backend_path + '/vivado.tcl', shell=True)
-        retval = p.wait()
-    else:
-        p = subprocess.Popen('echo "enable_beta_device ' + chip_part + '" > '
-                             + project_backend_path + '/vivado.tcl', shell=True)
-        retval = p.wait()
+        init_script_str += '\nset_param board.repoPaths [list {}]'.format(project_backend_path + '/board/' + board.name + '/board_files')
+
+    p = subprocess.Popen('echo {} > {}/vivado.tcl'.format(init_script_str, project_backend_path), shell=True)
+    retval = p.wait()
 
     p = subprocess.Popen('vivado -init -nojournal -nolog -notrace -mode batch -source '
                          + project_backend_path + '/tcl/scripts/generate_design.tcl',
