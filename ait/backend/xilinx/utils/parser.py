@@ -104,7 +104,7 @@ class ArgParser():
     def __init__(self):
         # Create vendor-specific parser
         # NOTE: usage must be suppressed as this parser is not called directly
-        self.parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter, epilog='  environment variables:\n    PETALINUX_INSTALL\tpath where Petalinux is installed\n    PETALINUX_BUILD\tpath where the Petalinux project is located', prog='ait', usage=argparse.SUPPRESS)
+        self.parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter, epilog='  environment variables:\n    PETALINUX_BUILD\tpath where the Petalinux project is located', prog='ait', usage=argparse.SUPPRESS)
 
         # Rename help title
         self.parser._optionals.title = 'Xilinx-specific arguments'

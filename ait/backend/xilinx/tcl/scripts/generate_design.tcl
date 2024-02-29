@@ -513,15 +513,6 @@ if {${::AIT::debugInterfaces} eq "custom"} {
 validate_bd_design -force -quiet
 save_bd_design
 
-# Create pl_ompss_fpga.dtsi file
-set ompss_at_fpga_DeviceTree_file [open ${::AIT::name_Project}/pl_ompss_at_fpga.dtsi "w"]
-set ompss_at_fpga_node "&amba_pl {\n"
-append ompss_at_fpga_node "\tompss_at_fpga: ompss_at_fpga@0 {\n\t\tcompatible = \"ompss-at-fpga\";\n"
-append ompss_at_fpga_node "\t\tbitstreaminfo = <&bitInfo_BRAM_Ctrl>;\n"
-append ompss_at_fpga_node "\t};\n};"
-puts $ompss_at_fpga_DeviceTree_file $ompss_at_fpga_node
-close $ompss_at_fpga_DeviceTree_file
-
 # Wipe clean address map
 delete_bd_objs [get_bd_addr_segs]
 

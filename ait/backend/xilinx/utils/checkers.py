@@ -24,11 +24,12 @@ import os
 import shutil
 import subprocess
 
-from ait.backend.xilinx.info import MIN_VITIS_HLS_VERSION, MIN_VIVADO_VERSION
+from ait.backend.xilinx.info import MIN_VITIS_HLS_VERSION, MIN_VIVADO_VERSION, MIN_PETALINUX_VERSION
 from ait.frontend.utils import msg
 
 vivado_version = None
-hls_version = None
+vitis_hls_version = None
+petalinux_version = None
 
 
 def check_vivado():
@@ -45,12 +46,12 @@ def check_vivado():
 
 
 def check_vitis_hls():
-    global hls_version
+    global vitis_hls_version
 
     if shutil.which('vitis_hls'):
-        hls_version = str(subprocess.check_output(['vitis_hls -version | head -n1 | sed "s/\(Vitis.\+v\)\(\([0-9]\|\.\)\+\).\+/\\2/"'], shell=True), 'utf-8').strip()
-        if hls_version < MIN_VITIS_HLS_VERSION:
-            msg.error('Installed Vitis HLS version ({}) not supported (>= {})'.format(hls_version, MIN_VITIS_HLS_VERSION))
+        vitis_hls_version = str(subprocess.check_output(['vitis_hls -version | head -n1 | sed "s/\(Vitis.\+v\)\(\([0-9]\|\.\)\+\).\+/\\2/"'], shell=True), 'utf-8').strip()
+        if vitis_hls_version < MIN_VITIS_HLS_VERSION:
+            msg.error('Installed Vitis HLS version ({}) not supported (>= {})'.format(vitis_hls_version, MIN_VITIS_HLS_VERSION))
     else:
         msg.error('vitis_hls not found. Please set PATH correctly')
 
@@ -65,25 +66,23 @@ def check_bootgen():
     return True
 
 
-def check_petalinux(petalinux_build_path, petalinux_install_path):
-    if (not os.path.exists(petalinux_build_path) or not os.path.exists(petalinux_install_path)):
-        msg.error('PETALINUX_BUILD (' + (petalinux_build_path if petalinux_build_path else 'empty') + ') or PETALINUX_INSTALL ('
-                  + (petalinux_install_path if petalinux_install_path else 'empty') + ') variables not properly set')
-        msg.error('Generation of petalinux boot files failed')
+def check_petalinux():
+    global petalinux_version
 
-    env = str(subprocess.Popen('bash -c "trap \'env\' exit; source ' + petalinux_install_path
-                               + '/settings.sh > /dev/null 2>&1"', shell=True,
-                               stdout=subprocess.PIPE).communicate()[0], 'utf-8').strip('\n')
+    petalinux_build_path = os.getenv('PETALINUX_BUILD', 'empty')
+    if not os.path.exists(petalinux_build_path):
+        msg.error('PETALINUX_BUILD (' + petalinux_build_path + ') variable not properly set')
 
-    # NOTE: Only importing some environment variables as there may be complex functions/expansions that
-    #       we do not need to handle here
-    for line in env.split('\n'):
-        splitted = line.split('=', 1)
-        if splitted[0] == 'PATH' or splitted[0].find('PETALINUX') != -1:
-            os.environ.update(dict([line.split('=', 1)]))
+    petalinux_version = os.getenv('PETALINUX_VER', '')
 
     if not shutil.which('petalinux-config'):
-        msg.error('petalinux commands not found. Please check PETALINUX_INSTALL environment variable')
+        msg.error('petalinux-config command not found. Please correctly source Petalinux settings.sh')
+    elif not shutil.which('petalinux-build'):
+        msg.error('petalinux-build command not found. Please correctly source Petalinux settings.sh')
+    elif not shutil.which('petalinux-package'):
+        msg.error('petalinux-package command not found. Please correctly source Petalinux settings.sh')
+    elif petalinux_version < MIN_PETALINUX_VERSION:
+        msg.error('Installed Petalinux version ({}) not supported (>= {})'.format(petalinux_version, MIN_PETALINUX_VERSION))
 
     return True
 

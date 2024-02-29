@@ -26,6 +26,7 @@ NAME = 'xilinx'
 
 MIN_VITIS_HLS_VERSION = '2021.1'
 MIN_VIVADO_VERSION = '2021.1'
+MIN_PETALINUX_VERSION = '2021.1'
 
 
 def get_supported_boards():

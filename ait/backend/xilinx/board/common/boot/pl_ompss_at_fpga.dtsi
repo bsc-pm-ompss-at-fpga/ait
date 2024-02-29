@@ -1,0 +1,6 @@
+&amba_pl {
+	ompss_at_fpga: ompss_at_fpga@0 {
+		compatible = "ompss-at-fpga";
+		bitstreaminfo = <&bitInfo_BRAM_Ctrl>;
+	};
+};
