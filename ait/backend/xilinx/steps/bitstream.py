@@ -29,7 +29,6 @@ import sys
 
 import ait.backend.xilinx.utils.checkers as checkers
 from ait.frontend.utils import ait_path, getNumJobs, msg
-from ait.backend.xilinx.utils.checkers import vivado_version
 
 script_folder = os.path.basename(os.path.dirname(os.path.realpath(__file__)))
 
@@ -49,15 +48,6 @@ def gen_utilization_report(out_path):
     with open(rpt_path, 'r') as rpt_file:
         rpt_data = rpt_file.readlines()
 
-        if vivado_version >= '2020.2':
-            used_offset = 2
-            av_offset = 5
-            util_offset = 6
-        else:
-            used_offset = 2
-            av_offset = 4
-            util_offset = 5
-
         # Search LUT/FF section
         # NOTE: Possible section names: Slice Logic, CLB Logic
         ids = [idx for idx in range(len(rpt_data) - 1) if ((re.match(r'^[0-9]\. ' + 'Slice Logic\n', rpt_data[idx])
@@ -70,15 +60,15 @@ def gen_utilization_report(out_path):
 
         # Get LUT
         elems = rpt_data[ids[0] + 6].split('|')
-        used_resources['LUT'] = elems[used_offset].strip()
-        av_resources['LUT'] = elems[av_offset].strip()
-        util_resources['LUT'] = elems[util_offset].strip()
+        used_resources['LUT'] = elems[2].strip()
+        av_resources['LUT'] = elems[5].strip()
+        util_resources['LUT'] = elems[6].strip()
 
         # Get FF
         elems = rpt_data[ids[0] + 11].split('|')
-        used_resources['FF'] = elems[used_offset].strip()
-        av_resources['FF'] = elems[av_offset].strip()
-        util_resources['FF'] = elems[util_offset].strip()
+        used_resources['FF'] = elems[2].strip()
+        av_resources['FF'] = elems[5].strip()
+        util_resources['FF'] = elems[6].strip()
 
         # Get DSP
         # NOTE: Possible section names: DSP, ARITHMETIC
@@ -90,9 +80,9 @@ def gen_utilization_report(out_path):
             msg.warning('Cannot find DSP info in rpt file. Skipping bitstream utilization report')
             return
         elems = rpt_data[ids[0] + 6].split('|')
-        used_resources['DSP'] = elems[used_offset].strip()
-        av_resources['DSP'] = elems[av_offset].strip()
-        util_resources['DSP'] = elems[util_offset].strip()
+        used_resources['DSP'] = elems[2].strip()
+        av_resources['DSP'] = elems[5].strip()
+        util_resources['DSP'] = elems[6].strip()
 
         # Search BRAM/URAM
         # NOTE: Possible section names: Memory, BLOCKRAM
@@ -106,9 +96,9 @@ def gen_utilization_report(out_path):
 
         # BRAM
         elems = rpt_data[ids[0] + 6].split('|')
-        used_resources['BRAM'] = str(int(float(elems[used_offset].strip()) * 2))
-        av_resources['BRAM'] = str(int(float(elems[av_offset].strip()) * 2))
-        util_resources['BRAM'] = elems[util_offset].strip()
+        used_resources['BRAM'] = str(int(float(elems[2].strip()) * 2))
+        av_resources['BRAM'] = str(int(float(elems[5].strip()) * 2))
+        util_resources['BRAM'] = elems[6].strip()
 
         # URAM
         # NOTE: It is not placed in the same offset for all boards (search in some lines)
@@ -117,9 +107,9 @@ def gen_utilization_report(out_path):
         for idx in ids:
             elems = rpt_data[idx].split('|')
             if len(elems) >= 6 and elems[1].strip() == 'URAM':
-                used_resources['URAM'] = elems[used_offset].strip()
-                av_resources['URAM'] = elems[av_offset].strip()
-                util_resources['URAM'] = elems[util_offset].strip()
+                used_resources['URAM'] = elems[2].strip()
+                av_resources['URAM'] = elems[5].strip()
+                util_resources['URAM'] = elems[6].strip()
                 break
 
     resources_file = open(out_path, 'w')
