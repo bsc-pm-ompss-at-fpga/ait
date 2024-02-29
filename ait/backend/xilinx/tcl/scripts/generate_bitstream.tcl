@@ -40,7 +40,7 @@ if {[string match "*ERROR*" [get_property STATUS [get_runs impl_1]]]} {
 }
 
 # Open and validate Block Design
-open_bd_design ${::AIT::name_Project}/${::AIT::name_Project}.srcs/sources_1/bd/${::AIT::name_Design}/${::AIT::name_Design}.bd
+open_bd_design [get_files ${::AIT::name_Design}.bd]
 validate_bd_design
 
 # Generate .bin file for Zynq and ZynqMP boards
@@ -66,7 +66,7 @@ if {[string match "*ERROR*" [get_property STATUS [get_runs impl_1]]]} {
 file mkdir ${::AIT::name_Project}/${::AIT::name_Project}.sdk
 
 # Set basic platform properties
-set_property pfm_name [get_property board_part [current_project]] [get_files *.bd]
+set_property pfm_name [get_property board_part [current_project]] [get_files [current_bd_design].bd]
 set_property PFM.CLOCK {clk_out1 {id "0" is_default "true" proc_sys_reset "processor_system_reset" }} [get_bd_cells clock_generator]
 
 # Generate xsa files

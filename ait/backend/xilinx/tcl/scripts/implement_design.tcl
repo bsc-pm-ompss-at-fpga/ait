@@ -40,7 +40,7 @@ if {[string match "*ERROR*" [get_property STATUS [get_runs synth_1]]]} {
 }
 
 # Open Block Design
-open_bd_design ${::AIT::name_Project}/${::AIT::name_Project}.srcs/sources_1/bd/${::AIT::name_Design}/${::AIT::name_Design}.bd
+open_bd_design [get_files ${::AIT::name_Design}.bd]
 
 # Generate .bin file for Zynq and ZynqMP boards
 if {(${::AIT::arch_device} eq "zynq") || (${::AIT::arch_device} eq "zynqmp")} {

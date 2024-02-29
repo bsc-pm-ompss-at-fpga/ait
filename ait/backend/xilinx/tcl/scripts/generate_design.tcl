@@ -204,10 +204,10 @@ if {[catch {source -notrace board/${::AIT::board}/baseDesign.tcl}]} {
 }
 
 # Open Block Design
-open_bd_design ${::AIT::name_Project}/${::AIT::name_Project}.srcs/sources_1/bd/${::AIT::name_Design}/${::AIT::name_Design}.bd
+open_bd_design [get_files ${::AIT::name_Design}.bd]
 
 # Set synthesis by IP
-set_property synth_checkpoint_mode {Hierarchical} [get_files ${::AIT::name_Project}/${::AIT::name_Project}.srcs/sources_1/bd/${::AIT::name_Design}/${::AIT::name_Design}.bd]
+set_property synth_checkpoint_mode {Hierarchical} [get_files [current_bd_design].bd]
 
 # If available, execute the user defined pre-design tcl script
 if {[file exists tcl/scripts/userPreDesign.tcl]} {
