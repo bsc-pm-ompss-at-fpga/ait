@@ -119,7 +119,7 @@ def gen_utilization_report(out_path):
         if name not in used_resources:
             continue
 
-        report_string = '{0:<9} {1:>6} used | {2:>6} available - {3:>6}% utilization'
+        report_string = '{0:<9} {1:>7} used | {2:>7} available - {3:>6}% utilization'
         report_string_formatted = report_string.format(name, used_resources[name],
                                                        av_resources[name], util_resources[name])
         msg.log(report_string_formatted)
