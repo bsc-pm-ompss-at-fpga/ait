@@ -78,7 +78,7 @@ set bCheckIPsPassed 1
 set bCheckIPs 1
 if { $bCheckIPs == 1 } {
    set list_check_ips "\ 
-bsc:ompss:picosompssmanager:*\
+bsc:ompss:picos_ompss_manager:*\
 xilinx.com:ip:blk_mem_gen:*\
 xilinx.com:ip:axi_bram_ctrl:*\
 xilinx.com:ip:axi_gpio:*\
@@ -327,7 +327,7 @@ proc create_hier_cell_Hardware_Runtime { parentCell nameHier } {
   }
 
   # Create instance: Picos_OmpSs_Manager, and set properties
-  set Picos_OmpSs_Manager [ create_bd_cell -type ip -vlnv bsc:ompss:picosompssmanager Picos_OmpSs_Manager ]
+  set Picos_OmpSs_Manager [ create_bd_cell -type ip -vlnv bsc:ompss:picos_ompss_manager Picos_OmpSs_Manager ]
   set POM_Config [list \
     CONFIG.AXILITE_INTF ${::AIT::enable_pom_axilite} \
     CONFIG.CMDIN_SUBQUEUE_LEN ${::AIT::cmdInSubqueue_len} \
