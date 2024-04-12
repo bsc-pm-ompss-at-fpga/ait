@@ -43,6 +43,7 @@ class Logger(object):
 
     def write(self, message):
         self.terminal.write(message)
+        self.terminal.flush()
         if message != '\n':
             self.log.write(self.tag)
         self.log.write(self.re_color.sub('', message))
