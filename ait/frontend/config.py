@@ -25,7 +25,7 @@ MIN_WRAPPER_VERSION = 13
 BITINFO_VERSION = 11
 VERSION_MAJOR = 7
 VERSION_MINOR = 3
-VERSION_PATCH = 2
+VERSION_PATCH = 3
 
 # NOTE: The variable will be overwritten during installation, do not manually modify.
 VERSION_COMMIT = ''
