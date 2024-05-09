@@ -362,9 +362,29 @@ foreach acc ${::AIT::accs} {
 
                 # Create and connect the Adapter_instr
                 create_bd_cell -type ip -vlnv bsc:ompss:Adapter_instr_wrapper:1.0 $acc_hier/Adapter_instr
-                connect_bd_net [get_bd_pins -regexp $acc_hier/Adapter_instr/in(_V)*?_ap_vld] [get_bd_pins -regexp $acc_ip/mcxx_instr(_V)*?_ap_vld]
-                connect_bd_net [get_bd_pins -regexp $acc_hier/Adapter_instr/in(_V)*?_ap_ack] [get_bd_pins -regexp $acc_ip/mcxx_instr(_V)*?_ap_ack]
-                connect_bd_net [get_bd_pins -regexp $acc_hier/Adapter_instr/in(_V)*?] [get_bd_pins -regexp $acc_ip/mcxx_instr(_V)*?]
+		puts "Pin names Adapter instr"
+		foreach {pin_name} [get_bd_pins -regexp $acc_hier/Adapter_instr/*] {
+                   puts $pin_name
+		}
+
+		puts "Intf pin names Adapter instr no quite"
+		foreach {intf_pin_name} [get_bd_intf_pins -regexp $acc_hier/Adapter_instr/*] {
+                   puts $intf_pin_name
+		}
+
+		puts "Intf pin names Adapter instr quite"
+		foreach {intf_pin_name} [get_bd_intf_pins -quiet -regexp $acc_hier/Adapter_instr/*] {
+                   puts $intf_pin_name
+		}
+
+		foreach x [get_bd_intf_pins -of_objects [get_bd_cells]] { puts "Next Interface Pin starts here
+			..............................................."
+			report_property -all $x
+		}
+                connect_bd_intf_net [get_bd_intf_pins $acc_hier/Adapter_instr/in_r] [get_bd_intf_pins -regexp $acc_ip/mcxx_instr(_V)*?]
+                #connect_bd_net [get_bd_pins -regexp $acc_hier/Adapter_instr/in(_V)*?_ap_vld] [get_bd_pins -regexp $acc_ip/mcxx_instr(_V)*?_ap_vld]
+                #connect_bd_net [get_bd_pins -regexp $acc_hier/Adapter_instr/in(_V)*?_ap_ack] [get_bd_pins -regexp $acc_ip/mcxx_instr(_V)*?_ap_ack]
+                #connect_bd_net [get_bd_pins -regexp $acc_hier/Adapter_instr/in(_V)*?] [get_bd_pins -regexp $acc_ip/mcxx_instr(_V)*?]
                 AIT::board::connect_clock [get_bd_pins $acc_hier/Adapter_instr/ap_clk]
                 connect_bd_net [get_bd_pins $acc_hier/Adapter_instr/ap_rst_n] [get_bd_pins $acc_hier/managed_aresetn]
 

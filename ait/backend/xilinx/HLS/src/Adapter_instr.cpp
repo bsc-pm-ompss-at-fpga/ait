@@ -44,7 +44,7 @@ typedef enum eventType_t {
 
 unsigned long long int get_typeAndId(volatile unsigned long long int * instr_buffer, unsigned long long int offset, unsigned short int slot) {
 	#pragma HLS INTERFACE m_axi port=instr_buffer
-	return *((unsigned long long int*)(instr_buffer + ((offset + slot*sizeof(event_t) + offsetof(event_t, typeAndId))/sizeof(unsigned long long int))));
+	return *((unsigned long long int*)(instr_buffer + ((offset + slot*sizeof(event_t) + (sizeof(unsigned long long int)*2))/sizeof(unsigned long long int))));
 }
 
 void Adapter_instr_wrapper(
@@ -54,7 +54,7 @@ void Adapter_instr_wrapper(
 {
 	#pragma HLS INTERFACE ap_ctrl_none port=return
 	#pragma HLS INTERFACE m_axi port=instr_buffer
-	#pragma HLS INTERFACE ap_hs port=in
+	#pragma HLS INTERFACE axis port=in
 
 	static unsigned short int instr_slots, instr_currentSlot, instr_numOverflow, instr_avSlots;
 	static unsigned long long int instr_buffer_offset;
@@ -107,8 +107,11 @@ void Adapter_instr_wrapper(
 			instr_avSlots -= can_write_event;
 			instr_numOverflow += !can_write_event;
 
-			const unsigned long long int typeAndId_ev = (unsigned long long int)data.range(103, 64);
-			const unsigned long long int typeAndId_of = (((unsigned long long int)EVENT_TYPE_POINT)<<32) | EV_INSTEVLOST;
+			const unsigned long long int type_event = (data.range(95,64) & 0xFFFFFFFF);
+			const unsigned long long int value_event = (data.bit(96)) & 0x1;
+			//const unsigned long long int typeAndId_ev = (unsigned long long int)data.range(103, 64);
+			const unsigned long long int typeAndId_ev = ((value_event << 32) | type_event) & 0xFFFFFFFFFFLL;
+			const unsigned long long int typeAndId_of = ((((unsigned long long int)EVENT_TYPE_POINT)<<32) | EV_INSTEVLOST) & 0xFFFFFFFFFFLL;
 			const unsigned long long int value_ev = (unsigned long long int)data.range(63, 0);
 			const unsigned long long int value_of = instr_numOverflow;
 
@@ -116,6 +119,7 @@ void Adapter_instr_wrapper(
 			fpga_event.timestamp = timestamp;
 			fpga_event.typeAndId = can_write_event ? typeAndId_ev : typeAndId_of;
 			fpga_event.value = can_write_event ? value_ev : value_of;
+                        ap_wait();
 			memcpy((void *)(instr_buffer + slot_offset), &fpga_event, sizeof(event_t));
 		}
 
