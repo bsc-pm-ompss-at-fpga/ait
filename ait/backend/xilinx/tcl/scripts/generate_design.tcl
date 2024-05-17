@@ -356,71 +356,38 @@ foreach acc ${::AIT::accs} {
 
         ## Other interfaces
         # If available, forward the instrumentation pins
-        if {([get_bd_pins -quiet $acc_ip/mcxx_instr_*] ne "") || ([get_bd_pins -quiet $acc_ip/mcxx_hwcounterPort*] ne "")} {
+        if {[get_bd_pins -quiet -regexp $acc_ip/mcxx_instr(_V)*?] ne ""} {
+            # Create and connect the Adapter_instr
+            set acc_hier_adapter_instr [create_bd_cell -type ip -vlnv bsc:ompss:adapter_instr:0.1 $acc_hier/Adapter_instr]
+            set_property -dict [list \
+                CONFIG.AXI_ADDR_WIDTH {64} \
+                CONFIG.COUNTER_WIDTH {64} \
+                CONFIG.FIFO_LEN {4} \
+             ] $acc_hier_adapter_instr
 
-            # Create counter for the current accelerator
-            set hwinst_counter [create_bd_cell -type ip -vlnv xilinx.com:ip:c_counter_binary $acc_hier/hwinst_counter]
-            set_property CONFIG.Output_Width {64} $hwinst_counter
-            connect_bd_net [get_bd_pins $acc_hier/aclk] [get_bd_pins $hwinst_counter/CLK]
+            connect_bd_intf_net [get_bd_intf_pins $acc_hier/Adapter_instr/event_in] [get_bd_intf_pins -regexp $acc_ip/mcxx_instr(_V)*?]
 
-            if {[get_bd_pins -quiet $acc_ip/mcxx_instr_*] ne ""} {
+            AIT::board::connect_clock [get_bd_pins $acc_hier/Adapter_instr/clk]
+            connect_bd_net [get_bd_pins $acc_hier/Adapter_instr/rstn] [get_bd_pins $acc_hier/managed_aresetn]
 
-                # Create and connect the Adapter_instr
-                create_bd_cell -type ip -vlnv bsc:ompss:Adapter_instr_wrapper:1.0 $acc_hier/Adapter_instr
-		puts "Pin names Adapter instr"
-		foreach {pin_name} [get_bd_pins -regexp $acc_hier/Adapter_instr/*] {
-                   puts $pin_name
-		}
+            set instr_inner_axi_pin [get_bd_intf_pins $acc_hier/Adapter_instr/instr_buf]
 
-		puts "Intf pin names Adapter instr no quite"
-		foreach {intf_pin_name} [get_bd_intf_pins -regexp $acc_hier/Adapter_instr/*] {
-                   puts $intf_pin_name
-		}
-
-		puts "Intf pin names Adapter instr quite"
-		foreach {intf_pin_name} [get_bd_intf_pins -quiet -regexp $acc_hier/Adapter_instr/*] {
-                   puts $intf_pin_name
-		}
-
-		foreach x [get_bd_intf_pins -of_objects [get_bd_cells]] { puts "Next Interface Pin starts here
-			..............................................."
-			report_property -all $x
-		}
-                connect_bd_intf_net [get_bd_intf_pins $acc_hier/Adapter_instr/in_r] [get_bd_intf_pins -regexp $acc_ip/mcxx_instr(_V)*?]
-                #connect_bd_net [get_bd_pins -regexp $acc_hier/Adapter_instr/in(_V)*?_ap_vld] [get_bd_pins -regexp $acc_ip/mcxx_instr(_V)*?_ap_vld]
-                #connect_bd_net [get_bd_pins -regexp $acc_hier/Adapter_instr/in(_V)*?_ap_ack] [get_bd_pins -regexp $acc_ip/mcxx_instr(_V)*?_ap_ack]
-                #connect_bd_net [get_bd_pins -regexp $acc_hier/Adapter_instr/in(_V)*?] [get_bd_pins -regexp $acc_ip/mcxx_instr(_V)*?]
-                AIT::board::connect_clock [get_bd_pins $acc_hier/Adapter_instr/ap_clk]
-                connect_bd_net [get_bd_pins $acc_hier/Adapter_instr/ap_rst_n] [get_bd_pins $acc_hier/managed_aresetn]
-
-                # Connect to hwcounter
-                connect_bd_net [get_bd_pins $hwinst_counter/Q] [get_bd_pins $acc_hier/Adapter_instr/hwcounter]
-
-                set instr_inner_axi_pin [get_bd_intf_pins -quiet -filter {NAME =~ *instr_buffer} $acc_hier/Adapter_instr/m_axi*]
-                set instr_pin_name [regsub -all {(^m_axi_|(_V)*$)} [get_property NAME $instr_inner_axi_pin] ""]
-
-                if {(${::AIT::slr_slices} eq "acc") || (${::AIT::slr_slices} eq "all")} {
-                    if {!([dict exists ${::AIT::acc_placement} $accName] && ([llength [dict get ${::AIT::acc_placement} $accName]] > ${instanceNum}))} {
-                        # No placement info is provided for this instance
-                        AIT::utils::warning_msg "No placement info provided for instance ${instanceNum} of ${accName}. Slices for AXI pins will not be created"
-                    } else {
-                        set slr [lindex [dict get ${::AIT::acc_placement} $accName] ${instanceNum}]
-                        # AIT::AXI::add_reg_slice ip_name intf_name slr_master slr_slave {intf_pin} {num_pipelines} {prefix}
-                        # num_pipelines format: master:middle:slave
-                        # Pass unused optional arguments as ""
-                        set instr_inner_axi_pin [AIT::AXI::add_reg_slice ${accName}_${instanceNum} $pin_name $slr ${::AIT::board_memory_slr} $instr_inner_axi_pin ${::AIT::regslice_pipeline_stages} acc_]
-                    }
+            if {(${::AIT::slr_slices} eq "acc") || (${::AIT::slr_slices} eq "all")} {
+                if {!([dict exists ${::AIT::acc_placement} $accName] && ([llength [dict get ${::AIT::acc_placement} $accName]] > ${instanceNum}))} {
+                    # No placement info is provided for this instance
+                    AIT::utils::warning_msg "No placement info provided for instance ${instanceNum} of ${accName}. Slices for AXI pins will not be created"
+                } else {
+                    set slr [lindex [dict get ${::AIT::acc_placement} $accName] ${instanceNum}]
+                    # AIT::AXI::add_reg_slice ip_name intf_name slr_master slr_slave {intf_pin} {num_pipelines} {prefix}
+                    # num_pipelines format: master:middle:slave
+                    # Pass unused optional arguments as ""
+                    set instr_inner_axi_pin [AIT::AXI::add_reg_slice ${accName}_${instanceNum} $pin_name $slr ${::AIT::board_memory_slr} $instr_inner_axi_pin ${::AIT::regslice_pipeline_stages} acc_]
                 }
-
-                # Connect instr_buffer pin
-                set instr_outter_axi_pin [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 $acc_hier/instr_buffer]
-                connect_bd_intf_net $instr_inner_axi_pin $instr_outter_axi_pin
-                lappend acc_axi_pins $instr_outter_axi_pin
             }
-
-            if {[get_bd_pins -quiet $acc_ip/mcxx_hwcounterPort*] ne ""} {
-                connect_bd_net [get_bd_pins $hwinst_counter/Q] [get_bd_pins $acc_ip/mcxx_hwcounterPort*]
-            }
+            # Connect instr_buffer pin
+            set instr_outter_axi_pin [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 $acc_hier/instr_buffer]
+            connect_bd_intf_net $instr_inner_axi_pin $instr_outter_axi_pin
+            lappend acc_axi_pins $instr_outter_axi_pin
         }
 
         # If available, forward the frequency pin

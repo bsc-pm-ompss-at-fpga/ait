@@ -48,10 +48,10 @@ module bsc_ompss_hwcounter #(
   // ADDR_LSB = 3 for 64 bits (n downto 3)
   localparam integer ADDR_LSB = (C_S_AXI_DATA_WIDTH/32) + 1;
 
-  reg [63:0] counter;
+  reg [63:0] counter = 64'd0;
   wire slv_reg_rden;
   reg [C_S_AXI_DATA_WIDTH-1:0] reg_data_out;
-
+  
   // I/O Connections assignments
 
   assign s_axi_arready = axi_arready;
@@ -104,6 +104,8 @@ module bsc_ompss_hwcounter #(
     end
   end
 
+    reg [31:0] upper;
+
   // Implement memory mapped register select and read logic generation
   // Slave register read enable is asserted when valid address is available
   // and the slave is ready to accept the read address.
@@ -113,7 +115,7 @@ module bsc_ompss_hwcounter #(
     // Address decoding for reading registers
     case ( axi_araddr )
       3'b000   : reg_data_out <= counter[31:0];
-      3'b100   : reg_data_out <= counter[63:32];
+      3'b100   : reg_data_out <= upper;
       default  : reg_data_out <= 0;
     endcase
   end
@@ -126,6 +128,7 @@ module bsc_ompss_hwcounter #(
     // output the read data
     if (slv_reg_rden)
     begin
+      upper <= counter[63:32];
       axi_rdata <= reg_data_out;     // register read data
     end
   end

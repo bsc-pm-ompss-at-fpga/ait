@@ -132,12 +132,6 @@ def get_accelerators(project_path):
     xtasks_config_file.write(xtasks_config)
     xtasks_config_file.close()
 
-    if args.hwinst:
-        hwinst_acc_json_string = json.dumps({'full_path': ait_path + '/backend/' + args.backend + '/HLS/src/Adapter_instr.cpp', 'filename': 'Adapter_instr.cpp', 'name': 'Adapter_instr', 'type': 0, 'num_instances': 1, 'task_creation': 'false', 'instrumentation': 'false', 'periodic': 'false', 'lock': 'false'}, indent=4)
-        hwinst_acc_json = json.loads(hwinst_acc_json_string)
-        hwinst_acc = Accelerator(hwinst_acc_json)
-        accs.append(hwinst_acc)
-
 
 def main():
     global args
