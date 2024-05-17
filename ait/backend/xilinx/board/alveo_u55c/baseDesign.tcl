@@ -288,6 +288,7 @@ proc create_hier_cell_QDMA { parentCell nameHier } {
    CONFIG.pf2_bar2_prefetchable_qdma {true} \
    CONFIG.pf3_bar0_prefetchable_qdma {true} \
    CONFIG.pf3_bar2_prefetchable_qdma {true} \
+   CONFIG.pl_link_cap_max_link_speed {16.0_GT/s} \
    CONFIG.testname {mm} \
    CONFIG.tl_pf_enable_reg {1} \
  ] $QDMA
