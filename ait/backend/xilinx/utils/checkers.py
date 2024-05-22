@@ -59,7 +59,7 @@ def check_vitis_hls():
 
 
 def check_bootgen():
-    if shutil.which('bootgen'):
+    if not shutil.which('bootgen'):
         msg.warning('bootgen not found. .bit.bin file will not be generated')
         return False
 
