@@ -362,7 +362,7 @@ foreach acc ${::AIT::accs} {
             set_property -dict [list \
                 CONFIG.AXI_ADDR_WIDTH {64} \
                 CONFIG.COUNTER_WIDTH {64} \
-                CONFIG.FIFO_LEN {4} \
+                CONFIG.FIFO_LEN {8} \
              ] $acc_hier_adapter_instr
 
             connect_bd_intf_net [get_bd_intf_pins $acc_hier/Adapter_instr/event_in] [get_bd_intf_pins -regexp $acc_ip/mcxx_instr(_V)*?]
