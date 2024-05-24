@@ -119,6 +119,14 @@ namespace eval AIT {
                 connect_bd_net [get_bd_pins $axiRegSlice/aclk] $clk_pin
                 connect_bd_net [get_bd_pins $axiRegSlice/aresetn] $rst_pin
 
+                # Set READ_WRITE_MODE according to the master interface
+                # Vivado propagates this, but we need this early in case we're using interleavers
+                set masterIf [get_bd_intf_pins -quiet -of_objects [get_bd_intf_nets -of_objects [get_bd_intf_pins $axiRegSlice/S_AXI]] -filter "MODE == Master"]
+                if  { [llength $masterIf] > 0 } {
+                    set rwMode [get_property CONFIG.READ_WRITE_MODE $masterIf]
+                    set_property CONFIG.READ_WRITE_MODE $rwMode $axiRegSlice
+                }
+
                 # Return new outermost AXI pin
                 set intf_pin $new_intf_pin
             }
