@@ -221,6 +221,7 @@ class ArgParser:
         datapath_args = self.parser.add_argument_group('Data path')
         datapath_args.add_argument('--datainterfaces_map', help='path of mappings file for the data interfaces', type=FileType())
         datapath_args.add_argument('--memory_interleaving_stride', help='size in bytes of the stride of the memory interleaving. By default there is no interleaving', metavar='MEM_INTERLEAVING_STRIDE', type=HumanReadableType(vmin='4K'))
+        datapath_args.add_argument('--disable_creator_ports', help='Disable memory access ports in the task-creation accelerators', action='store_true', default=False)
 
         # Hardware Runtime arguments
         hwruntime_args = self.parser.add_argument_group('Hardware Runtime')

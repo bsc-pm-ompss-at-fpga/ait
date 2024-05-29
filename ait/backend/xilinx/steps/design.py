@@ -90,6 +90,7 @@ def generate_Vivado_variables_tcl():
                                 + '\tvariable regslice_pipeline_stages {}\n'    .format(args.regslice_pipeline_stages) \
                                 + '\tvariable power_monitor {}\n'               .format(str(args.power_monitor)) \
                                 + '\tvariable thermal_monitor {}\n'              .format(str(args.thermal_monitor)) \
+                                + '\tvariable disable_creator_ports {}\n'       .format(str(args.disable_creator_ports)) \
                                 + '\n' \
                                 + '\t# {} board variables\n'                    .format(board.name) \
                                 + '\tvariable board {}\n'                       .format(board.name) \
