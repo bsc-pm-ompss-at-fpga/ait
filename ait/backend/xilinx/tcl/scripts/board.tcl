@@ -225,7 +225,7 @@ namespace eval AIT {
                     # DDR_X each DDR bank
                     foreach addr_seg [get_bd_addr_segs -regexp {/bridge_to_host/memory/DDR_[0-9]/DDR/C0_DDR4_MEMORY_MAP_CTRL/C0_REG}] {
                         assign_bd_address -quiet $addr_seg
-                        exclude_bd_addr_seg [get_bd_addr_segs -regexp {/bridge_to_host/.*/SEG_DDR_C0_REG[0-9]?}]
+                        exclude_bd_addr_seg [get_bd_addr_segs -regexp {/bridge_to_host/.*/SEG_DDR_C0_REG_?[0-9]?}]
                     }
                 } elseif {$mem_type eq "hbm"} {
                     set bank_num 0
