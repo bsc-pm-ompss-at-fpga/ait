@@ -96,5 +96,39 @@ namespace eval AIT {
             }
             return $result
         }
+
+        # Returns a clk bd_pin object from where the input parameter clk_pin is generated
+        proc get_source_clk_from_clk_pin {clk_pin} {
+            set clk_domain [get_property CONFIG.CLK_DOMAIN $clk_pin]
+            set source_clk [get_bd_pins -hierarchical -filter "(TYPE == clk) && (CONFIG.CLK_DOMAIN == $clk_domain) && (DIR == O)"]
+
+            return $source_clk
+        }
+
+        # Returns a clk bd_pin object of the clock associated to the input parameter intf_pin
+        proc get_clk_pin_from_intf_pin {intf_pin} {
+            set ip [get_bd_cells -of_objects $intf_pin]
+            set intf_name [get_property NAME $intf_pin]
+            set clk_pin [get_bd_pins -of_objects $ip -filter "(TYPE == clk) && (CONFIG.ASSOCIATED_BUSIF =~ *$intf_name*)"]
+
+            return $clk_pin
+        }
+
+        # Returns a bd_net of a reset net synchronous to the input parameter clk_pin
+        # Iterates over the clock pins sharing the same net as clk_pin and looks for associated resets, then returns the first instance
+        proc get_rst_net_from_clk_pin {clk_pin} {
+            set clk_net [get_bd_nets -of_objects $clk_pin]
+            foreach pin [get_bd_pins -of_objects $clk_net] {
+                set clk_rst [get_property CONFIG.ASSOCIATED_RESET $pin]
+                if [llength $clk_rst] {
+                    set ip_path [string range [get_property PATH $pin] 0 [string last / [get_property PATH $pin]]]
+                    set rst_net [get_bd_nets -of_objects [get_bd_pins $ip_path/$clk_rst]]
+                    if [llength $rst_net] {
+                        return $rst_net
+                    }
+                }
+            }
+            error_msg "No valid reset net found for clock pin ($clk_pin)"
+        }
     }
 }
