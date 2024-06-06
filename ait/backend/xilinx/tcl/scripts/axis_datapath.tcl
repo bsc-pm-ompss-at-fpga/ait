@@ -67,7 +67,7 @@ namespace eval AIT {
                     }
                 }
 
-                # If no intf_pin passed, we assume that we are adding a register slice on an already-connected 
+                # If no intf_pin passed, we assume that we are adding a register slice on an already-connected
                 # interface, so we must first delete the net and get both ends of the connection
                 if {$intf_pin eq ""} {
                     set intf_pin [get_bd_intf_pins ${ip_cell}/${intf_name}]
@@ -91,11 +91,11 @@ namespace eval AIT {
                     connect_bd_intf_net [get_bd_intf_pins $axisRegSlice/M_AXIS] $intf_pin
                     set new_intf_pin [get_bd_intf_pins $axisRegSlice/S_AXIS]
                 }
-                set clk_pin [get_bd_pins -of_objects [get_bd_cells -of_objects $intf_pin] -filter "(TYPE == clk) && (CONFIG.ASSOCIATED_BUSIF =~ *[get_property NAME $intf_pin]*)"]
-                set rst_pin [get_bd_pins [get_bd_cells -of_objects $clk_pin]/[split [get_property CONFIG.ASSOCIATED_RESET $clk_pin] ':']]
+                set clk_pin [AIT::utils::get_clk_pin_from_intf_pin $intf_pin]
+                set rst_net [AIT::utils::get_rst_net_from_clk_pin $clk_pin]
 
                 connect_bd_net [get_bd_pins $axisRegSlice/aclk] $clk_pin
-                connect_bd_net [get_bd_pins $axisRegSlice/aresetn] $rst_pin
+                connect_bd_net [get_bd_pins $axisRegSlice/aresetn] -net $rst_net
 
                 # Return new outermost AXI-Stream pin
                 set intf_pin $new_intf_pin

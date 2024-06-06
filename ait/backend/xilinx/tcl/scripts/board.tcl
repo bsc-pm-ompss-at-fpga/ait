@@ -126,8 +126,8 @@ namespace eval AIT {
             set acc_hier [create_bd_cell -type hier ${accName}_${instanceNum}]
             create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 $acc_hier/inStream
             create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 $acc_hier/outStream
-            create_bd_pin -dir I $acc_hier/aclk
-            create_bd_pin -dir I $acc_hier/managed_aresetn
+            create_bd_pin -type clk -dir I $acc_hier/aclk
+            create_bd_pin -type rst -dir I $acc_hier/managed_aresetn
 
             set acc_ip [create_bd_cell -type ip -vlnv bsc:ompss:${accName}_wrapper:1.0 $acc_hier/${accName}_ompss]
             connect_bd_net [get_bd_pins $acc_hier/aclk] [get_bd_pins $acc_ip/ap_clk]
