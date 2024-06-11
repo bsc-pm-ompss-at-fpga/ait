@@ -362,7 +362,7 @@ foreach acc ${::AIT::accs} {
             set_property -dict [list \
                 CONFIG.AXI_ADDR_WIDTH {64} \
                 CONFIG.COUNTER_WIDTH {64} \
-                CONFIG.FIFO_LEN {8} \
+                CONFIG.FIFO_LEN {32} \
                 CONFIG.MAX_EVENT_BUF_LEN {128} \
              ] $acc_hier_adapter_instr
 
