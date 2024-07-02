@@ -215,7 +215,7 @@ class ArgParser:
         bitstream_args.add_argument('--hwruntime', help=argparse.SUPPRESS, action=RemovedArg)
         bitstream_args.add_argument('--hwcounter', help='add a hardware counter to the bitstream', action='store_true', default=False)
         bitstream_args.add_argument('--wrapper_version', help='version of accelerator wrapper shell. This information will be placed in the bitstream information', type=int)
-        bitstream_args.add_argument('--bitinfo_note', help='custom note to add to the bitInfo', type=ascii, default='')
+        bitstream_args.add_argument('--bitinfo_note', help='custom note to add to the bitInfo', type=ascii, default=None)
 
         # Data path arguments
         datapath_args = self.parser.add_argument_group('Data path')
@@ -349,7 +349,7 @@ class ArgParser:
 
     def check_bitstream_args(self, args):
         # Validate bitstream args
-        if len(args.bitinfo_note) > 256:
+        if args.bitinfo_note and len(args.bitinfo_note) > 256:
             msg.error('Length of bitInfo note must be less than 256 ASCII chars')
 
     # This check has to be delayed because arguments are parsed before the number of accelerators is calculated

@@ -558,7 +558,7 @@ foreach acc ${::AIT::accs} {
         set accName [string range $accName 0 30]
     }
     # Max length is 31 characters, but there are 8 padding bits at the end
-    append accName [string repeat " " [expr {32 - [string length $accName]}]]
+    append accName [string repeat "\0" [expr {32 - [string length $accName]}]]
     # Convert ascii to hexadecimal string
     append xtasks_bin_str [AIT::utils::ascii2hex $accName]
 
@@ -622,9 +622,10 @@ append bitInfo_coe [string range $addr_thermal_monitor 2 9]\n
 # Calculate the bitinfo offset of each variable-length field
 # Variable-length fields are appended next to the fixed-length fields
 set xtasks_config_acc_size 44
+set num_static_fields 34
 set dynamic_field_sizes [list [expr {$xtasks_config_acc_size*[llength ${::AIT::accs}]}] [string length ${::AIT::ait_call}] [string length $hwruntime_vlnv] [string length ${::AIT::bitInfo_note}]]
 set dynamic_field_offsets [list]
-set offset [expr {[llength [split $bitInfo_coe "\n"]] + 1}]
+set offset $num_static_fields
 foreach size $dynamic_field_sizes {
     lappend dynamic_field_offsets $offset
     incr offset [expr {int(ceil($size/4.))}]
@@ -637,6 +638,7 @@ if {$bitinfo_len > 1024} {
 for {set i 0} {$i < [llength $dynamic_field_sizes]} {incr i} {
     append bitInfo_coe [format %08X [expr {[lindex $dynamic_field_sizes $i] | ([lindex $dynamic_field_offsets $i] << 16)}]]\n
 }
+append bitInfo_coe [format %08x ${::AIT::user_id}]\n
 append bitInfo_coe $xtasks_bin_str
 append bitInfo_coe [AIT::utils::ascii2hex ${::AIT::ait_call}]
 append bitInfo_coe [AIT::utils::ascii2hex $hwruntime_vlnv]

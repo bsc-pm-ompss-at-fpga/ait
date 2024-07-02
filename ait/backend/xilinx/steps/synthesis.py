@@ -21,7 +21,6 @@
 # ------------------------------------------------------------------------ #
 
 import os
-import random
 import subprocess
 import sys
 
@@ -54,12 +53,6 @@ def run_step(project_args):
     checkers.check_vivado()
 
     if os.path.isfile(project_backend_path + '/' + args.name + '/' + args.name + '.xpr'):
-        # Generate random USERID to identify the bitstream
-        user_id = str(hex(random.randrange(2**32)))
-        msg.log('Setting bitstream user id: ' + user_id)
-        p = subprocess.Popen('sed -i s/BITSTREAM_USERID/{}/ {}/constraints/basic_constraints.xdc'.format(user_id, project_board_path), shell=True)
-        retval = p.wait()
-
         p = subprocess.Popen('vivado -init -nojournal -nolog -notrace -mode batch -source '
                              + project_backend_path + '/tcl/scripts/synthesize_design.tcl '
                              + '-tclargs ' + (str(args.jobs) if args.jobs is not None else str(getNumJobs(args.mem_per_job))),

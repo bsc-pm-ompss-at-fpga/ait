@@ -22,6 +22,7 @@
 
 import json
 import os
+import random
 import re
 import shutil
 import subprocess
@@ -50,7 +51,7 @@ def generate_Vivado_variables_tcl():
                                + '\tvariable num_accs {}\n'               .format(str(args.num_instances)) \
                                + '\tvariable num_acc_creators {}\n'       .format(str(args.num_acc_creators)) \
                                + '\tvariable ait_call "{}"\n'             .format(str(re.escape(os.path.basename(sys.argv[0]) + ' ' + ' '.join(sys.argv[1:])))) \
-                               + '\tvariable bitInfo_note {}\n'           .format(str(re.escape(args.bitinfo_note))) \
+                               + '\tvariable bitInfo_note {}\n'           .format(str((re.escape(args.bitinfo_note))) if args.bitinfo_note is not None else {}) \
                                + '\tvariable version_major_ait {}\n'      .format(str(VERSION_MAJOR)) \
                                + '\tvariable version_minor_ait {}\n'      .format(str(VERSION_MINOR)) \
                                + '\tvariable version_patch_ait {}\n'      .format(str(VERSION_PATCH)) \
@@ -77,6 +78,7 @@ def generate_Vivado_variables_tcl():
 
     vivado_project_variables += '\n' \
                                 + '\t# Bitstream variables\n' \
+                                + '\tvariable user_id {}\n'                     .format(str(user_id)) \
                                 + '\tvariable interconOpt {}\n'                 .format(str(args.interconnect_opt + 1)) \
                                 + '\tvariable debugInterfaces {}\n'             .format(str(args.debug_intfs)) \
                                 + '\tvariable interconRegSlice_all {}\n'        .format(regslice_all) \
@@ -268,6 +270,7 @@ def run_step(project_args):
     global accs
     global chip_part
     global start_time
+    global user_id
     global ait_backend_path
     global project_backend_path
     global project_board_path
@@ -309,6 +312,12 @@ def run_step(project_args):
         shutil.copy2(args.user_constraints, constraints_path + '/')
     elif args.user_constraints:
         msg.error('User constraints file not found: ' + args.user_constraints)
+
+    # Generate random USERID to identify the bitstream
+    user_id = str(hex(random.randrange(2**32)))
+    msg.log('Setting bitstream user id: ' + user_id)
+    p = subprocess.Popen('sed -i s/BITSTREAM_USERID/{}/ {}/constraints/basic_constraints.xdc'.format(user_id, project_board_path), shell=True)
+    retval = p.wait()
 
     if args.user_pre_design and os.path.exists(args.user_pre_design):
         user_pre_design_ext = args.user_pre_design.split('.')[-1] if len(args.user_pre_design.split('.')) > 1 else ''
