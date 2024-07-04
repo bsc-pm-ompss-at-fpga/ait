@@ -233,7 +233,7 @@ if {(${::AIT::arch_device} eq "zynq") || (${::AIT::arch_device} eq "zynqmp")} {
 AIT::board::connect_clock [get_bd_pins Hardware_Runtime/aclk]
 AIT::board::connect_reset [get_bd_pins Hardware_Runtime/interconnect_aresetn] [get_bd_pins /processor_system_reset/interconnect_aresetn]
 AIT::board::connect_reset [get_bd_pins Hardware_Runtime/peripheral_aresetn]
-connect_bd_net [get_bd_pins Hardware_Runtime/managed_aresetn] [get_bd_pins reset_AND/Res]
+AIT::board::connect_reset [get_bd_pins Hardware_Runtime/managed_aresetn] [get_bd_pins reset_AND/Res]
 
 if {${::AIT::hwruntime_interconnect} == "centralized"} {
     set hwruntime_interconnect_script "tcl/scripts/hwr_central_interconnect.tcl"
@@ -265,7 +265,7 @@ foreach acc ${::AIT::accs} {
 
         # Connect clk and rst pins
         AIT::board::connect_clock [get_bd_pins $acc_hier/aclk]
-        connect_bd_net [get_bd_pins $acc_hier/managed_aresetn] [get_bd_pins reset_AND/Res]
+        AIT::board::connect_reset [get_bd_pins $acc_hier/managed_aresetn] [get_bd_pins reset_AND/Res]
 
         ## AXI interfaces
         # Get list of M_AXI interfaces
@@ -369,7 +369,7 @@ foreach acc ${::AIT::accs} {
             connect_bd_intf_net [get_bd_intf_pins $acc_hier/Adapter_instr/event_in] [get_bd_intf_pins -regexp $acc_ip/mcxx_instr(_V)*?]
 
             AIT::board::connect_clock [get_bd_pins $acc_hier/Adapter_instr/clk]
-            connect_bd_net [get_bd_pins $acc_hier/Adapter_instr/rstn] [get_bd_pins $acc_hier/managed_aresetn]
+            AIT::board::connect_reset [get_bd_pins $acc_hier/Adapter_instr/rstn] [AIT::board::get_rst_net_from_clk_pin [get_bd_pins $acc_hier/Adapter_instr/clk]]
 
             set instr_inner_axi_pin [get_bd_intf_pins $acc_hier/Adapter_instr/instr_buf]
 

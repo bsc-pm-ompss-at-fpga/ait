@@ -113,11 +113,11 @@ namespace eval AIT {
                     connect_bd_intf_net [get_bd_intf_pins $axiRegSlice/M_AXI] $intf_pin
                     set new_intf_pin [get_bd_intf_pins $axiRegSlice/S_AXI]
                 }
-                set clk_pin [get_bd_pins -of_objects [get_bd_cells -of_objects $intf_pin] -filter "(TYPE == clk) && (CONFIG.ASSOCIATED_BUSIF =~ *[get_property NAME $intf_pin]*)"]
-                set rst_pin [get_bd_pins [get_bd_cells -of_objects $clk_pin]/[split [get_property CONFIG.ASSOCIATED_RESET $clk_pin] ':']]
 
-                connect_bd_net [get_bd_pins $axiRegSlice/aclk] $clk_pin
-                connect_bd_net [get_bd_pins $axiRegSlice/aresetn] $rst_pin
+                set clk_pin [AIT::board::get_clk_pin_from_intf_pin $intf_pin]
+                set rst_net [AIT::board::get_rst_net_from_clk_pin $clk_pin]
+                AIT::board::connect_clock [get_bd_pins $axiRegSlice/aclk] $clk_pin
+                AIT::board::connect_reset [get_bd_pins $axiRegSlice/aresetn] $rst_net
 
                 # Set READ_WRITE_MODE according to the master interface
                 # Vivado propagates this, but we need this early in case we're using interleavers

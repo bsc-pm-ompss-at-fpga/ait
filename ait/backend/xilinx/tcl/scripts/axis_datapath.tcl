@@ -91,11 +91,10 @@ namespace eval AIT {
                     connect_bd_intf_net [get_bd_intf_pins $axisRegSlice/M_AXIS] $intf_pin
                     set new_intf_pin [get_bd_intf_pins $axisRegSlice/S_AXIS]
                 }
-                set clk_pin [AIT::utils::get_clk_pin_from_intf_pin $intf_pin]
-                set rst_net [AIT::utils::get_rst_net_from_clk_pin $clk_pin]
-
-                connect_bd_net [get_bd_pins $axisRegSlice/aclk] $clk_pin
-                connect_bd_net [get_bd_pins $axisRegSlice/aresetn] -net $rst_net
+                set clk_pin [AIT::board::get_clk_pin_from_intf_pin $intf_pin]
+                set rst_net [AIT::board::get_rst_net_from_clk_pin $clk_pin]
+                AIT::board::connect_clock [get_bd_pins $axisRegSlice/aclk] $clk_pin
+                AIT::board::connect_reset [get_bd_pins $axisRegSlice/aresetn] $rst_net
 
                 # Return new outermost AXI-Stream pin
                 set intf_pin $new_intf_pin
@@ -115,30 +114,31 @@ namespace eval AIT {
                 connect_bd_net [get_bd_pins $stream_adapter/in_hs_ap_vld] [get_bd_pins -regexp ${intf_pin}_ap_vld]
                 connect_bd_net [get_bd_pins $stream_adapter/in_hs_ap_ack] [get_bd_pins -regexp ${intf_pin}_ap_ack]
                 connect_bd_net [get_bd_pins $stream_adapter/in_hs] ${intf_pin}
-                connect_bd_net [get_bd_pins $stream_adapter/aclk] [get_bd_pins ${accName}_${instanceNum}/aclk]
-                connect_bd_net [get_bd_pins $stream_adapter/aresetn] [get_bd_pins ${accName}_${instanceNum}/managed_aresetn]
+                set clk_pin [AIT::board::connect_clock [get_bd_pins $stream_adapter/aclk] [AIT::board::get_clk_pin_from_intf_pin $intf_pin]]
+                AIT::board::connect_reset [get_bd_pins $stream_adapter/aresetn] [AIT::board::get_rst_net_from_clk_pin $clk_pin]
                 return [get_bd_intf_pins $stream_adapter/outStream]
             } elseif {$dir eq "I"} {
                 set stream_adapter [create_bd_cell -type module -reference bsc_ompss_streamToHsAdapter ${accName}_${instanceNum}/Adapter_${intf_name}]
                 connect_bd_net [get_bd_pins $stream_adapter/out_hs_ap_vld] [get_bd_pins -regexp ${intf_pin}_ap_vld]
                 connect_bd_net [get_bd_pins $stream_adapter/out_hs_ap_ack] [get_bd_pins -regexp ${intf_pin}_ap_ack]
                 connect_bd_net [get_bd_pins $stream_adapter/out_hs] ${intf_pin}
-                connect_bd_net [get_bd_pins $stream_adapter/aclk] [get_bd_pins ${accName}_${instanceNum}/aclk]
-                connect_bd_net [get_bd_pins $stream_adapter/aresetn] [get_bd_pins ${accName}_${instanceNum}/managed_aresetn]
+                set clk_pin [AIT::board::connect_clock [get_bd_pins $stream_adapter/aclk] [AIT::board::get_clk_pin_from_intf_pin $intf_pin]]
+                AIT::board::connect_reset [get_bd_pins $stream_adapter/aresetn] [AIT::board::get_rst_net_from_clk_pin $clk_pin]
                 return [get_bd_intf_pins $stream_adapter/inStream]
             }
         }
 
         proc add_newtask_spawner {acc_spawnInStream hier_inStream hier_outStream accName instanceNum} {
             set newtask_spawner [create_bd_cell -type ip -vlnv bsc:ompss:new_task_spawner_wrapper:1.0 ${accName}_${instanceNum}/new_task_spawner]
-            connect_bd_net [get_bd_pins $newtask_spawner/clk] [get_bd_pins ${accName}_${instanceNum}/aclk]
-            connect_bd_net [get_bd_pins $newtask_spawner/rstn] [get_bd_pins ${accName}_${instanceNum}/managed_aresetn]
+            set clk_pin [AIT::board::get_clk_pin_from_intf_pin $acc_spawnInStream]
+            AIT::board::connect_clock [get_bd_pins $newtask_spawner/clk] $clk_pin
+            AIT::board::connect_reset [get_bd_pins $newtask_spawner/rstn] [AIT::board::get_rst_net_from_clk_pin $clk_pin]
 
             connect_bd_intf_net [get_bd_intf_pins $newtask_spawner/stream_in] $hier_outStream
             connect_bd_intf_net [get_bd_intf_pins $newtask_spawner/ack_out] $acc_spawnInStream
 
             set tid_demux [create_bd_cell -type module -reference bsc_ompss_axis_tid_demux ${accName}_${instanceNum}/axis_tid_demux]
-            connect_bd_net [get_bd_pins $tid_demux/clk] [get_bd_pins ${accName}_${instanceNum}/aclk]
+            AIT::board::connect_clock [get_bd_pins $tid_demux/clk] [get_bd_pins ${accName}_${instanceNum}/aclk]
             connect_bd_intf_net [get_bd_intf_pins $tid_demux/m0] $hier_inStream
             connect_bd_intf_net [get_bd_intf_pins $tid_demux/m1] [get_bd_intf_pins $newtask_spawner/ack_in]
 
@@ -150,8 +150,9 @@ namespace eval AIT {
 
             # We need to insert accID to the new_task_spawner TID AXI-Stream signal
             set tidSubsetConv [create_bd_cell -type module -reference bsc_ompss_axis_subset_converter ${accName}_${instanceNum}/TID_subset_converter]
-            connect_bd_net [get_bd_pins $tidSubsetConv/clk] [get_bd_pins ${accName}_${instanceNum}/aclk]
-            connect_bd_net [get_bd_pins $tidSubsetConv/aresetn] [get_bd_pins ${accName}_${instanceNum}/managed_aresetn]
+            set clk_pin [AIT::board::get_clk_pin_from_intf_pin $intf_pin]
+            AIT::board::connect_clock [get_bd_pins $tidSubsetConv/clk] $clk_pin
+            AIT::board::connect_reset [get_bd_pins $tidSubsetConv/aresetn] [AIT::board::get_rst_net_from_clk_pin $clk_pin]
 
             # Add accID as AXI-Stream TID signal
             set_property -dict [list \
