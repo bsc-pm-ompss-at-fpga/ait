@@ -30,7 +30,7 @@ namespace eval AIT {
                 lassign [split $num_pipeline_stages ':'] num_master_stages num_middle_stages num_slave_stages
                 lassign [split ${::AIT::regslice_pipeline_stages} ':'] num_default_master_stages num_default_middle_stages num_default_slave_stages
                 if {$num_master_stages == ""} { set num_master_stages $num_default_master_stages }
-                if {$num_middle_stages == ""} { set num_midlle_stages $num_default_middle_stages }
+                if {$num_middle_stages == ""} { set num_middle_stages $num_default_middle_stages }
                 if {$num_slave_stages == ""} { set num_slave_stages $num_default_slave_stages }
 
                 set axisRegSlice [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_register_slice ${ip_cell}/${prefix}${intf_name}_regslice_slr_${slr_master}_${slr_slave}]
