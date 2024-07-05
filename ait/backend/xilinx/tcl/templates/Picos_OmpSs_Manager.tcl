@@ -393,6 +393,7 @@ proc create_hier_cell_Hardware_Runtime { parentCell nameHier } {
   # Create instance: cmdInQueue_BRAM_Ctrl, and set properties
   set cmdInQueue_BRAM_Ctrl [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl cmdInQueue_BRAM_Ctrl ]
   set_property -dict [ list \
+   CONFIG.PROTOCOL {AXI4LITE} \
    CONFIG.SINGLE_PORT_BRAM {1} \
  ] $cmdInQueue_BRAM_Ctrl
 
@@ -426,6 +427,7 @@ proc create_hier_cell_Hardware_Runtime { parentCell nameHier } {
   # Create instance: cmdOutQueue_BRAM_Ctrl, and set properties
   set cmdOutQueue_BRAM_Ctrl [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl cmdOutQueue_BRAM_Ctrl ]
   set_property -dict [ list \
+   CONFIG.PROTOCOL {AXI4LITE} \
    CONFIG.SINGLE_PORT_BRAM {1} \
  ] $cmdOutQueue_BRAM_Ctrl
 
@@ -460,6 +462,7 @@ if {${::AIT::enable_spawn_queues}} {
     # Create instance: spawnInQueue_BRAM_Ctrl, and set properties
     set spawnInQueue_BRAM_Ctrl [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl spawnInQueue_BRAM_Ctrl ]
     set_property -dict [ list \
+        CONFIG.PROTOCOL {AXI4LITE} \
         CONFIG.SINGLE_PORT_BRAM {1} \
     ] $spawnInQueue_BRAM_Ctrl
 
@@ -493,6 +496,7 @@ if {${::AIT::enable_spawn_queues}} {
     # Create instance: spawnOutQueue_BRAM_Ctrl, and set properties
     set spawnOutQueue_BRAM_Ctrl [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl spawnOutQueue_BRAM_Ctrl ]
     set_property -dict [ list \
+        CONFIG.PROTOCOL {AXI4LITE} \
         CONFIG.SINGLE_PORT_BRAM {1} \
     ] $spawnOutQueue_BRAM_Ctrl
 }

@@ -80,7 +80,7 @@ namespace eval AIT {
             # Create instance: bitInfo_BRAM_Ctrl, and set properties
             set bitInfo_BRAM_Ctrl [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl bitInfo_BRAM_Ctrl]
             set_property -dict [list \
-                CONFIG.PROTOCOL {AXI4} \
+                CONFIG.PROTOCOL {AXI4LITE} \
                 CONFIG.SINGLE_PORT_BRAM {1} \
              ] $bitInfo_BRAM_Ctrl
 
