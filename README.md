@@ -31,20 +31,22 @@ Follow instructions on their website to install it.
 
 ##### Xilinx Vivado
 
-Follow installation instructions from Xilinx Vivado, Citis HLS and SDK, as well as the device support for the devices you're working, should be enabled during setup.
+Follow installation instructions for Xilinx Vivado, Vitis HLS and SDK, as well as enable support during setupt for the devices you plan to use.
 However, components can be added or removed afterwards.
 
 Current version supports Vivado 2021.1 onwards.
 
 # Installation
 
+## Using pip
+
 You can use `pip` to easily install `ait` on your system:
 
     python3 -m pip install ait-bsc
 
-# Development
+## Manual installation
 
-1. Make sure you have the following packages installed on your system.
+1. Make sure you have the following packages installed on your system
 
     * `git-lfs` ([Git Large File Storage](https://git-lfs.github.com))
     * `setuptools >= 61.0` ([setuptools](https://setuptools.pypa.io/en/latest/userguide/quickstart.html#installation))
@@ -67,6 +69,28 @@ You can use `pip` to easily install `ait` on your system:
        export AIT_HOME="/path/to/install/ait"
        export DEB_PYTHON_INSTALL_LAYOUT=deb_system
        python3 -m pip install . -t $AIT_HOME
+
+4. Add the installed binaries to your PATH
+
+       export PATH=$AIT_HOME/bin:$PATH
+       export PYTHONPATH=$AIT_HOME:$PYTHONPATH
+
+## Offline installation
+
+1. Make sure you have the following packages installed on your system
+
+    * `wheel` ([wheel](https://wheel.readthedocs.io/en/stable/installing.html))
+    * `setuptools >= 61.0` ([setuptools](https://setuptools.pypa.io/en/latest/userguide/quickstart.html#installation))
+
+2. Copy AIT sources into target machine
+
+3. Build wheel for AIT and install
+
+       cd ait
+       python3 setup.py bdist_wheel
+       export AIT_HOME="/path/to/install/ait"
+       export DEB_PYTHON_INSTALL_LAYOUT=deb_system
+       python3 -m pip install dist/ait_bsc-*.whl --no-index -t $AIT_HOME
 
 4. Add the installed binaries to your PATH
 
