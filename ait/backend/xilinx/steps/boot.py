@@ -68,7 +68,7 @@ def run_step(project_args):
     if retval:
         msg.error('Configuration of petalinux project failed', start_time, False)
 
-    petalinux_overlay_config = subprocess.check_output(['grep CONFIG_SUBSYSTEM_DTB_OVERLAY=y {}/project-spec/configs/config'.format(petalinux_build_path)], shell=True)
+    petalinux_overlay_config = subprocess.run('grep -q CONFIG_SUBSYSTEM_DTB_OVERLAY=y {}/project-spec/configs/config'.format(petalinux_build_path), shell=True).returncode == 0
 
     if petalinux_overlay_config:
         if args.verbose_info:

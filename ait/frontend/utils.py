@@ -144,8 +144,8 @@ def secondsToHumanReadable(seconds):
 
 
 def getNumJobs(mem_per_job):
-    available_mem = int(subprocess.check_output(["free -b | grep 'Mem:' | awk {'print $7'}"], shell=True))
-    nprocs = int(subprocess.check_output(['nproc']))
+    available_mem = int(subprocess.run("free -b | grep 'Mem:' | awk {'print $7'}", shell=True, capture_output=True, encoding='utf-8').stdout.strip())
+    nprocs = int(subprocess.run('nproc', capture_output=True, encoding='utf-8').stdout.strip())
 
     return max(1, min(int(available_mem / mem_per_job), nprocs))
 

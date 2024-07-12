@@ -31,14 +31,14 @@ class PostInstallCommand(install):
             config_file.write(config_commit)
 
 
-tag = str(subprocess.check_output(['git describe --tags --exact-match HEAD 2>/dev/null || true'], shell=True), 'utf-8').strip()
-commit_hash = str(subprocess.check_output(['git show -s --format=%h 2>/dev/null || true'], shell=True), 'utf-8').strip()
+tag = subprocess.run('git describe --tags --exact-match HEAD', shell=True, capture_output=True, encoding='utf-8').stdout.strip()
+commit_hash = subprocess.run('git show -s --format=%h', shell=True, capture_output=True, encoding='utf-8').stdout.strip()
 
 version_commit = ''
 if tag:
     version_commit = tag
 elif commit_hash:
-    commit_hash += str(subprocess.check_output(["git diff --quiet HEAD || echo '-dirty'"], shell=True), 'utf-8').strip()
+    commit_hash += subprocess.run("git diff --quiet HEAD || echo '-dirty'", shell=True, capture_output=True, encoding='utf-8').stdout.strip()
     version_commit = 'commit: ' + commit_hash
 
 if version_commit:

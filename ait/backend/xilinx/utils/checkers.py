@@ -36,7 +36,7 @@ def check_vivado():
     global vivado_version
 
     if shutil.which('vivado'):
-        vivado_version = str(subprocess.check_output(['vivado -version | head -n1 | sed "s/\(Vivado.\+v\)\(\([0-9]\|\.\)\+\).\+/\\2/"'], shell=True), 'utf-8').strip()
+        vivado_version = subprocess.run('vivado -version | head -n1 | sed "s/\(Vivado.\+v\)\(\([0-9]\|\.\)\+\).\+/\\2/"', shell=True, capture_output=True, encoding='utf-8').stdout.strip()
         if vivado_version < MIN_VIVADO_VERSION:
             msg.error('Installed Vivado version ({}) not supported (>= {})'.format(vivado_version, MIN_VIVADO_VERSION))
     else:
@@ -49,7 +49,7 @@ def check_vitis_hls():
     global vitis_hls_version
 
     if shutil.which('vitis_hls'):
-        vitis_hls_version = str(subprocess.check_output(['vitis_hls -version | head -n1 | sed "s/\(Vitis.\+v\)\(\([0-9]\|\.\)\+\).\+/\\2/"'], shell=True), 'utf-8').strip()
+        vitis_hls_version = subprocess.run('vitis_hls -version | head -n1 | sed "s/\(Vitis.\+v\)\(\([0-9]\|\.\)\+\).\+/\\2/"', shell=True, capture_output=True, encoding='utf-8').stdout.strip()
         if vitis_hls_version < MIN_VITIS_HLS_VERSION:
             msg.error('Installed Vitis HLS version ({}) not supported (>= {})'.format(vitis_hls_version, MIN_VITIS_HLS_VERSION))
     else:

@@ -301,7 +301,7 @@ def run_step(project_args):
     load_acc_placement(accs[0:args.num_accs], args)
 
     if args.memory_interleaving_stride is not None:
-        subprocess.check_output(['sed -i "s/\`undef __ENABLE__/\`define __ENABLE__/" {}/IPs/bsc_ompss_addrInterleaver.v'.format(project_backend_path)], shell=True)
+        subprocess.run('sed -i "s/\`undef __ENABLE__/\`define __ENABLE__/" {}/IPs/bsc_ompss_addrInterleaver.v'.format(project_backend_path), shell=True, check=True)
 
     if args.user_constraints and os.path.exists(args.user_constraints):
         constraints_path = project_board_path + '/constraints'
@@ -316,8 +316,7 @@ def run_step(project_args):
     # Generate random USERID to identify the bitstream
     user_id = str(hex(random.randrange(2**32)))
     msg.log('Setting bitstream user id: ' + user_id)
-    p = subprocess.Popen('sed -i s/BITSTREAM_USERID/{}/ {}/constraints/basic_constraints.xdc'.format(user_id, project_board_path), shell=True)
-    retval = p.wait()
+    subprocess.run('sed -i s/BITSTREAM_USERID/{}/ {}/constraints/basic_constraints.xdc'.format(user_id, project_board_path), shell=True, check=True)
 
     if args.user_pre_design and os.path.exists(args.user_pre_design):
         user_pre_design_ext = args.user_pre_design.split('.')[-1] if len(args.user_pre_design.split('.')) > 1 else ''
@@ -347,8 +346,7 @@ def run_step(project_args):
     if os.path.exists(project_board_path + '/board_files'):
         init_script_str += '\nset_param board.repoPaths [list {}]'.format(project_board_path + '/board_files')
 
-    p = subprocess.Popen('echo {} > {}/vivado.tcl'.format(init_script_str, project_backend_path), shell=True)
-    retval = p.wait()
+    subprocess.run('echo {} > {}/vivado.tcl'.format(init_script_str, project_backend_path), shell=True, check=True)
 
     p = subprocess.Popen('vivado -init -nojournal -nolog -notrace -mode batch -source '
                          + project_backend_path + '/tcl/scripts/generate_design.tcl',
