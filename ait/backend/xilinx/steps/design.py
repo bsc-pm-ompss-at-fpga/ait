@@ -301,7 +301,7 @@ def run_step(project_args):
     load_acc_placement(accs[0:args.num_accs], args)
 
     if args.memory_interleaving_stride is not None:
-        subprocess.run('sed -i "s/\`undef __ENABLE__/\`define __ENABLE__/" {}/IPs/bsc_ompss_addrInterleaver.v'.format(project_backend_path), shell=True, check=True)
+        subprocess.run('sed -i "s/\`undef __ENABLE__/\`define __ENABLE__/" {}/IPs/bsc_axiu_addrInterleaver.v'.format(project_backend_path), shell=True, check=True)
 
     if args.user_constraints and os.path.exists(args.user_constraints):
         constraints_path = project_board_path + '/constraints'

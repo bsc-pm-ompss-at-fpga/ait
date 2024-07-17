@@ -18,67 +18,32 @@
 /*    License along with this code. If not, see <www.gnu.org/licenses/>.  */
 /*------------------------------------------------------------------------*/
 
-module bsc_ompss_streamToHsAdapter #(
-    parameter USE_BUFFER = 0
-)
-(
-    input aclk,
+module bsc_axiu_axis_subset_converter #(
+    parameter ID_WIDTH = 1,
+    parameter [ID_WIDTH-1:0] ID = 0
+) (
+    input clk,
     input aresetn,
 
-    input [63:0] inStream_tdata,
-    input        inStream_tvalid,
-    output       inStream_tready,
+    input [63:0] S_AXIS_tdata,
+    input  [1:0] S_AXIS_tdest,
+    input        S_AXIS_tlast,
+    input        S_AXIS_tvalid,
+    input        M_AXIS_tready,
 
-    output [63:0] out_hs,
-    output        out_hs_ap_vld,
-    input         out_hs_ap_ack
+    output         [63:0] M_AXIS_tdata,
+    output          [1:0] M_AXIS_tdest,
+    output [ID_WIDTH-1:0] M_AXIS_tid,
+    output                M_AXIS_tlast,
+    output                M_AXIS_tvalid,
+    output                S_AXIS_tready
 );
 
-    if (USE_BUFFER) begin
-
-    localparam IDLE = 0;
-    localparam WAIT_ACK = 1;
-
-    reg [0:0] state;
-    reg [63:0] buf_data;
-
-    assign inStream_tready = state == IDLE;
-
-    assign out_hs_ap_vld = state == WAIT_ACK;
-    assign out_hs = buf_data;
-
-    always @(posedge aclk) begin
-
-        case (state)
-
-            IDLE: begin
-                buf_data <= inStream_tdata;
-
-                if (inStream_tvalid) begin
-                    state <= WAIT_ACK;
-                end
-            end
-
-            WAIT_ACK: begin
-                if (out_hs_ap_ack) begin
-                    state <= IDLE;
-                end
-            end
-
-        endcase
-
-        if (!aresetn) begin
-            state <= IDLE;
-        end
-    end
-
-    end else begin
-
-    assign out_hs_ap_vld = inStream_tvalid;
-    assign out_hs = inStream_tdata;
-
-    assign inStream_tready = out_hs_ap_ack;
-
-    end
+    assign M_AXIS_tdata  = S_AXIS_tdata;
+    assign M_AXIS_tdest  = S_AXIS_tdest;
+    assign M_AXIS_tid    = ID;
+    assign M_AXIS_tlast  = S_AXIS_tlast;
+    assign M_AXIS_tvalid = S_AXIS_tvalid;
+    assign S_AXIS_tready = M_AXIS_tready;
 
 endmodule

@@ -456,7 +456,7 @@ if {${::AIT::interleaving_stride} ne "None"} {
         set num_banks [expr {int(pow(2, floor($lg)))}]
     }
 
-    set addrInterleaver [get_bd_cells -hierarchical -filter {VLNV =~ xilinx.com:module_ref:bsc_ompss_addrInterleaver:*}]
+    set addrInterleaver [get_bd_cells -hierarchical -filter {VLNV =~ xilinx.com:module_ref:bsc_axiu_addrInterleaver:*}]
     set_property -dict [list \
         CONFIG.BANK_SIZE [dict get ${::AIT::address_map} "mem_bank_size"] \
         CONFIG.NUM_BANKS $num_banks \
@@ -467,7 +467,7 @@ if {${::AIT::interleaving_stride} ne "None"} {
 
 # If enabled, add and connect hwcounter IP
 if {${::AIT::hwcounter} || ${::AIT::hwinst}} {
-    create_bd_cell -type module -reference bsc_ompss_hwcounter HW_Counter
+    create_bd_cell -type module -reference bsc_axiu_hwcounter HW_Counter
 
     if {(${::AIT::arch_device} eq "zynq") || (${::AIT::arch_device} eq "zynqmp")} {
         AIT::board::connect_to_axi_intf [get_bd_intf_pins HW_Counter/S_AXI] M 1

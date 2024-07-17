@@ -18,52 +18,28 @@
 /*    License along with this code. If not, see <www.gnu.org/licenses/>.  */
 /*------------------------------------------------------------------------*/
 
-`undef __ENABLE__
-`define __ADDR_WIDTH__ 64
+module bsc_axiu_axis_tid_demux (
+    input clk,
 
+    input [63:0] s_tdata,
+    input  [0:0] s_tid,
+    input        s_tvalid,
+    input        m0_tready,
+    input        m1_tready,
 
-`ifdef __ENABLE__
-module bsc_ompss_addrInterleaver #(
-    parameter NUM_BANKS = 4,
-    parameter STRIDE = `__ADDR_WIDTH__'h2000, //8K
-    parameter BANK_SIZE = `__ADDR_WIDTH__'h400000000, //16G
-    parameter BASE_ADDR = `__ADDR_WIDTH__'h0
-)
-`else
-module bsc_ompss_addrInterleaver
-`endif
-(
-    input wire [(`__ADDR_WIDTH__-1):0] in_addr,
-
-    output wire [(`__ADDR_WIDTH__-1):0] out_addr
+    output [63:0] m0_tdata,
+    output [63:0] m1_tdata,
+    output        m0_tvalid,
+    output        m1_tvalid,
+    output        s_tready
 );
 
-    reg [(`__ADDR_WIDTH__-1):0] r_out_addr;
+    assign m0_tvalid = s_tvalid && s_tid == 1'b0;
+    assign m1_tvalid = s_tvalid && s_tid == 1'b1;
 
-`ifdef __ENABLE__
-    localparam NUM_SELECTOR_BITS = $clog2(NUM_BANKS);
-    localparam SRC_SELECTOR_BIT = $clog2(STRIDE);
-    localparam DST_SELECTOR_BIT = $clog2(BANK_SIZE);
-`endif
+    assign m0_tdata = s_tdata;
+    assign m1_tdata = s_tdata;
 
-    assign out_addr = r_out_addr;
-
-    // Only interleave addresses within DDR address space
-    always @(*) begin
-    `ifdef __ENABLE__
-        if (in_addr < BASE_ADDR + BANK_SIZE*NUM_BANKS) begin
-            r_out_addr <= {in_addr[(`__ADDR_WIDTH__-1)                  : DST_SELECTOR_BIT+NUM_SELECTOR_BITS],
-                           in_addr[SRC_SELECTOR_BIT+NUM_SELECTOR_BITS-1 : SRC_SELECTOR_BIT],
-                           in_addr[DST_SELECTOR_BIT+NUM_SELECTOR_BITS-1 : SRC_SELECTOR_BIT+NUM_SELECTOR_BITS],
-                           in_addr[SRC_SELECTOR_BIT-1                   : 0]};
-        end
-        else begin
-            r_out_addr <= in_addr;
-        end
-    `else
-        r_out_addr <= in_addr;
-    `endif
-    end
+    assign s_tready = s_tid == 1'b0 ? m0_tready : m1_tready;
 
 endmodule
-

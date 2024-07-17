@@ -136,13 +136,13 @@ namespace eval AIT {
         proc add_addrInterleaver {intf_pin intf_name accName instanceNum} {
             set rw_mode [get_property CONFIG.READ_WRITE_MODE $intf_pin]
             if {($rw_mode eq "READ_WRITE") || ($rw_mode eq "READ_ONLY")} {
-                set araddrInterleaver [create_bd_cell -type module -reference bsc_ompss_addrInterleaver ${accName}_${instanceNum}/${intf_name}_araddrInterleaver]
+                set araddrInterleaver [create_bd_cell -type module -reference bsc_axiu_addrInterleaver ${accName}_${instanceNum}/${intf_name}_araddrInterleaver]
                 create_bd_pin -dir O -from 63 -to 0 ${accName}_${instanceNum}/${intf_name}_araddr_intlv
                 connect_bd_net [get_bd_pins ${intf_pin}_araddr] [get_bd_pins $araddrInterleaver/in_addr]
                 connect_bd_net [get_bd_pins ${accName}_${instanceNum}/${intf_name}_araddr_intlv] [get_bd_pins $araddrInterleaver/out_addr]
             }
             if {($rw_mode eq "READ_WRITE") || ($rw_mode eq "WRITE_ONLY")} {
-                set awaddrInterleaver [create_bd_cell -type module -reference bsc_ompss_addrInterleaver ${accName}_${instanceNum}/${intf_name}_awaddrInterleaver]
+                set awaddrInterleaver [create_bd_cell -type module -reference bsc_axiu_addrInterleaver ${accName}_${instanceNum}/${intf_name}_awaddrInterleaver]
                 create_bd_pin -dir O -from 63 -to 0 ${accName}_${instanceNum}/${intf_name}_awaddr_intlv
                 connect_bd_net [get_bd_pins ${intf_pin}_awaddr] [get_bd_pins $awaddrInterleaver/in_addr]
                 connect_bd_net [get_bd_pins ${accName}_${instanceNum}/${intf_name}_awaddr_intlv] [get_bd_pins $awaddrInterleaver/out_addr]

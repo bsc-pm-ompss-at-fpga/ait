@@ -164,7 +164,7 @@ xilinx.com:ip:util_ds_buf:*\
 set bCheckModules 1
 if { $bCheckModules == 1 } {
    set list_check_mods "\ 
-bsc_ompss_addrInterleaver\
+bsc_axiu_addrInterleaver\
 "
 
    set list_mods_missing ""
@@ -833,7 +833,7 @@ proc create_hier_cell_bridge_to_host { parentCell nameHier } {
  ] $QDMA_M_AXI_LITE_Inter
 
   # Create instance: bridge_to_host_araddrInterleaver, and set properties
-  set block_name bsc_ompss_addrInterleaver
+  set block_name bsc_axiu_addrInterleaver
   set block_cell_name bridge_to_host_araddrInterleaver
   if { [catch {set bridge_to_host_araddrInterleaver [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
      catch {common::send_msg_id "BD_TCL-105" "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
@@ -844,7 +844,7 @@ proc create_hier_cell_bridge_to_host { parentCell nameHier } {
    }
 
   # Create instance: bridge_to_host_awaddrInterleaver, and set properties
-  set block_name bsc_ompss_addrInterleaver
+  set block_name bsc_axiu_addrInterleaver
   set block_cell_name bridge_to_host_awaddrInterleaver
   if { [catch {set bridge_to_host_awaddrInterleaver [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
      catch {common::send_msg_id "BD_TCL-105" "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}

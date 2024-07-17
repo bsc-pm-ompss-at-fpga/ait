@@ -39,7 +39,7 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 
 # The design that will be created by this Tcl script contains the following 
 # module references:
-# bsc_ompss_addrInterleaver
+# bsc_axiu_addrInterleaver
 
 # Please add the sources of those modules before sourcing this Tcl script.
 
@@ -171,7 +171,7 @@ xilinx.com:ip:axi_protocol_converter:*\
 set bCheckModules 1
 if { $bCheckModules == 1 } {
    set list_check_mods "\ 
-bsc_ompss_addrInterleaver\
+bsc_axiu_addrInterleaver\
 "
 
    set list_mods_missing ""
@@ -625,7 +625,7 @@ proc create_hier_cell_bridge_to_host { parentCell nameHier } {
   set QDMA_sys_reset [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset QDMA_sys_reset ]
 
   # Create instance: bridge_to_host_araddrInterleaver, and set properties
-  set block_name bsc_ompss_addrInterleaver
+  set block_name bsc_axiu_addrInterleaver
   set block_cell_name bridge_to_host_araddrInterleaver
   if { [catch {set bridge_to_host_araddrInterleaver [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2095 -severity "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
@@ -636,7 +636,7 @@ proc create_hier_cell_bridge_to_host { parentCell nameHier } {
    }
 
   # Create instance: bridge_to_host_awaddrInterleaver, and set properties
-  set block_name bsc_ompss_addrInterleaver
+  set block_name bsc_axiu_addrInterleaver
   set block_cell_name bridge_to_host_awaddrInterleaver
   if { [catch {set bridge_to_host_awaddrInterleaver [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2095 -severity "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}

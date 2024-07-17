@@ -18,7 +18,7 @@
 /*    License along with this code. If not, see <www.gnu.org/licenses/>.  */
 /*------------------------------------------------------------------------*/
 
-module bsc_ompss_hsToStreamAdapter #(
+module bsc_axiu_hsToStreamAdapter #(
     parameter USE_BUFFER = 0,
     parameter TID_WIDTH = 4,
     parameter ACCID = 0
