@@ -155,6 +155,54 @@ if { $bCheckIPsPassed != 1 } {
 ##################################################################
 
 
+# Hierarchical cell: system_reset
+proc create_hier_cell_system_reset { parentCell nameHier } {
+
+  if { $parentCell eq "" || $nameHier eq "" } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2092 -severity "ERROR" "create_hier_cell_bridge_to_host() - Empty argument(s)!"}
+     return
+  }
+
+  # Get object for parentCell
+  set parentObj [get_bd_cells $parentCell]
+  if { $parentObj == "" } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2090 -severity "ERROR" "Unable to find parent cell <$parentCell>!"}
+     return
+  }
+
+  # Make sure parentObj is hier blk
+  set parentType [get_property TYPE $parentObj]
+  if { $parentType ne "hier" } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2091 -severity "ERROR" "Parent <$parentObj> has TYPE = <$parentType>. Expected to be <hier>."}
+     return
+  }
+
+  # Save current instance; Restore later
+  set oldCurInst [current_bd_instance .]
+
+  # Set parent object as current
+  current_bd_instance $parentObj
+
+  # Create cell and set as current instance
+  set hier_obj [create_bd_cell -type hier $nameHier]
+  current_bd_instance $hier_obj
+
+  create_bd_pin -dir I -type rst pl_resetn
+  create_bd_pin -dir I clk_gen_locked
+  create_bd_pin -dir I -type clk clk_app
+  create_bd_pin -dir O -type rst clk_app_rstn
+
+  create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset proc_sys_reset_clk_app
+  set_property -dict [list CONFIG.C_EXT_RST_WIDTH {1}] [get_bd_cells proc_sys_reset_clk_app]
+
+  connect_bd_net [get_bd_pins proc_sys_reset_clk_app/slowest_sync_clk] [get_bd_pins clk_app]
+  connect_bd_net [get_bd_pins proc_sys_reset_clk_app/peripheral_aresetn] [get_bd_pins clk_app_rstn]
+  connect_bd_net [get_bd_pins proc_sys_reset_clk_app/ext_reset_in] [get_bd_pins pl_resetn]
+  connect_bd_net [get_bd_pins proc_sys_reset_clk_app/dcm_locked] [get_bd_pins clk_gen_locked]
+
+  # Restore current instance
+  current_bd_instance $oldCurInst
+}
 
 # Procedure to create entire design; Provide argument to make
 # procedure reusable. If parentCell is "", will use root.
@@ -1003,9 +1051,13 @@ Port;FD4A0000;FD4AFFFF;1|FPD;DPDMA;FD4C0000;FD4CFFFF;1|FPD;DDR_XMPU5_CFG;FD05000
    CONFIG.SUBPRESET1 {Custom} \
  ] $bridge_to_host
 
+  # Create instance: system_reset
+  create_hier_cell_system_reset [current_bd_instance .] system_reset
+
   # Create instance: clock_generator, and set properties
   set clock_generator [ create_bd_cell -type ip -vlnv xilinx.com:ip:clk_wiz clock_generator ]
   set_property -dict [ list \
+   CONFIG.CLK_OUT1_PORT {clk_app} \
    CONFIG.CLKOUT1_DRIVES {BUFGCE} \
    CONFIG.CLKOUT1_MATCHED_ROUTING {true} \
    CONFIG.CLKOUT2_DRIVES {BUFGCE} \
@@ -1025,13 +1077,6 @@ Port;FD4A0000;FD4AFFFF;1|FPD;DPDMA;FD4C0000;FD4CFFFF;1|FPD;DDR_XMPU5_CFG;FD05000
    CONFIG.USE_SAFE_CLOCK_STARTUP {true} \
  ] $clock_generator
 
-  # Create instance: processor_system_reset, and set properties
-  set processor_system_reset [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset processor_system_reset ]
-  set_property -dict [ list \
-   CONFIG.RESET_BOARD_INTERFACE {Custom} \
-   CONFIG.USE_BOARD_FLOW {true} \
- ] $processor_system_reset
-
   # Create interface connections
   connect_bd_intf_net -intf_net S_AXI_0_Inter_M00_AXI [get_bd_intf_pins S_AXI_0_Inter/M00_AXI] [get_bd_intf_pins bridge_to_host/S_AXI_HP0_FPD]
   connect_bd_intf_net -intf_net S_AXI_1_Inter_M00_AXI [get_bd_intf_pins S_AXI_1_Inter/M00_AXI] [get_bd_intf_pins bridge_to_host/S_AXI_HP1_FPD]
@@ -1041,12 +1086,12 @@ Port;FD4A0000;FD4AFFFF;1|FPD;DPDMA;FD4C0000;FD4CFFFF;1|FPD;DDR_XMPU5_CFG;FD05000
   connect_bd_intf_net -intf_net processingSystemUltra_M_AXI_HPM1_FPD [get_bd_intf_pins M_AXI_1_Inter/S00_AXI] [get_bd_intf_pins bridge_to_host/M_AXI_HPM1_FPD]
 
   # Create port connections
-  connect_bd_net -net Net [get_bd_pins bridge_to_host/pl_clk0] [get_bd_pins clock_generator/clk_in1]
-  connect_bd_net -net clock_generator_locked [get_bd_pins clock_generator/locked] [get_bd_pins processor_system_reset/dcm_locked]
-  connect_bd_net -net clock_genreator_clk_out1 [get_bd_pins M_AXI_0_Inter/ACLK] [get_bd_pins M_AXI_0_Inter/S00_ACLK] [get_bd_pins M_AXI_1_Inter/ACLK] [get_bd_pins M_AXI_1_Inter/S00_ACLK] [get_bd_pins S_AXI_0_Inter/ACLK] [get_bd_pins S_AXI_0_Inter/M00_ACLK] [get_bd_pins S_AXI_1_Inter/ACLK] [get_bd_pins S_AXI_1_Inter/M00_ACLK] [get_bd_pins S_AXI_2_Inter/ACLK] [get_bd_pins S_AXI_2_Inter/M00_ACLK] [get_bd_pins S_AXI_3_Inter/ACLK] [get_bd_pins S_AXI_3_Inter/M00_ACLK] [get_bd_pins bridge_to_host/maxihpm0_fpd_aclk] [get_bd_pins bridge_to_host/maxihpm1_fpd_aclk] [get_bd_pins bridge_to_host/saxihp0_fpd_aclk] [get_bd_pins bridge_to_host/saxihp1_fpd_aclk] [get_bd_pins bridge_to_host/saxihp2_fpd_aclk] [get_bd_pins bridge_to_host/saxihp3_fpd_aclk] [get_bd_pins clock_generator/clk_out1] [get_bd_pins processor_system_reset/slowest_sync_clk]
-  connect_bd_net -net processingSystemUltra_pl_resetn0 [get_bd_pins bridge_to_host/pl_resetn0] [get_bd_pins clock_generator/resetn] [get_bd_pins processor_system_reset/ext_reset_in]
-  connect_bd_net -net processor_system_reset_interconnect_aresetn [get_bd_pins M_AXI_0_Inter/ARESETN] [get_bd_pins M_AXI_1_Inter/ARESETN] [get_bd_pins S_AXI_0_Inter/ARESETN] [get_bd_pins S_AXI_1_Inter/ARESETN] [get_bd_pins S_AXI_2_Inter/ARESETN] [get_bd_pins S_AXI_3_Inter/ARESETN] [get_bd_pins processor_system_reset/interconnect_aresetn]
-  connect_bd_net -net processor_system_reset_peripheral_aresetn [get_bd_pins M_AXI_0_Inter/S00_ARESETN] [get_bd_pins M_AXI_1_Inter/S00_ARESETN] [get_bd_pins S_AXI_0_Inter/M00_ARESETN] [get_bd_pins S_AXI_1_Inter/M00_ARESETN] [get_bd_pins S_AXI_2_Inter/M00_ARESETN] [get_bd_pins S_AXI_3_Inter/M00_ARESETN] [get_bd_pins processor_system_reset/peripheral_aresetn]
+  connect_bd_net [get_bd_pins bridge_to_host/pl_clk0] [get_bd_pins clock_generator/clk_in1]
+  connect_bd_net [get_bd_pins clock_generator/locked] [get_bd_pins system_reset/clk_gen_locked]
+  connect_bd_net [get_bd_pins M_AXI_0_Inter/ACLK] [get_bd_pins M_AXI_0_Inter/S00_ACLK] [get_bd_pins M_AXI_1_Inter/ACLK] [get_bd_pins M_AXI_1_Inter/S00_ACLK] [get_bd_pins S_AXI_0_Inter/ACLK] [get_bd_pins S_AXI_0_Inter/M00_ACLK] [get_bd_pins S_AXI_1_Inter/ACLK] [get_bd_pins S_AXI_1_Inter/M00_ACLK] [get_bd_pins S_AXI_2_Inter/ACLK] [get_bd_pins S_AXI_2_Inter/M00_ACLK] [get_bd_pins S_AXI_3_Inter/ACLK] [get_bd_pins S_AXI_3_Inter/M00_ACLK] [get_bd_pins bridge_to_host/maxihpm0_fpd_aclk] [get_bd_pins bridge_to_host/maxihpm1_fpd_aclk] [get_bd_pins bridge_to_host/saxihp0_fpd_aclk] [get_bd_pins bridge_to_host/saxihp1_fpd_aclk] [get_bd_pins bridge_to_host/saxihp2_fpd_aclk] [get_bd_pins bridge_to_host/saxihp3_fpd_aclk] [get_bd_pins clock_generator/clk_app] [get_bd_pins system_reset/clk_app]
+  connect_bd_net [get_bd_pins bridge_to_host/pl_resetn0] [get_bd_pins clock_generator/resetn] [get_bd_pins system_reset/pl_resetn]
+  connect_bd_net [get_bd_pins M_AXI_0_Inter/ARESETN] [get_bd_pins M_AXI_1_Inter/ARESETN] [get_bd_pins S_AXI_0_Inter/ARESETN] [get_bd_pins S_AXI_1_Inter/ARESETN] [get_bd_pins S_AXI_2_Inter/ARESETN] [get_bd_pins S_AXI_3_Inter/ARESETN] [get_bd_pins system_reset/clk_app_rstn]
+  connect_bd_net [get_bd_pins M_AXI_0_Inter/S00_ARESETN] [get_bd_pins M_AXI_1_Inter/S00_ARESETN] [get_bd_pins S_AXI_0_Inter/M00_ARESETN] [get_bd_pins S_AXI_1_Inter/M00_ARESETN] [get_bd_pins S_AXI_2_Inter/M00_ARESETN] [get_bd_pins S_AXI_3_Inter/M00_ARESETN] [get_bd_pins system_reset/clk_app_rstn]
 
   # Restore current instance
   current_bd_instance $oldCurInst

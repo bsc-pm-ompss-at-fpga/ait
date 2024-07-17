@@ -68,7 +68,7 @@ file mkdir ${::AIT::name_Project}/${::AIT::name_Project}.sdk
 if {(${::AIT::arch_device} eq "zynq") || (${::AIT::arch_device} eq "zynqmp")} {
     # Set basic platform properties
     set_property pfm_name [get_property board_part [current_project]] [get_files [current_bd_design].bd]
-    set_property PFM.CLOCK {clk_out1 {id "0" is_default "true" proc_sys_reset "processor_system_reset" }} [get_bd_cells clock_generator]
+    set_property PFM.CLOCK {clk_app {id "0" is_default "true" proc_sys_reset "processor_system_reset" }} [get_bd_cells clock_generator]
 
     # Generate xsa files
     write_hw_platform -force -fixed -unified -include_bit ${::AIT::name_Project}/${::AIT::name_Project}.sdk/${::AIT::name_Project}_design_wrapper.xsa

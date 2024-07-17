@@ -519,7 +519,7 @@ namespace eval AIT {
                 # Connect clocks and resets
                 connect_clock [get_bd_pins $nested_inter/ACLK]
                 connect_clock [get_bd_pins $nested_inter/M00_ACLK]
-                connect_reset [get_bd_pins $nested_inter/ARESETN] [get_bd_pins /processor_system_reset/interconnect_aresetn]
+                connect_reset [get_bd_pins $nested_inter/ARESETN] [get_bd_pins /system_reset/clk_app_rstn]
                 connect_reset [get_bd_pins $nested_inter/M00_ARESETN]
 
                 # Connect nested interconnect to parent interconnect
@@ -641,7 +641,7 @@ namespace eval AIT {
 
         # Connects src_clk to dst_clk (pin or net) or to the default clock
         proc connect_clock {src_clk {dst_clk ""}} {
-            if {$dst_clk eq ""} { set dst_clk [get_bd_pins clock_generator/clk_out1] }
+            if {$dst_clk eq ""} { set dst_clk [get_bd_pins clock_generator/clk_app] }
             if {!([llength [get_bd_nets -quiet -of_objects $src_clk]])} {
                 if {[get_property CLASS $dst_clk] eq "bd_net"} {
                     connect_bd_net $src_clk -net $dst_clk
@@ -653,7 +653,7 @@ namespace eval AIT {
 
         # Connects src_rst to dst_rst (pin or net) or to the default reset
         proc connect_reset {src_rst {dst_rst ""}} {
-            if {$dst_rst eq ""} { set dst_rst [get_bd_pins processor_system_reset/peripheral_aresetn] }
+            if {$dst_rst eq ""} { set dst_rst [get_bd_pins system_reset/clk_app_rstn] }
             if {!([llength [get_bd_nets -quiet -of_objects $src_rst]])} {
                 if {[get_property CLASS $dst_rst] eq "bd_net"} {
                     connect_bd_net $src_rst -net $dst_rst
@@ -702,7 +702,7 @@ namespace eval AIT {
             AIT::utils::info_msg "Using generic set_and_get_freq procedure"
 
             set_property CONFIG.CLKOUT1_REQUESTED_OUT_FREQ $targetFreq [get_bd_cells clock_generator]
-            set actFreq [expr {[get_property CONFIG.FREQ_HZ [get_bd_pins clock_generator/clk_out1]]/1000000}]
+            set actFreq [expr {[get_property CONFIG.FREQ_HZ [get_bd_pins clock_generator/clk_app]]/1000000}]
 
             return $actFreq
         }

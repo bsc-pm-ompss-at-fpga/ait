@@ -231,7 +231,7 @@ if {(${::AIT::arch_device} eq "zynq") || (${::AIT::arch_device} eq "zynqmp")} {
 }
 
 AIT::board::connect_clock [get_bd_pins Hardware_Runtime/aclk]
-AIT::board::connect_reset [get_bd_pins Hardware_Runtime/interconnect_aresetn] [get_bd_pins /processor_system_reset/interconnect_aresetn]
+AIT::board::connect_reset [get_bd_pins Hardware_Runtime/interconnect_aresetn] [get_bd_pins /system_reset/clk_app_rstn]
 AIT::board::connect_reset [get_bd_pins Hardware_Runtime/peripheral_aresetn]
 AIT::board::connect_reset [get_bd_pins Hardware_Runtime/managed_aresetn] [get_bd_pins reset_AND/Res]
 
