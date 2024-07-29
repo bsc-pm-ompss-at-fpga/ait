@@ -356,9 +356,9 @@ foreach acc ${::AIT::accs} {
 
         ## Other interfaces
         # If available, forward the instrumentation pins
-        if {[get_bd_pins -quiet -regexp $acc_ip/mcxx_instr(_V)*?] ne ""} {
+        if {[get_bd_intf_pins -quiet -regexp $acc_ip/mcxx_instr(_V)*?] ne ""} {
             # Create and connect the Adapter_instr
-            set acc_hier_adapter_instr [create_bd_cell -type ip -vlnv bsc:ompss:adapter_instr:0.1 $acc_hier/Adapter_instr]
+            set acc_hier_adapter_instr [create_bd_cell -type ip -vlnv bsc:ompss:adapter_instr $acc_hier/Adapter_instr]
             set_property -dict [list \
                 CONFIG.AXI_ADDR_WIDTH {64} \
                 CONFIG.COUNTER_WIDTH {64} \
