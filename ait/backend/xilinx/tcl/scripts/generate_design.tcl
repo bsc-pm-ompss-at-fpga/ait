@@ -233,7 +233,7 @@ if {(${::AIT::arch_device} eq "zynq") || (${::AIT::arch_device} eq "zynqmp")} {
 AIT::board::connect_clock [get_bd_pins Hardware_Runtime/aclk]
 AIT::board::connect_reset [get_bd_pins Hardware_Runtime/interconnect_aresetn] [get_bd_pins /system_reset/clk_app_rstn]
 AIT::board::connect_reset [get_bd_pins Hardware_Runtime/peripheral_aresetn]
-AIT::board::connect_reset [get_bd_pins Hardware_Runtime/managed_aresetn] [get_bd_pins reset_AND/Res]
+AIT::board::connect_reset [get_bd_pins Hardware_Runtime/managed_aresetn] [get_bd_pins system_reset/clk_app_managed_rstn]
 
 if {${::AIT::hwruntime_interconnect} == "centralized"} {
     set hwruntime_interconnect_script "tcl/scripts/hwr_central_interconnect.tcl"
@@ -265,7 +265,7 @@ foreach acc ${::AIT::accs} {
 
         # Connect clk and rst pins
         AIT::board::connect_clock [get_bd_pins $acc_hier/aclk]
-        AIT::board::connect_reset [get_bd_pins $acc_hier/managed_aresetn] [get_bd_pins reset_AND/Res]
+        AIT::board::connect_reset [get_bd_pins $acc_hier/managed_aresetn] [get_bd_pins system_reset/clk_app_managed_rstn]
 
         ## AXI interfaces
         # Get list of M_AXI interfaces

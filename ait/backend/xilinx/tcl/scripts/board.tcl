@@ -93,14 +93,25 @@ namespace eval AIT {
              ] $managed_reset
 
             # Create instance: reset_AND, and set properties
-            set reset_AND [create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic reset_AND]
+            set reset_AND [create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic system_reset/managed_reset_AND]
             set_property -dict [list \
                 CONFIG.C_SIZE {1} \
                 CONFIG.C_OPERATION {and} \
              ] $reset_AND
 
-            connect_bd_net [get_bd_pins managed_reset/gpio_io_o] [get_bd_pins reset_AND/Op1]
-            connect_reset [get_bd_pins reset_AND/Op2]
+            create_bd_pin -dir I -type rst system_reset/managed_reset
+            create_bd_pin -dir O -type rst system_reset/clk_app_managed_rstn
+
+            create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset system_reset/proc_sys_reset_clk_app_managed
+            set_property -dict [list CONFIG.C_EXT_RST_WIDTH {1}] [get_bd_cells system_reset/proc_sys_reset_clk_app_managed]
+
+            connect_bd_net [get_bd_pins system_reset/proc_sys_reset_clk_app_managed/slowest_sync_clk] [get_bd_pins system_reset/clk_app]
+            connect_bd_net [get_bd_pins system_reset/proc_sys_reset_clk_app_managed/peripheral_aresetn] [get_bd_pins system_reset/clk_app_managed_rstn]
+            connect_bd_net [get_bd_pins system_reset/proc_sys_reset_clk_app_managed/dcm_locked] [get_bd_pins system_reset/clk_gen_locked]
+            connect_bd_net [get_bd_pins system_reset/managed_reset] [get_bd_pins system_reset/managed_reset_AND/Op1]
+            connect_bd_net [get_bd_pins managed_reset/gpio_io_o] [get_bd_pins system_reset/managed_reset]
+            connect_bd_net [get_bd_pins system_reset/managed_reset_AND/Op2] [get_bd_pins system_reset/proc_sys_reset_clk_app/peripheral_aresetn]
+            connect_bd_net [get_bd_pins system_reset/managed_reset_AND/res] [get_bd_pins system_reset/proc_sys_reset_clk_app_managed/ext_reset_in]
 
             if {(${::AIT::arch_device} eq "zynq") || (${::AIT::arch_device} eq "zynqmp")} {
                 connect_to_axi_intf [get_bd_intf_pins bitInfo_BRAM_Ctrl/S_AXI] M 1
