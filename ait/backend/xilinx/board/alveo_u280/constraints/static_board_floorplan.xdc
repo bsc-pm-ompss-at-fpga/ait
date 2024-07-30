@@ -22,7 +22,6 @@ add_cells_to_pblock [get_pblocks slr0_pblock] [get_cells -hierarchical { \
     M_AXI_Inter \
     bitInfo \
     bitInfo_BRAM_Ctrl \
-    reset_AND \
     managed_reset \
 }]
 
