@@ -19,11 +19,11 @@
 #------------------------------------------------------------------------#
 
 set pi_clk [get_bd_pins Hardware_Runtime/hwr_inStream/clk]
-set pi_inter_rstn [get_bd_pins Hardware_Runtime/hwr_inStream/interconnect_aresetn]
-set pi_peri_rstn [get_bd_pins Hardware_Runtime/hwr_inStream/peripheral_aresetn]
+set pi_inter_rstn [get_bd_pins Hardware_Runtime/hwr_inStream/rstn]
+set pi_peri_rstn [get_bd_pins Hardware_Runtime/hwr_inStream/rstn]
 set po_clk [get_bd_pins Hardware_Runtime/hwr_outStream/clk]
-set po_inter_rstn [get_bd_pins Hardware_Runtime/hwr_outStream/interconnect_aresetn]
-set po_peri_rstn [get_bd_pins Hardware_Runtime/hwr_outStream/peripheral_aresetn]
+set po_inter_rstn [get_bd_pins Hardware_Runtime/hwr_outStream/rstn]
+set po_peri_rstn [get_bd_pins Hardware_Runtime/hwr_outStream/rstn]
 
 set num_common_hwruntime_intf 1
 set num_acc_no_creators [expr {${::AIT::num_accs} - ${::AIT::num_acc_creators}}]

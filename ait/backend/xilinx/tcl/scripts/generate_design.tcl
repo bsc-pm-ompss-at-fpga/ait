@@ -230,10 +230,9 @@ if {(${::AIT::arch_device} eq "zynq") || (${::AIT::arch_device} eq "zynqmp")} {
     AIT::board::connect_to_axi_intf [get_bd_intf_pins Hardware_Runtime/S_AXI_GP] M
 }
 
-AIT::board::connect_clock [get_bd_pins Hardware_Runtime/aclk]
-AIT::board::connect_reset [get_bd_pins Hardware_Runtime/interconnect_aresetn] [get_bd_pins /system_reset/clk_app_rstn]
-AIT::board::connect_reset [get_bd_pins Hardware_Runtime/peripheral_aresetn]
-AIT::board::connect_reset [get_bd_pins Hardware_Runtime/managed_aresetn] [get_bd_pins system_reset/clk_app_managed_rstn]
+AIT::board::connect_clock [get_bd_pins Hardware_Runtime/clk]
+AIT::board::connect_reset [get_bd_pins Hardware_Runtime/rstn] [get_bd_pins /system_reset/clk_app_rstn]
+AIT::board::connect_reset [get_bd_pins Hardware_Runtime/managed_rstn] [get_bd_pins system_reset/clk_app_managed_rstn]
 
 if {${::AIT::hwruntime_interconnect} == "centralized"} {
     set hwruntime_interconnect_script "tcl/scripts/hwr_central_interconnect.tcl"

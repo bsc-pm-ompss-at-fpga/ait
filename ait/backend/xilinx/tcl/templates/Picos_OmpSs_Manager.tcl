@@ -159,8 +159,7 @@ proc create_hier_cell_hwr_inStream { parentCell nameHier } {
 
   # Create pins
   create_bd_pin -dir I -type clk clk
-  create_bd_pin -dir I -type rst interconnect_aresetn
-  create_bd_pin -dir I -type rst peripheral_aresetn
+  create_bd_pin -dir I -type rst rstn
 
   # Restore current instance
   current_bd_instance $oldCurInst
@@ -215,8 +214,7 @@ proc create_hier_cell_hwr_outStream { parentCell nameHier } {
 
   # Create pins
   create_bd_pin -dir I -type clk clk
-  create_bd_pin -dir I -type rst interconnect_aresetn
-  create_bd_pin -dir I -type rst peripheral_aresetn
+  create_bd_pin -dir I -type rst rstn
 
   # Restore current instance
   current_bd_instance $oldCurInst
@@ -260,10 +258,9 @@ proc create_hier_cell_Hardware_Runtime { parentCell nameHier } {
   create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S_AXI_GP
 
   # Create pins
-  create_bd_pin -dir I -type clk aclk
-  create_bd_pin -dir I -type rst managed_aresetn
-  create_bd_pin -dir I -type rst interconnect_aresetn
-  create_bd_pin -dir I -type rst peripheral_aresetn
+  create_bd_pin -dir I -type clk clk
+  create_bd_pin -dir I -type rst managed_rstn
+  create_bd_pin -dir I -type rst rstn
 
   # Create instance: hwr_inStream
   create_hier_cell_hwr_inStream [current_bd_instance .] hwr_inStream
@@ -532,34 +529,34 @@ if {${::AIT::enable_spawn_queues}} {
     connect_bd_intf_net -intf_net spawnOutQueue_BRAM_Ctrl_BRAM_PORTA [get_bd_intf_pins spawnOutQueue/BRAM_PORTB] [get_bd_intf_pins spawnOutQueue_BRAM_Ctrl/BRAM_PORTA]
     connect_bd_intf_net -intf_net GP_Inter_spawn_out [get_bd_intf_pins GP_Inter/M0${spawn_out_m}_AXI] [get_bd_intf_pins spawnOutQueue_BRAM_Ctrl/S_AXI]
     connect_bd_intf_net -intf_net GP_Inter_spawn_in [get_bd_intf_pins GP_Inter/M0${spawn_in_m}_AXI] [get_bd_intf_pins spawnInQueue_BRAM_Ctrl/S_AXI]
-    connect_bd_net [get_bd_pins aclk] [get_bd_pins spawnInQueue_BRAM_Ctrl/s_axi_aclk] [get_bd_pins spawnOutQueue_BRAM_Ctrl/s_axi_aclk]
-    connect_bd_net [get_bd_pins peripheral_aresetn] [get_bd_pins spawnInQueue_BRAM_Ctrl/s_axi_aresetn] [get_bd_pins spawnOutQueue_BRAM_Ctrl/s_axi_aresetn]
+    connect_bd_net [get_bd_pins clk] [get_bd_pins spawnInQueue_BRAM_Ctrl/s_axi_aclk] [get_bd_pins spawnOutQueue_BRAM_Ctrl/s_axi_aclk]
+    connect_bd_net [get_bd_pins rstn] [get_bd_pins spawnInQueue_BRAM_Ctrl/s_axi_aresetn] [get_bd_pins spawnOutQueue_BRAM_Ctrl/s_axi_aresetn]
   }
   if {${::AIT::enable_pom_axilite}} {
     connect_bd_intf_net -intf_net GP_Inter_pom_axilite [get_bd_intf_pins GP_Inter/M0${pom_axilite_m}_AXI] [get_bd_intf_pins Picos_OmpSs_Manager/axilite]
   }
 
   # Create port connections
-  connect_bd_net -net aclk_1 [get_bd_pins aclk] [get_bd_pins GP_Inter/ACLK] [get_bd_pins GP_Inter/M00_ACLK] [get_bd_pins GP_Inter/M01_ACLK] [get_bd_pins GP_Inter/S00_ACLK] [get_bd_pins Picos_OmpSs_Manager/clk] [get_bd_pins cmdInQueue_BRAM_Ctrl/s_axi_aclk] [get_bd_pins cmdOutQueue_BRAM_Ctrl/s_axi_aclk] [get_bd_pins hwr_inStream/clk] [get_bd_pins hwr_outStream/clk] [get_bd_pins axis_cmdin_TID/aclk]
-  connect_bd_net -net interconnect_aresetn_1 [get_bd_pins interconnect_aresetn] [get_bd_pins GP_Inter/ARESETN] [get_bd_pins hwr_inStream/interconnect_aresetn] [get_bd_pins hwr_outStream/interconnect_aresetn]
-  connect_bd_net -net peripheral_aresetn_1 [get_bd_pins peripheral_aresetn] [get_bd_pins GP_Inter/M00_ARESETN] [get_bd_pins GP_Inter/M01_ARESETN] [get_bd_pins GP_Inter/S00_ARESETN] [get_bd_pins cmdInQueue_BRAM_Ctrl/s_axi_aresetn] [get_bd_pins cmdOutQueue_BRAM_Ctrl/s_axi_aresetn] [get_bd_pins hwr_inStream/peripheral_aresetn] [get_bd_pins hwr_outStream/peripheral_aresetn]
-  connect_bd_net [get_bd_pins managed_aresetn] [get_bd_pins Picos_OmpSs_Manager/rstn] [get_bd_pins axis_cmdin_TID/aresetn]
+  connect_bd_net [get_bd_pins clk] [get_bd_pins GP_Inter/ACLK] [get_bd_pins GP_Inter/M00_ACLK] [get_bd_pins GP_Inter/M01_ACLK] [get_bd_pins GP_Inter/S00_ACLK] [get_bd_pins Picos_OmpSs_Manager/clk] [get_bd_pins cmdInQueue_BRAM_Ctrl/s_axi_aclk] [get_bd_pins cmdOutQueue_BRAM_Ctrl/s_axi_aclk] [get_bd_pins hwr_inStream/clk] [get_bd_pins hwr_outStream/clk] [get_bd_pins axis_cmdin_TID/aclk]
+  connect_bd_net [get_bd_pins rstn] [get_bd_pins GP_Inter/ARESETN] [get_bd_pins hwr_inStream/rstn] [get_bd_pins hwr_outStream/rstn]
+  connect_bd_net [get_bd_pins rstn] [get_bd_pins GP_Inter/M00_ARESETN] [get_bd_pins GP_Inter/M01_ARESETN] [get_bd_pins GP_Inter/S00_ARESETN] [get_bd_pins cmdInQueue_BRAM_Ctrl/s_axi_aresetn] [get_bd_pins cmdOutQueue_BRAM_Ctrl/s_axi_aresetn] [get_bd_pins hwr_inStream/rstn] [get_bd_pins hwr_outStream/rstn]
+  connect_bd_net [get_bd_pins managed_rstn] [get_bd_pins Picos_OmpSs_Manager/rstn] [get_bd_pins axis_cmdin_TID/aresetn]
 
   if {${::AIT::task_creation}} {
-    connect_bd_net [get_bd_pins aclk] [get_bd_pins axis_spawn_TID/aclk] [get_bd_pins axis_taskwait_TID/aclk]
-    connect_bd_net [get_bd_pins managed_aresetn] [get_bd_pins axis_spawn_TID/aresetn] [get_bd_pins axis_taskwait_TID/aresetn]
+    connect_bd_net [get_bd_pins clk] [get_bd_pins axis_spawn_TID/aclk] [get_bd_pins axis_taskwait_TID/aclk]
+    connect_bd_net [get_bd_pins managed_rstn] [get_bd_pins axis_spawn_TID/aresetn] [get_bd_pins axis_taskwait_TID/aresetn]
   }
   if {${::AIT::enable_spawn_queues}} {
-    connect_bd_net [get_bd_pins aclk] [get_bd_pins GP_Inter/M0${spawn_out_m}_ACLK] [get_bd_pins GP_Inter/M0${spawn_in_m}_ACLK]
-    connect_bd_net [get_bd_pins peripheral_aresetn] [get_bd_pins GP_Inter/M0${spawn_out_m}_ARESETN] [get_bd_pins GP_Inter/M0${spawn_in_m}_ARESETN]
+    connect_bd_net [get_bd_pins clk] [get_bd_pins GP_Inter/M0${spawn_out_m}_ACLK] [get_bd_pins GP_Inter/M0${spawn_in_m}_ACLK]
+    connect_bd_net [get_bd_pins managed_rstn] [get_bd_pins GP_Inter/M0${spawn_out_m}_ARESETN] [get_bd_pins GP_Inter/M0${spawn_in_m}_ARESETN]
   }
   if {${::AIT::enable_pom_axilite}} {
-    connect_bd_net [get_bd_pins aclk] [get_bd_pins GP_Inter/M0${pom_axilite_m}_ACLK]
-    connect_bd_net [get_bd_pins peripheral_aresetn] [get_bd_pins GP_Inter/M0${pom_axilite_m}_ARESETN]
+    connect_bd_net [get_bd_pins clk] [get_bd_pins GP_Inter/M0${pom_axilite_m}_ACLK]
+    connect_bd_net [get_bd_pins managed_rstn] [get_bd_pins GP_Inter/M0${pom_axilite_m}_ARESETN]
   }
   if {${::AIT::lock_hwruntime}} {
-    connect_bd_net [get_bd_pins aclk] [get_bd_pins axis_lock_TID/aclk]
-    connect_bd_net [get_bd_pins managed_aresetn] [get_bd_pins axis_lock_TID/aresetn]
+    connect_bd_net [get_bd_pins clk] [get_bd_pins axis_lock_TID/aclk]
+    connect_bd_net [get_bd_pins managed_rstn] [get_bd_pins axis_lock_TID/aresetn]
   }
 
   # Restore current instance
