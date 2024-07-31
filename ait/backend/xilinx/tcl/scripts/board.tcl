@@ -566,7 +566,7 @@ namespace eval AIT {
             set occupation [lindex [lindex $board_axi_inters $index] 2]
             set capacity [lindex [lindex $board_axi_inters $index] 3]
             set board_axi_inters [lreplace $board_axi_inters $index $index]
-            set intf_num [regsub -all {(^(/)?${mode}_AXI_|(_)?Inter(_[0-9]*)?$)} $dst_name ""]
+            set intf_num [regsub -all "(^(/)?${mode}_AXI_|(_)?Inter(_\[0-9\]*)?$)" $dst_name ""]
 
             # Interconnect is full
             if {$occupation == $capacity} {
@@ -630,8 +630,10 @@ namespace eval AIT {
             lappend board_axi_inters "$mode $dst_name $occupation $capacity"
             set board_axi_inters [lsort -integer -index 2 -increasing $board_axi_inters]
 
-            # Add a line to datainterfaces.txt
-            puts $datainterfaces_file "$src\t$intf_num"
+            # Add a line to datainterfaces.txt, if interface is indexable
+            if {[llength $intf_num]} {
+                puts $datainterfaces_file "$src\t$intf_num"
+            }
             close $datainterfaces_file
 
             return [list "$dst_name" "${mode}_AXI"]
