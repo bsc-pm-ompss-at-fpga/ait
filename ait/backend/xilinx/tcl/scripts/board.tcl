@@ -686,7 +686,7 @@ namespace eval AIT {
         proc get_clk_pin_from_intf_pin {intf_pin} {
             set ip [get_bd_cells -of_objects $intf_pin]
             set intf_name [get_property NAME $intf_pin]
-            set clk_pin [get_bd_pins -of_objects $ip -regexp -filter "(TYPE == clk) && (CONFIG.ASSOCIATED_BUSIF =~ .*$intf_name.*)"]
+            set clk_pin [get_bd_pins -quiet -of_objects $ip -regexp -filter "(TYPE == clk) && (CONFIG.ASSOCIATED_BUSIF =~ .*$intf_name.*)"]
 
             return $clk_pin
         }
