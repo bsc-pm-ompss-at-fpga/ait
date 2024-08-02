@@ -86,12 +86,14 @@ def synthesize_accelerator(acc):
                      + 'set_part {' + chip_part + '}\n' \
                      + 'create_clock -period ' + str(args.clock) + 'MHz -name default\n' \
                      + 'config_rtl -reset_level low -reset_async\n' \
-                     + 'config_interface -default_slave_interface none -m_axi_offset off'
+                     + 'config_interface -default_slave_interface none -m_axi_offset off -m_axi_addr64='
 
     if board.arch.device == 'zynqmp' or board.arch.device == 'alveo':
-        acc_tcl_script += ' -m_axi_addr64'
+        acc_tcl_script += '1\n'
+    elif board.arch.device == 'zynq':
+        acc_tcl_script += '0\n'
 
-    acc_tcl_script += '\ncsynth_design\n' \
+    acc_tcl_script += 'csynth_design\n' \
                       + 'export_design -rtl ' + args.target_language + ' -format ip_catalog -vendor bsc -library ompss -display_name ' + acc.name + ' -taxonomy /BSC/OmpSs\n' \
                       + 'exit\n'
 
