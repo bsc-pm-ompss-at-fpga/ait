@@ -178,12 +178,6 @@ namespace eval AIT {
             } else {
                 apply_bd_automation -rule xilinx.com:bd_rule:debug -dict [list [get_bd_intf_nets [get_bd_intf_nets -of_objects $intf_pin]] {AXIS_SIGNALS "Data and Trigger" CLK_SRC clock_generator/clk_app SYSTEM_ILA "Auto" APC_EN "0" }]
 
-                set_property -dict [list \
-                    CONFIG.C_EN_STRG_QUAL {1} \
-                    CONFIG.C_PROBE0_MU_CNT {2} \
-                    CONFIG.ALL_PROBE_SAME_MU_CNT {2} \
-                 ] [get_bd_cells -hierarchical -filter {VLNV =~ xilinx.com:ip:system_ila:*}]
-
                 # Add a line to debuginterfaces.txt
                 puts $debugInterfaces_file "$intf_pin"
                 close $debugInterfaces_file
