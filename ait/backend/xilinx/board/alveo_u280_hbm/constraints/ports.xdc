@@ -16,3 +16,7 @@ set_property DQS_BIAS    TRUE       [ get_ports  {sysclk1_clk_p} ]  ;# Bank  69 
 set_property PACKAGE_PIN D32        [ get_ports {HBM_CATTRIP} ]     ;# Bank  75 VCCO - VCC1V8                   - IO_L17P_T2U_N8_AD10P_75
 set_property IOSTANDARD  LVCMOS18   [ get_ports {HBM_CATTRIP} ]     ;# Bank  75 VCCO - VCC1V8                   - IO_L17P_T2U_N8_AD10P_75
 set_property PULLDOWN    TRUE       [ get_ports {HBM_CATTRIP} ]     ;# Bank  75 VCCO - VCC1V8                   - IO_L17P_T2U_N8_AD10P_75
+
+# pcie_perstn
+set_property PACKAGE_PIN BH26 [ get_ports pcie_perstn ]
+set_property IOSTANDARD LVCMOS18 [ get_ports pcie_perstn ]

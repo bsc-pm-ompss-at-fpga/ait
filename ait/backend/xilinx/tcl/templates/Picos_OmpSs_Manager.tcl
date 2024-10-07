@@ -340,6 +340,10 @@ proc create_hier_cell_Hardware_Runtime { parentCell nameHier } {
     CONFIG.MAX_DEPS_PER_TASK ${::AIT::max_deps_per_task} \
   ]
 
+  if {${::AIT::enable_pom_axilite}} {
+    lappend POM_Config CONFIG.DBG_AVAIL_COUNT_EN true CONFIG.DBG_AVAIL_COUNT_W 40
+  }
+
   if {${::AIT::enable_spawn_queues}} {
     lappend POM_Config \
       CONFIG.SPAWNIN_QUEUE_LEN ${::AIT::spawnInQueue_len} \

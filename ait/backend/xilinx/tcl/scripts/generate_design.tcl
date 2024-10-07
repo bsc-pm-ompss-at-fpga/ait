@@ -258,6 +258,28 @@ set acc_axi_pins []
 foreach acc ${::AIT::accs} {
     lassign [split $acc ":"] accHash accNumInstances accName taskCreator
 
+    if {$accName == "ompif_message_sender"} {
+        if {[catch {source "tcl/templates/ompif_message_sender.tcl"}]} {
+            AIT::utils::error_msg "Failed sourcing ompif_message_sender template"
+        }
+
+        connect_bd_intf_net [get_bd_intf_pins ompif_message_sender_0/M_AXIS] [get_bd_intf_pins Hardware_Runtime/hwr_inStream/S${accID}_AXIS]
+        connect_bd_intf_net [get_bd_intf_pins ompif_message_sender_0/axis_clk_conv_in/S_AXIS] [get_bd_intf_pins Hardware_Runtime/hwr_outStream/M${accID}_AXIS]
+
+        incr accID
+        continue
+    } elseif {$accName == "ompif_message_receiver"} {
+        if {[catch {source "tcl/templates/ompif_message_receiver.tcl"}]} {
+            AIT::utils::error_msg "Failed sourcing ompif_message_receiver template"
+        }
+
+        connect_bd_intf_net [get_bd_intf_pins ompif_message_receiver_0/axis_clk_conv_in/S_AXIS] [get_bd_intf_pins Hardware_Runtime/hwr_outStream/M${accID}_AXIS]
+        connect_bd_intf_net [get_bd_intf_pins ompif_message_receiver_0/M_AXIS] [get_bd_intf_pins Hardware_Runtime/hwr_inStream/S${accID}_AXIS]
+
+        incr accID
+        continue
+    }
+
     for {set instanceNum 0} {${instanceNum} < $accNumInstances} {incr instanceNum} {
         # Create accelerator hierarchy
         lassign [AIT::board::create_acc_hier $accName $instanceNum] acc_hier acc_ip
@@ -354,6 +376,11 @@ foreach acc ${::AIT::accs} {
         }
 
         ## Other interfaces
+        # OMPIF ports
+        if {[get_bd_pins -quiet $acc_ip/ompif_*] ne ""} {
+             connect_bd_net [get_bd_pins $acc_ip/ompif_rank] [get_bd_pins cluster_rank_slice/Dout]
+             connect_bd_net [get_bd_pins $acc_ip/ompif_size] [get_bd_pins cluster_size_slice/Dout]
+        }
         # If available, forward the instrumentation pins
         if {[get_bd_intf_pins -quiet -regexp $acc_ip/mcxx_instr(_V)*?] ne ""} {
             # Create and connect the Adapter_instr
@@ -500,6 +527,9 @@ if {${::AIT::debugInterfaces} eq "custom"} {
     }
     save_bd_design
 }
+
+# Some boards require to configure IPs after acc instantiation
+AIT::board::after_acc_configuration
 
 # Propagate parameters
 validate_bd_design -force -quiet

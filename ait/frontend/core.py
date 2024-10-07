@@ -53,6 +53,31 @@ class Logger(object):
         pass
 
 
+def add_ompif_accs(accs, acc_types, acc_names, args):
+    msg_sender_config = {
+        'name': 'ompif_message_sender',
+        'type': 4294967299,
+        'num_instances': 1,
+        'task_creation': False,
+        'ompif': False
+    }
+    msg_receiver_config = {
+        'name': 'ompif_message_receiver',
+        'type': 4294967300,
+        'num_instances': 1,
+        'task_creation': False,
+        'ompif': False
+    }
+    accs.append(Accelerator(msg_sender_config))
+    accs.append(Accelerator(msg_receiver_config))
+    acc_types.append(msg_sender_config['type'])
+    acc_names.append(msg_sender_config['name'])
+    acc_types.append(msg_receiver_config['type'])
+    acc_names.append(msg_receiver_config['name'])
+    args.num_accs += 2
+    args.num_instances += 2
+
+
 def check_board_support(board):
     chip_part = board.chip_part + ('-' + board.es if board.es and not args.ignore_eng_sample else '')
 
@@ -76,6 +101,7 @@ def get_accelerators(project_path):
     args.num_accs = 0
     args.num_instances = 0
     args.num_acc_creators = 0
+    args.ompif = False
 
     for file_ in sorted(glob.glob(os.getcwd() + '/ait_*.json')):
         acc_config_json = json.load(open(file_))
@@ -117,12 +143,19 @@ def get_accelerators(project_path):
             if acc.deps:
                 args.deps_hwruntime = True
 
+            # Check if the acc needs ompif
+            if acc.ompif:
+                args.ompif = True
+
     if args.num_accs == 0:
         msg.error('No accelerators found')
     elif args.num_acc_creators == 0:
         args.disable_spawn_queues = True
         args.spawnin_queue_len = 0
         args.spawnout_queue_len = 0
+
+    if args.ompif:
+        add_ompif_accs(accs, acc_types, acc_names, args)
 
     # Generate the .xtasks.config file
     xtasks_config_file = open(project_path + '/' + args.name + '.xtasks.config', 'w')

@@ -62,6 +62,12 @@ variable num_banks
 set num_banks 32
 variable QDMA_port
 set QDMA_port 15
+variable ompif_msg_send_port
+set ompif_msg_send_port 14
+variable ompif_msg_recv_0_port
+set ompif_msg_recv_0_port 30
+variable ompif_msg_recv_1_port
+set ompif_msg_recv_1_port 31
 
 # If you do not already have an existing IP Integrator design open,
 # you can create a design using the following command:
@@ -330,6 +336,9 @@ proc create_hier_cell_memory { parentCell nameHier } {
   variable script_folder
   variable num_banks
   variable QDMA_port
+  variable ompif_msg_send_port
+  variable ompif_msg_recv_0_port
+  variable ompif_msg_recv_1_port
 
   if { $parentCell eq "" || $nameHier eq "" } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2092 -severity "ERROR" "create_hier_cell_memory() - Empty argument(s)!"}
@@ -363,7 +372,7 @@ proc create_hier_cell_memory { parentCell nameHier } {
   # Create interface pins
   create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S15_AXI
   for {set i 0} {$i < $num_banks} {incr i} {
-    if {$i != $QDMA_port} {
+    if {$i != $QDMA_port && (!$AIT::ompif || ($i != $ompif_msg_send_port && $i != $ompif_msg_recv_0_port && $i != $ompif_msg_recv_1_port))} {
       create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S[format %02u $i]_AXI
     }
   }
@@ -533,7 +542,7 @@ proc create_hier_cell_memory { parentCell nameHier } {
   connect_bd_net -net QDMA_peripheral_aresetn [get_bd_pins QDMA_aclk_rstn] [get_bd_pins HBM/AXI_15_ARESET_N]
 
   for {set i 0} {$i < $num_banks} {incr i} {
-    if {$i != $QDMA_port} {
+    if {$i != $QDMA_port && (!$AIT::ompif || ($i != $ompif_msg_send_port && $i != $ompif_msg_recv_0_port && $i != $ompif_msg_recv_1_port))} {
       connect_bd_intf_net -intf_net SAXI_[format %02u $i]_8HI [get_bd_intf_pins S[format %02u $i]_AXI] [get_bd_intf_pins HBM/SAXI_[format %02u $i]_8HI]
       connect_bd_net [get_bd_pins clk_app_rstn] [get_bd_pins HBM/AXI_[format %02u $i]_ARESET_N]
       connect_bd_net -net aclk_1 [get_bd_pins clk_app] [get_bd_pins HBM/AXI_[format %02u $i]_ACLK]
@@ -550,6 +559,9 @@ proc create_hier_cell_bridge_to_host { parentCell nameHier } {
   variable script_folder
   variable num_banks
   variable QDMA_port
+  variable ompif_msg_send_port
+  variable ompif_msg_recv_0_port
+  variable ompif_msg_recv_1_port
 
   if { $parentCell eq "" || $nameHier eq "" } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2092 -severity "ERROR" "create_hier_cell_bridge_to_host() - Empty argument(s)!"}
@@ -583,7 +595,7 @@ proc create_hier_cell_bridge_to_host { parentCell nameHier } {
   # Create interface pins
   create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 M_AXI_LITE
   for {set i 0} {$i < $num_banks} {incr i} {
-    if {$i != $QDMA_port} {
+    if {$i != $QDMA_port && (!$AIT::ompif || ($i != $ompif_msg_send_port && $i != $ompif_msg_recv_0_port && $i != $ompif_msg_recv_1_port))} {
       create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S[format %02u $i]_AXI
     }
   }
@@ -662,7 +674,7 @@ proc create_hier_cell_bridge_to_host { parentCell nameHier } {
   connect_bd_net -net peripheral_aresetn_1 [get_bd_pins clk_app_rstn] [get_bd_pins memory/clk_app_rstn]
 
   for {set i 0} {$i < $num_banks} {incr i} {
-    if {$i != $QDMA_port} {
+    if {$i != $QDMA_port && (!$AIT::ompif || ($i != $ompif_msg_send_port && $i != $ompif_msg_recv_0_port && $i != $ompif_msg_recv_1_port))} {
       connect_bd_intf_net -intf_net memory_S[format %02u $i]_AXI [get_bd_intf_pins S[format %02u $i]_AXI] [get_bd_intf_pins memory/S[format %02u $i]_AXI]
     }
   }
@@ -736,6 +748,9 @@ proc create_root_design { parentCell } {
   variable design_name
   variable num_banks
   variable QDMA_port
+  variable ompif_msg_send_port
+  variable ompif_msg_recv_0_port
+  variable ompif_msg_recv_1_port
 
   if { $parentCell eq "" } {
      set parentCell [get_bd_cells /]
@@ -797,7 +812,7 @@ proc create_root_design { parentCell } {
 
   # Create instance: S_AXI_XX_Inter, and set properties
   for {set i 0} {$i < $num_banks} {incr i} {
-    if {$i != $QDMA_port} {
+    if {$i != $QDMA_port && (!$AIT::ompif || ($i != $ompif_msg_send_port && $i != $ompif_msg_recv_0_port && $i != $ompif_msg_recv_1_port))} {
       set S_AXI_Inter [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect S_AXI_[format %02u $i]_Inter ]
       set_property -dict [ list \
        CONFIG.NUM_MI {1} \
@@ -861,7 +876,7 @@ proc create_root_design { parentCell } {
   connect_bd_net [get_bd_ports pcie_perstn] [get_bd_pins system_reset/pcie_perstn]
 
   for {set i 0} {$i < $num_banks} {incr i} {
-    if {$i != $QDMA_port} {
+    if {$i != $QDMA_port && (!$AIT::ompif || ($i != $ompif_msg_send_port && $i != $ompif_msg_recv_0_port && $i != $ompif_msg_recv_1_port))} {
       connect_bd_intf_net -intf_net S_AXI_[format %02u $i]_AXI [get_bd_intf_pins S_AXI_[format %02u $i]_Inter/M00_AXI] [get_bd_intf_pins bridge_to_host/S[format %02u $i]_AXI]
       connect_bd_net -net clock_generator_clk_out1 [get_bd_pins S_AXI_[format %02u $i]_Inter/ACLK] [get_bd_pins S_AXI_[format %02u $i]_Inter/M00_ACLK] [get_bd_pins S_AXI_[format %02u $i]_Inter/S00_ACLK] [get_bd_pins clock_generator/clk_app]
       connect_bd_net [get_bd_pins S_AXI_[format %02u $i]_Inter/ARESETN] [get_bd_pins system_reset/clk_app_rstn]

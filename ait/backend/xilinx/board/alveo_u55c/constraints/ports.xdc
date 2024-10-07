@@ -22,3 +22,7 @@ set_property IOSTANDARD  LVCMOS18 [get_ports {pcie_perstn}]             ;# Bank 
 # HBM_CATTRIP
 set_property PACKAGE_PIN BE45     [get_ports {HBM_CATTRIP}]             ;# Bank  65 VCCO - VCC1V8   - IO_L22P_T3U_N6_DBC_AD0P_D04_65
 set_property IOSTANDARD  LVCMOS18 [get_ports {HBM_CATTRIP}]             ;# Bank  65 VCCO - VCC1V8   - IO_L22P_T3U_N6_DBC_AD0P_D04_65
+
+#QSFP0 refclk
+set_property PACKAGE_PIN AD43 [get_ports QSFP0_CLK_clk_n]
+set_property PACKAGE_PIN AD42 [get_ports QSFP0_CLK_clk_p]

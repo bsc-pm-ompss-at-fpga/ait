@@ -150,14 +150,18 @@ def run_step(project_args):
     shutil.rmtree(project_backend_path + '/HLS', ignore_errors=True)
     os.makedirs(project_backend_path + '/HLS')
 
-    msg.info('Synthesizing ' + str(args.num_accs) + ' accelerator' + ('s' if args.num_accs > 1 else ''))
+    # ompif_message_send and ompif_message_recv accelerators are not synthesized by HLS
+    num_accs = args.num_accs - 2 if args.ompif else args.num_accs
+
+    msg.info('Synthesizing ' + str(num_accs) + ' accelerator' + ('s' if num_accs > 1 else ''))
 
     # Load used resources by hwruntime
     used_resources = dict()
     available_resources = dict()
 
     for acc in range(0, args.num_accs):
-        synthesize_accelerator(accs[acc])
+        if accs[acc].name != 'ompif_message_sender' and accs[acc].name != 'ompif_message_receiver':
+            synthesize_accelerator(accs[acc])
 
     if len(accs) > args.num_accs:
         msg.info('Synthesizing ' + str(len(accs) - args.num_accs) + ' additional auxiliary IP' + ('s' if len(accs) - args.num_accs > 1 else ''))

@@ -122,6 +122,10 @@ namespace eval AIT {
             }
             connect_bd_intf_net [get_bd_intf_pins bitInfo/BRAM_PORTA] [get_bd_intf_pins bitInfo_BRAM_Ctrl/BRAM_PORTA]
 
+            if {${::AIT::ompif}} {
+                add_ethernet_subsystem
+            }
+
             if {${::AIT::power_monitor}} {
                 add_power_monitor
             }
@@ -248,6 +252,19 @@ namespace eval AIT {
                         incr bank_num
                     }
                 }
+                if {${AIT::ompif}} {
+                    # Add ompif and ethernet mapping
+                    # Some addresses are accessible thorugh jtag and qdma
+                    # The jtag master doesn't have access to the bitinfo, so all addresses must be hardcoded
+                    assign_bd_address [get_bd_addr_segs ethernet_subsystem/eth_100G_controller_0/s_axi/reg0] -range 16384 -offset 0x100000
+                    assign_bd_address [get_bd_addr_segs ethernet_subsystem/eth_100G_rx_wrapper_0/s_axi/reg0] -range 16384 -offset 0x104000
+                    assign_bd_address [get_bd_addr_segs ompif_message_sender_0/ompif_message_sender/cntrl/reg0] -range 16384 -offset 0x108000
+                    assign_bd_address [get_bd_addr_segs ompif_message_receiver_0/ompif_message_receiver/cntrl/Reg] -range 16384 -offset 0x114000
+                    assign_bd_address [get_bd_addr_segs jtag_gpio/S_AXI/Reg] -range 4096 -offset 0x10C000
+                    assign_bd_address -target_address_space /ompif_message_receiver_0/ompif_message_receiver/bufwr [get_bd_addr_segs axi_inter_msg_recv_bufwr/axiu_dwidth_downsize_0/slv/reg0]
+                    assign_bd_address -target_address_space /ompif_message_receiver_0/ompif_message_receiver/memcpy [get_bd_addr_segs axi_inter_msg_recv_memcpy/axiu_dwidth_downsize_0/slv/reg0]
+                    assign_bd_address -target_address_space /ompif_message_sender_0/ompif_message_sender/moMEM [get_bd_addr_segs axi_inter_msg_send/axiu_dwidth_downsize_0/slv/reg0]
+                }
             }
         }
 
@@ -264,6 +281,10 @@ namespace eval AIT {
         # Placeholder for thermal monitor feature
         proc add_thermal_monitor {} {
             AIT::utils::warning_msg "Board ${::AIT::board} has no support for thermal monitoring"
+        }
+
+        proc add_ethernet_subsystem {} {
+            AIT::utils::error_msg "Board ${::AIT::board} has no support for ethernet"
         }
 
         # Creates and connects a tree of interconnects that allows an arbitrary number of AXI-stream slaves to connect to up to 16 AXI-stream masters
@@ -747,6 +768,7 @@ namespace eval AIT {
             set bitmap_bitInfo [expr {$bitmap_bitInfo | (${::AIT::enable_spawn_queues} == True)<<8}]
             set bitmap_bitInfo [expr {$bitmap_bitInfo | (${::AIT::power_monitor} == True)<<9}]
             set bitmap_bitInfo [expr {$bitmap_bitInfo | (${::AIT::thermal_monitor} == True)<<10}]
+            set bitmap_bitInfo [expr {$bitmap_bitInfo | (${::AIT::ompif} == True)<<11}]
 
             return [format 0x%08x $bitmap_bitInfo]
         }
@@ -778,6 +800,9 @@ namespace eval AIT {
                     }
                 }
             }
+        }
+
+        proc after_acc_configuration {} {
         }
     }
 }

@@ -91,7 +91,8 @@ def generate_Vivado_variables_tcl():
                                 + '\tvariable slr_slices {}\n'                  .format(str(args.slr_slices)) \
                                 + '\tvariable regslice_pipeline_stages {}\n'    .format(args.regslice_pipeline_stages) \
                                 + '\tvariable power_monitor {}\n'               .format(str(args.power_monitor)) \
-                                + '\tvariable thermal_monitor {}\n'              .format(str(args.thermal_monitor)) \
+                                + '\tvariable thermal_monitor {}\n'             .format(str(args.thermal_monitor)) \
+                                + '\tvariable ompif {}\n'                       .format(str(args.ompif)) \
                                 + '\tvariable disable_creator_ports {}\n'       .format(str(args.disable_creator_ports)) \
                                 + '\n' \
                                 + '\t# {} board variables\n'                    .format(board.name) \
@@ -186,6 +187,8 @@ def generate_Vivado_variables_tcl():
                     msg.warning('Placement list for accelerator {} has less instances than expected ({} < {}). Placing instances 0-{}'.format(acc.name, len(acc.SLR), acc.num_instances, instancesToPlace - 1))
                 # Instantiate each accelerator with a single instance and placement info
                 for instanceNumber in range(instancesToPlace):
+                    if acc.name.startswith('ompif'):
+                        continue  # Ignore OMPIF accelerators because their constraints are static
                     accBlock = '{}_{}'                                                    .format(acc.name, instanceNumber)
                     accConstrFiles.write('add_cells_to_pblock [get_pblocks slr{}_pblock] '.format(acc.SLR[instanceNumber])
                                          + '[get_cells {'
@@ -255,6 +258,8 @@ def load_acc_placement(accList, args):
     if args.placement_file and os.path.exists(args.placement_file):
         usrPlacement = json.load(open(args.placement_file))
         for acc in accList:
+            if acc.name.startswith('ompif'):
+                continue
             if acc.name not in usrPlacement:
                 msg.warning('No placement given for acc ' + acc.name)
             else:
