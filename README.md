@@ -1,5 +1,5 @@
 [![PyPI version](https://img.shields.io/pypi/v/ait-bsc.svg?logo=pypi&logoColor=FFE873)](https://pypi.org/project/ait-bsc/)
-[![Licence](https://img.shields.io/github/license/bsc-pm-ompss-at-fpga/ait.svg)](LICENSE)
+[![License](https://img.shields.io/github/license/bsc-pm-ompss-at-fpga/ait.svg)](LICENSE)
 [![PyPi Downloads](https://img.shields.io/pypi/dm/ait-bsc?label=PyPI%20Downloads)](https://pypistats.org/packages/ait-bsc)
 [![Total Downloads](https://static.pepy.tech/personalized-badge/ait-bsc?period=total&units=international_system&left_color=black&right_color=red&left_text=Total+Downloads)](https://pepy.tech/project/ait-bsc)
 [![Supported Python versions](https://img.shields.io/pypi/pyversions/ait-bsc.svg?logo=python&logoColor=FFE873)](https://pypi.org/project/ait-bsc/)
@@ -31,7 +31,7 @@ Follow instructions on their website to install it.
 
 ##### Xilinx Vivado
 
-Follow installation instructions for Xilinx Vivado, Vitis HLS and SDK, as well as enable support during setupt for the devices you plan to use.
+Follow installation instructions for Xilinx Vivado, Vitis HLS and SDK, as well as enable support during setup for the devices you plan to use.
 However, components can be added or removed afterwards.
 
 Current version supports Vivado 2021.1 onwards.

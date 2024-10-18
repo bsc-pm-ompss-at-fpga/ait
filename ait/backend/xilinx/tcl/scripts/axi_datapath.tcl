@@ -89,7 +89,7 @@ namespace eval AIT {
                     }
                 }
 
-                # If no intf_pin passed, we assume that we are adding a register slice on an already-connected 
+                # If no intf_pin passed, we assume that we are adding a register slice on an already-connected
                 # interface, so we must first delete the net and get both ends of the connection
                 if {$intf_pin eq ""} {
                     set intf_pin [get_bd_intf_pins ${ip_cell}/${intf_name}]
