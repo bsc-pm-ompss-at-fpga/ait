@@ -153,10 +153,12 @@ class ArgParser():
 
         if args.interconnect_priorities and (board.arch.device == 'zynq' or board.arch.device == 'zynqmp'):
             msg.error('Memory interconnect priorities are not available on neither Zynq nor ZynqMP boards')
+        elif args.interconnect_priorities and board.mem.type != 'ddr':
+            msg.error('Memory interconnect priorities are only available for DDR memories')
 
         if args.simplify_interconnection and (board.arch.device == 'zynq' or board.arch.device == 'zynqmp'):
             msg.error('Simplify memory interconnection is not available on neither Zynq nor ZynqMP boards')
-        if args.simplify_interconnection and board.mem.type != 'ddr':
+        elif args.simplify_interconnection and board.mem.type != 'ddr':
             msg.error('Simplify memory interconnection is only available for DDR memories')
 
         if not board.frequency.min <= args.clock <= board.frequency.max:
