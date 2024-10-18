@@ -408,7 +408,7 @@ foreach acc ${::AIT::accs} {
                     # AIT::AXI::add_reg_slice ip_name intf_name slr_master slr_slave {intf_pin} {num_pipelines} {prefix}
                     # num_pipelines format: master:middle:slave
                     # Pass unused optional arguments as ""
-                    set instr_inner_axi_pin [AIT::AXI::add_reg_slice ${accName}_${instanceNum} $pin_name $slr ${::AIT::board_memory_slr} $instr_inner_axi_pin ${::AIT::regslice_pipeline_stages} acc_]
+                    set instr_inner_axi_pin [AIT::AXI::add_reg_slice ${accName}_${instanceNum} mcxx_instr $slr ${::AIT::board_memory_slr} $instr_inner_axi_pin ${::AIT::regslice_pipeline_stages} acc_]
                 }
             }
             # Connect instr_buffer pin
