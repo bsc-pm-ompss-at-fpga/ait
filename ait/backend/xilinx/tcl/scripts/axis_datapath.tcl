@@ -71,21 +71,21 @@ namespace eval AIT {
                 # interface, so we must first delete the net and get both ends of the connection
                 if {$intf_pin eq ""} {
                     set intf_pin [get_bd_intf_pins ${ip_cell}/${intf_name}]
-                    set net_intfs [get_bd_intf_pins -of_objects [get_bd_intf_nets -boundary_type lower -of_objects $intf_pin]]
+                    lassign [get_bd_intf_pins -of_objects [get_bd_intf_nets -boundary_type lower -of_objects $intf_pin]] master_intf slave_intf
                     delete_bd_objs [get_bd_intf_nets -boundary_type lower -of_objects $intf_pin]
 
                     if {[get_property MODE $intf_pin] == "Master"} {
-                        connect_bd_intf_net [get_bd_intf_pins $axisRegSlice/M_AXIS] [lindex $net_intfs 1]
-                        set intf_pin [lindex $net_intfs 0]
+                        connect_bd_intf_net [get_bd_intf_pins $axisRegSlice/M_AXIS] $slave_intf
+                        set intf_pin $master_intf
                     } elseif {[get_property MODE $intf_pin] == "Slave"} {
-                        connect_bd_intf_net [get_bd_intf_pins $axisRegSlice/S_AXIS] [lindex $net_intfs 0]
-                        set intf_pin [lindex $net_intfs 1]
+                        connect_bd_intf_net $master_intf [get_bd_intf_pins $axisRegSlice/S_AXIS]
+                        set intf_pin $slave_intf
                     }
                 }
 
                 # Connect interface pin accordingly and look for its clock and reset
                 if {[get_property MODE $intf_pin] == "Master"} {
-                    connect_bd_intf_net [get_bd_intf_pins $axisRegSlice/S_AXIS] $intf_pin
+                    connect_bd_intf_net $intf_pin [get_bd_intf_pins $axisRegSlice/S_AXIS]
                     set new_intf_pin [get_bd_intf_pins $axisRegSlice/M_AXIS]
                 } elseif {[get_property MODE $intf_pin] == "Slave"} {
                     connect_bd_intf_net [get_bd_intf_pins $axisRegSlice/M_AXIS] $intf_pin
@@ -134,7 +134,7 @@ namespace eval AIT {
             AIT::board::connect_clock [get_bd_pins $newtask_spawner/clk] $clk_pin
             AIT::board::connect_reset [get_bd_pins $newtask_spawner/rstn] [AIT::board::get_rst_net_from_clk_pin $clk_pin]
 
-            connect_bd_intf_net [get_bd_intf_pins $newtask_spawner/stream_in] $hier_outStream
+            connect_bd_intf_net $hier_outStream [get_bd_intf_pins $newtask_spawner/stream_in]
             connect_bd_intf_net [get_bd_intf_pins $newtask_spawner/ack_out] $acc_spawnInStream
 
             set tid_demux [create_bd_cell -type module -reference bsc_axiu_axis_tid_demux ${accName}_${instanceNum}/axis_tid_demux]

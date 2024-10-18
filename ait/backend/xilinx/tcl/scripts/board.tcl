@@ -120,7 +120,7 @@ namespace eval AIT {
                 connect_to_axi_intf [get_bd_intf_pins bitInfo_BRAM_Ctrl/S_AXI] M
                 connect_to_axi_intf [get_bd_intf_pins managed_reset/S_AXI] M
             }
-            connect_bd_intf_net [get_bd_intf_pins bitInfo/BRAM_PORTA] [get_bd_intf_pins bitInfo_BRAM_Ctrl/BRAM_PORTA]
+            connect_bd_intf_net [get_bd_intf_pins bitInfo_BRAM_Ctrl/BRAM_PORTA] [get_bd_intf_pins bitInfo/BRAM_PORTA]
 
             if {${::AIT::ompif}} {
                 add_ethernet_subsystem
@@ -496,7 +496,7 @@ namespace eval AIT {
                                 set slave_inf 00
                                 set slave_inter ${stream_name}_lvl${slave_inter_level}_s${s}_$slave_inter_num
                             }
-                            connect_bd_intf_net [get_bd_intf_pins $slave_inter/S${slave_inf}_AXIS] [get_bd_intf_pins $inter_name/M${master}_AXIS]
+                            connect_bd_intf_net [get_bd_intf_pins $inter_name/M${master}_AXIS] [get_bd_intf_pins $slave_inter/S${slave_inf}_AXIS]
                         }
                     }
                 }
@@ -555,7 +555,7 @@ namespace eval AIT {
                 connect_reset [get_bd_pins $nested_inter/M00_ARESETN]
 
                 # Connect nested interconnect to parent interconnect
-                connect_bd_intf_net -boundary_type upper [get_bd_intf_pins $parent_inter/S${intf_num}_AXI] [get_bd_intf_pins $nested_inter/M00_AXI]
+                connect_bd_intf_net -boundary_type upper [get_bd_intf_pins $nested_inter/M00_AXI] [get_bd_intf_pins $parent_inter/S${intf_num}_AXI]
 
                 connect_clock [get_bd_pins $parent_inter/S${intf_num}_ACLK]
                 connect_reset [get_bd_pins $parent_inter/S${intf_num}_ARESETN]

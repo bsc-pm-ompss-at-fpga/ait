@@ -93,22 +93,26 @@ namespace eval AIT {
                 # interface, so we must first delete the net and get both ends of the connection
                 if {$intf_pin eq ""} {
                     set intf_pin [get_bd_intf_pins ${ip_cell}/${intf_name}]
-                    set net_intfs [get_bd_intf_pins -of_objects [get_bd_intf_nets -boundary_type lower -of_objects $intf_pin]]
+                    lassign [get_bd_intf_pins -of_objects [get_bd_intf_nets -boundary_type lower -of_objects $intf_pin]] master_intf slave_intf
                     delete_bd_objs [get_bd_intf_nets -boundary_type lower -of_objects $intf_pin]
 
                     if {[get_property MODE $intf_pin] == "Master"} {
-                        connect_bd_intf_net [get_bd_intf_pins $axiRegSlice/M_AXI] [lindex $net_intfs 1]
-                        set intf_pin [lindex $net_intfs 0]
+                        connect_bd_intf_net [get_bd_intf_pins $axiRegSlice/M_AXI] $slave_intf
+                        set intf_pin $master_intf
                     } elseif {[get_property MODE $intf_pin] == "Slave"} {
-                        connect_bd_intf_net [get_bd_intf_pins $axiRegSlice/S_AXI] [lindex $net_intfs 0]
-                        set intf_pin [lindex $net_intfs 1]
+                        connect_bd_intf_net $master_intf [get_bd_intf_pins $axiRegSlice/S_AXI]
+                        set intf_pin $slave_intf
                     }
                 }
 
                 # Connect interface pin accordingly and look for its clock and reset
                 if {[get_property MODE $intf_pin] == "Master"} {
-                    connect_bd_intf_net [get_bd_intf_pins $axiRegSlice/S_AXI] $intf_pin
+                    connect_bd_intf_net $intf_pin [get_bd_intf_pins $axiRegSlice/S_AXI]
                     set new_intf_pin [get_bd_intf_pins $axiRegSlice/M_AXI]
+
+                    # Set READ_WRITE_MODE according to the master interface
+                    # Vivado propagates this, but we need this early in case we're using interleavers
+                    set_property CONFIG.READ_WRITE_MODE [get_property CONFIG.READ_WRITE_MODE $intf_pin] $axiRegSlice
                 } elseif {[get_property MODE $intf_pin] == "Slave"} {
                     connect_bd_intf_net [get_bd_intf_pins $axiRegSlice/M_AXI] $intf_pin
                     set new_intf_pin [get_bd_intf_pins $axiRegSlice/S_AXI]
@@ -118,14 +122,6 @@ namespace eval AIT {
                 set rst_net [AIT::board::get_rst_net_from_clk_pin $clk_pin]
                 AIT::board::connect_clock [get_bd_pins $axiRegSlice/aclk] $clk_pin
                 AIT::board::connect_reset [get_bd_pins $axiRegSlice/aresetn] $rst_net
-
-                # Set READ_WRITE_MODE according to the master interface
-                # Vivado propagates this, but we need this early in case we're using interleavers
-                set masterIf [get_bd_intf_pins -quiet -of_objects [get_bd_intf_nets -of_objects [get_bd_intf_pins $axiRegSlice/S_AXI]] -filter "MODE == Master"]
-                if  { [llength $masterIf] > 0 } {
-                    set rwMode [get_property CONFIG.READ_WRITE_MODE $masterIf]
-                    set_property CONFIG.READ_WRITE_MODE $rwMode $axiRegSlice
-                }
 
                 # Return new outermost AXI pin
                 set intf_pin $new_intf_pin

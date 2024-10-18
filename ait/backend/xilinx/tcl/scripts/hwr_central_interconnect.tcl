@@ -80,35 +80,35 @@ if {${::AIT::task_creation}} {
 
 if {${::AIT::task_creation}} {
     if {$max_level_ext == 0} {
-        connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_inStream/inS_common_Inter_lvl0_0/S00_AXIS] [get_bd_intf_pins Hardware_Runtime/hwr_inStream/inS_ext_Inter_lvl0_0/M00_AXIS]
-        connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_inStream/spawn_in] [get_bd_intf_pins Hardware_Runtime/hwr_inStream/inS_ext_Inter_lvl0_0/M01_AXIS]
-        connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_inStream/taskwait_in] [get_bd_intf_pins Hardware_Runtime/hwr_inStream/inS_ext_Inter_lvl0_0/M02_AXIS]
+        connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_inStream/inS_ext_Inter_lvl0_0/M00_AXIS] [get_bd_intf_pins Hardware_Runtime/hwr_inStream/inS_common_Inter_lvl0_0/S00_AXIS]
+        connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_inStream/inS_ext_Inter_lvl0_0/M01_AXIS] [get_bd_intf_pins Hardware_Runtime/hwr_inStream/spawn_in]
+        connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_inStream/inS_ext_Inter_lvl0_0/M02_AXIS] [get_bd_intf_pins Hardware_Runtime/hwr_inStream/taskwait_in]
         connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_outStream/outS_common_Inter_lvl0_0/M00_AXIS] [get_bd_intf_pins Hardware_Runtime/hwr_outStream/outS_ext_Inter_lvl0_0/S02_AXIS]
         connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_outStream/spawn_out] [get_bd_intf_pins Hardware_Runtime/hwr_outStream/outS_ext_Inter_lvl0_0/S00_AXIS]
         connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_outStream/taskwait_out] [get_bd_intf_pins Hardware_Runtime/hwr_outStream/outS_ext_Inter_lvl0_0/S01_AXIS]
     } else {
         set max_level $max_level_ext
-        connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_inStream/inS_common_Inter_lvl0_0/S00_AXIS] [get_bd_intf_pins Hardware_Runtime/hwr_inStream/inS_ext_Inter_lvl${max_level}_m0_0/M00_AXIS]
-        connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_inStream/spawn_in] [get_bd_intf_pins Hardware_Runtime/hwr_inStream/inS_ext_Inter_lvl${max_level}_m1_0/M00_AXIS]
-        connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_inStream/taskwait_in] [get_bd_intf_pins Hardware_Runtime/hwr_inStream/inS_ext_Inter_lvl${max_level}_m2_0/M00_AXIS]
+        connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_inStream/inS_ext_Inter_lvl${max_level}_m0_0/M00_AXIS] [get_bd_intf_pins Hardware_Runtime/hwr_inStream/inS_common_Inter_lvl0_0/S00_AXIS]
+        connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_inStream/inS_ext_Inter_lvl${max_level}_m1_0/M00_AXIS] [get_bd_intf_pins Hardware_Runtime/hwr_inStream/spawn_in]
+        connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_inStream/inS_ext_Inter_lvl${max_level}_m2_0/M00_AXIS] [get_bd_intf_pins Hardware_Runtime/hwr_inStream/taskwait_in]
         connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_outStream/outS_common_Inter_lvl0_0/M00_AXIS] [get_bd_intf_pins Hardware_Runtime/hwr_outStream/outS_ext_Inter_lvl${max_level}_s2_0/S00_AXIS]
         connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_outStream/spawn_out] [get_bd_intf_pins Hardware_Runtime/hwr_outStream/outS_ext_Inter_lvl${max_level}_m0_0/S00_AXIS]
         connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_outStream/taskwait_out] [get_bd_intf_pins Hardware_Runtime/hwr_outStream/outS_ext_Inter_lvl${max_level}_m1_0/S00_AXIS]
     }
 }
 if {$max_level_common == 0} {
-    connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_inStream/cmdout_in] [get_bd_intf_pins Hardware_Runtime/hwr_inStream/inS_common_Inter_lvl0_0/M00_AXIS]
+    connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_inStream/inS_common_Inter_lvl0_0/M00_AXIS] [get_bd_intf_pins Hardware_Runtime/hwr_inStream/cmdout_in]
     connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_outStream/cmdin_out] [get_bd_intf_pins Hardware_Runtime/hwr_outStream/outS_common_Inter_lvl0_0/S00_AXIS]
     if {${::AIT::lock_hwruntime}} {
-        connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_inStream/lock_in] [get_bd_intf_pins Hardware_Runtime/hwr_inStream/inS_common_Inter_lvl0_0/M01_AXIS]
+        connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_inStream/inS_common_Inter_lvl0_0/M01_AXIS] [get_bd_intf_pins Hardware_Runtime/hwr_inStream/lock_in]
         connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_outStream/lock_out] [get_bd_intf_pins Hardware_Runtime/hwr_outStream/outS_common_Inter_lvl0_0/S01_AXIS]
     }
 } else {
     set max_level $max_level_common
-    connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_inStream/cmdout_in] [get_bd_intf_pins Hardware_Runtime/hwr_inStream/inS_common_Inter_lvl${max_level}_m0_0/M00_AXIS]
+    connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_inStream/inS_common_Inter_lvl${max_level}_m0_0/M00_AXIS] [get_bd_intf_pins Hardware_Runtime/hwr_inStream/cmdout_in]
     connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_outStream/cmdin_out] [get_bd_intf_pins Hardware_Runtime/hwr_outStream/outS_common_Inter_lvl${max_level}_s0_0/S00_AXIS]
     if {${::AIT::lock_hwruntime}} {
-        connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_inStream/lock_in] [get_bd_intf_pins Hardware_Runtime/hwr_inStream/inS_common_Inter_lvl${max_level}_m1_0/M00_AXIS]
+        connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_inStream/inS_common_Inter_lvl${max_level}_m1_0/M00_AXIS] [get_bd_intf_pins Hardware_Runtime/hwr_inStream/lock_in]
         connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_outStream/lock_out] [get_bd_intf_pins Hardware_Runtime/hwr_outStream/outS_common_Inter_lvl${max_level}_s1_0/S00_AXIS]
     }
 }
@@ -123,15 +123,15 @@ for {set i 0} {$i < ${::AIT::num_accs}} {incr i} {
 
     if {$i < ${::AIT::num_acc_creators}} {
         connect_bd_intf_net $inStream_intf [get_bd_intf_pins Hardware_Runtime/hwr_inStream/inS_ext_Inter_lvl0_${inter_i}/S${intf_i}_AXIS]
-        connect_bd_intf_net $outStream_intf [get_bd_intf_pins Hardware_Runtime/hwr_outStream/outS_ext_Inter_lvl0_${inter_i}/M${intf_i}_AXIS]
+        connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_outStream/outS_ext_Inter_lvl0_${inter_i}/M${intf_i}_AXIS] $outStream_intf
     } elseif {${::AIT::num_acc_creators} == 0} {
         connect_bd_intf_net $inStream_intf [get_bd_intf_pins Hardware_Runtime/hwr_inStream/inS_common_Inter_lvl0_${inter_i}/S${intf_i}_AXIS]
-        connect_bd_intf_net $outStream_intf [get_bd_intf_pins Hardware_Runtime/hwr_outStream/outS_common_Inter_lvl0_${inter_i}/M${intf_i}_AXIS]
+        connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_outStream/outS_common_Inter_lvl0_${inter_i}/M${intf_i}_AXIS] $outStream_intf
     } else {
         set inter_i [expr {int(($i+1-${::AIT::num_acc_creators})/16)}]
         set intf_i [format %02u [expr {($i + 1 - ${::AIT::num_acc_creators})%16}]]
         connect_bd_intf_net $inStream_intf [get_bd_intf_pins Hardware_Runtime/hwr_inStream/inS_common_Inter_lvl0_${inter_i}/S${intf_i}_AXIS]
-        connect_bd_intf_net $outStream_intf [get_bd_intf_pins Hardware_Runtime/hwr_outStream/outS_common_Inter_lvl0_${inter_i}/M${intf_i}_AXIS]
+        connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_outStream/outS_common_Inter_lvl0_${inter_i}/M${intf_i}_AXIS] $outStream_intf
         if {$prev_inter_i != $inter_i} {
             set_property -dict $config_list [get_bd_cells Hardware_Runtime/hwr_outStream/outS_common_Inter_lvl0_${prev_inter_i}]
             set prev_inter_i $inter_i

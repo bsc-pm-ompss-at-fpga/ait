@@ -264,7 +264,7 @@ foreach acc ${::AIT::accs} {
         }
 
         connect_bd_intf_net [get_bd_intf_pins ompif_message_sender_0/M_AXIS] [get_bd_intf_pins Hardware_Runtime/hwr_inStream/S${accID}_AXIS]
-        connect_bd_intf_net [get_bd_intf_pins ompif_message_sender_0/axis_clk_conv_in/S_AXIS] [get_bd_intf_pins Hardware_Runtime/hwr_outStream/M${accID}_AXIS]
+        connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_outStream/M${accID}_AXIS] [get_bd_intf_pins ompif_message_sender_0/axis_clk_conv_in/S_AXIS]
 
         incr accID
         continue
@@ -273,7 +273,7 @@ foreach acc ${::AIT::accs} {
             AIT::utils::error_msg "Failed sourcing ompif_message_receiver template"
         }
 
-        connect_bd_intf_net [get_bd_intf_pins ompif_message_receiver_0/axis_clk_conv_in/S_AXIS] [get_bd_intf_pins Hardware_Runtime/hwr_outStream/M${accID}_AXIS]
+        connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_outStream/M${accID}_AXIS] [get_bd_intf_pins ompif_message_receiver_0/axis_clk_conv_in/S_AXIS]
         connect_bd_intf_net [get_bd_intf_pins ompif_message_receiver_0/M_AXIS] [get_bd_intf_pins Hardware_Runtime/hwr_inStream/S${accID}_AXIS]
 
         incr accID
@@ -392,7 +392,7 @@ foreach acc ${::AIT::accs} {
                 CONFIG.MAX_EVENT_BUF_LEN {128} \
              ] $acc_hier_adapter_instr
 
-            connect_bd_intf_net [get_bd_intf_pins $acc_hier/Adapter_instr/event_in] [get_bd_intf_pins -regexp $acc_ip/mcxx_instr(_V)*?]
+            connect_bd_intf_net [get_bd_intf_pins -regexp $acc_ip/mcxx_instr(_V)*?] [get_bd_intf_pins $acc_hier/Adapter_instr/event_in]
 
             AIT::board::connect_clock [get_bd_pins $acc_hier/Adapter_instr/clk]
             AIT::board::connect_reset [get_bd_pins $acc_hier/Adapter_instr/rstn] [AIT::board::get_rst_net_from_clk_pin [get_bd_pins $acc_hier/Adapter_instr/clk]]
@@ -432,7 +432,7 @@ foreach acc ${::AIT::accs} {
         connect_bd_intf_net [get_bd_intf_pins $acc_hier/inStream] $hier_inStream
         connect_bd_intf_net $hier_outStream [get_bd_intf_pins $acc_hier/outStream]
         connect_bd_intf_net -boundary_type upper [get_bd_intf_pins $acc_hier/outStream] [get_bd_intf_pins Hardware_Runtime/hwr_inStream/S${accID}_AXIS]
-        connect_bd_intf_net -boundary_type upper [get_bd_intf_pins $acc_hier/inStream] [get_bd_intf_pins Hardware_Runtime/hwr_outStream/M${accID}_AXIS]
+        connect_bd_intf_net -boundary_type upper [get_bd_intf_pins Hardware_Runtime/hwr_outStream/M${accID}_AXIS] [get_bd_intf_pins $acc_hier/inStream]
 
         # Mark AXI-Stream pin for debug
         if {(${::AIT::debugInterfaces} eq "stream") || (${::AIT::debugInterfaces} eq "both")} {
