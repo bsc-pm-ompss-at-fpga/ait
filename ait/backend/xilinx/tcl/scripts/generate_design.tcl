@@ -162,7 +162,7 @@ set_property sim.ip.auto_export_scripts {false} [current_project]
 
 # If enabled, set cache location
 if {${::AIT::IP_caching}} {
-    check_ip_cache -import_from_project -use_cache_location ${::AIT::path_CacheLocation}
+    config_ip_cache -import_from_project -use_cache_location ${::AIT::path_CacheLocation}
 }
 
 # Suppress known messages wrongly marked as critical warnings
@@ -206,7 +206,7 @@ if {[catch {source -notrace board/${::AIT::board}/baseDesign.tcl}]} {
 # Open Block Design
 open_bd_design [get_files ${::AIT::name_Design}.bd]
 
-# Set synthesis by IP
+# Set Out-Of-Context synthesis
 set_property synth_checkpoint_mode {Hierarchical} [get_files [current_bd_design].bd]
 
 # If available, execute the user defined pre-design tcl script

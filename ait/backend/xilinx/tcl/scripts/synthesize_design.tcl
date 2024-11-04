@@ -37,18 +37,10 @@ open_project ${::AIT::name_Project}/${::AIT::name_Project}.xpr
 # Open Block Design
 open_bd_design [get_files ${::AIT::name_Design}.bd]
 
-# Generate output products
-generate_target all [get_files [current_bd_design].bd]
-
 AIT::utils::info_msg "Launching synthesis run with $num_jobs jobs"
 
-# Launch synthesis
-reset_runs synth_1
-reset_target all [get_files [current_bd_design].bd]
-export_ip_user_files -of_objects [get_files [current_bd_design].bd] -sync -no_script -force -quiet
-delete_ip_run [get_files -of_objects [get_filesets sources_1] [get_files [current_bd_design].bd]]
+# Launch and wait for synthesis
 launch_runs synth_1 -jobs $num_jobs
-
 wait_on_run synth_1
 
 # Check if synthesis finished correctly
