@@ -37,6 +37,14 @@ open_project ${::AIT::name_Project}/${::AIT::name_Project}.xpr
 # Open Block Design
 open_bd_design [get_files ${::AIT::name_Design}.bd]
 
+# Generate OOC synthesis runs sequentially to avoid Vivado aborting when checking the IPCACHE
+generate_target {synthesis implementation} [get_files [current_bd_design].bd]
+foreach ooc_ip [get_ips -all] {
+    config_ip_cache -quiet -export $ooc_ip
+}
+export_ip_user_files -of_objects [get_files [current_bd_design].bd] -no_script -sync -force -quiet
+create_ip_run [get_files -of_objects [get_filesets sources_1] [current_bd_design].bd]
+
 AIT::utils::info_msg "Launching synthesis run with $num_jobs jobs"
 
 # Launch and wait for synthesis
