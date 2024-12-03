@@ -99,10 +99,10 @@ namespace eval AIT {
 
         # Returns the number of bits needed to address the board memory
         proc get_addr_width {} {
-            if {[dict exists ${::AIT::address_map} "mem_size"]} {
-                set size [dict get ${::AIT::address_map} "mem_size"]
+            if {[dict exists ${::AIT::board} "memory" "size"]} {
+                set size [dict get ${::AIT::board} "memory" "size"]
             } else {
-                set size [expr {[dict get ${::AIT::address_map} "mem_bank_size"]*[dict get ${::AIT::address_map} "mem_num_banks"]}]
+                set size [expr {[dict get ${::AIT::board} "memory" "bank_size"]*[dict get ${::AIT::board} "memory" "num_banks"]}]
             }
             return [expr {int(ceil(log($size)/log(2)))}]
         }

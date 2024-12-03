@@ -1,25 +1,16 @@
 {
 	"name": "zcu102",
 	"chip_part": "xczu9eg-ffvb1156-2-e",
-	"es": "",
 	"board_part": ["xilinx.com:zcu102"],
 
 	"arch": {
 		"device": "zynqmp"
 	},
 
-	"frequency": {
-		"min": 7,
-		"max": 775
-	},
-
-	"mem": {
+	"memory": {
 		"type": "ddr",
-		"size": "4G"
-	},
-
-	"address_map": {
-		"mem_base_addr": "0x0",
+		"size": "0x100000000",
+		"base_addr": "0x0",
 		"ompss_base_addr": "0xB0000000"
 	}
 }

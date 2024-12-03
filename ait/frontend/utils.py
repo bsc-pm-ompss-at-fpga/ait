@@ -31,10 +31,12 @@ import time
 import setuptools
 
 
-class Accelerator:
-    def __init__(self, acc_config):
-        for attribute in acc_config:
-            setattr(self, attribute, acc_config[attribute])
+class JSONDottedDict(dict):
+    def __getattr__(*args):
+        val = dict.get(*args)
+        return JSONDottedDict(val) if type(val) is dict else val
+    __setattr__ = dict.__setitem__
+    __delattr__ = dict.__delitem__
 
 
 class Color:
@@ -148,6 +150,45 @@ def getNumJobs(mem_per_job):
     nprocs = int(subprocess.run('nproc', capture_output=True, encoding='utf-8').stdout.strip())
 
     return max(1, min(int(available_mem / mem_per_job), nprocs))
+
+
+def json2tcl(data, name, base_level=0, indent_level=None):
+
+    if indent_level is None:
+        indent_level = base_level
+
+    def indentString(level):
+        string = ''
+        for lvl in range(level):
+            string += '\t'
+        return string
+
+    string = ''
+    if isinstance(data, list):
+        string += ' '
+        for elem in data:
+            string += json2tcl(elem, name, base_level, indent_level + 1)
+            string += ' '
+    elif isinstance(data, dict):
+        for key in data.keys():
+            string += indentString(indent_level)
+            if indent_level == base_level:
+                string += 'dict set {} '.format(name)
+            string += '"{}" '.format(key)
+            if isinstance(data[key], dict):
+                string += '{\n'
+            elif isinstance(data[key], list):
+                string += '{'
+            string += json2tcl(data[key], name, base_level, indent_level + 1)
+            if isinstance(data[key], dict):
+                string += indentString(indent_level)
+                string += '}'
+            elif isinstance(data[key], list):
+                string += '}'
+            string += '\n'
+    else:
+        string += '{{{}}}'.format(data)
+    return string
 
 
 ait_path = os.path.normpath(os.path.dirname(os.path.realpath(__file__)) + '/..')

@@ -49,10 +49,10 @@ if {[catch {source -notrace tcl/scripts/axis_datapath.tcl}]} {
 }
 
 # If available, overwrite board-specific procedures
-if {[file exists board/${::AIT::board}/procs.tcl]} {
+if {[file exists board/[dict get ${::AIT::board} "name"]/procs.tcl]} {
     AIT::utils::info_msg "Loading board-specific procedures"
-    if {[catch {source -notrace board/${::AIT::board}/procs.tcl}]} {
-        AIT::utils::error_msg "Failed overwriting ${::AIT::board} board-specific procedures"
+    if {[catch {source -notrace board/[dict get ${::AIT::board} "name"]/procs.tcl}]} {
+        AIT::utils::error_msg "Failed overwriting [dict get ${::AIT::board} "name"] board-specific procedures"
     }
 }
 
@@ -109,7 +109,7 @@ for {set i 0} {$i < [llength $bd_addr_segments]} {incr i} {
     if {$addr%$size} {
         incr addr [expr {$size - ($addr%$size)}]
     }
-    set format_addr [format 0x%016x [expr {[dict get ${::AIT::address_map} "ompss_base_addr"] + $addr}]]
+    set format_addr [format 0x%016x [expr {[dict get ${::AIT::board} "memory" "ompss_base_addr"] + $addr}]]
     lset bd_addr_segments $i [dict replace $cur_dict addr $format_addr size $size]
 
     set name [dict get $cur_dict name]
@@ -135,13 +135,13 @@ for {set i 0} {$i < [llength $bd_addr_segments]} {incr i} {
     incr addr $size
 }
 
-variable addr_bitInfo [format 0x%016x [expr {[dict get ${::AIT::address_map} "ompss_base_addr"] + $bitInfo_offset}]]
+variable addr_bitInfo [format 0x%016x [expr {[dict get ${::AIT::board} "memory" "ompss_base_addr"] + $bitInfo_offset}]]
 
 # Create project and set board files
-create_project -force ${::AIT::name_Project} ${::AIT::name_Project} -part ${::AIT::chipPart}
-if {[info exists {::AIT::boardPart}]} {
+create_project -force ${::AIT::name_Project} ${::AIT::name_Project} -part [dict get ${::AIT::board} "chip_part"]
+if {[dict exists ${::AIT::board} "board_part"]} {
     set board_found False
-    foreach board_name ${::AIT::boardPart} {
+    foreach board_name [dict get ${::AIT::board} "board_part"] {
         set board_part [get_board_parts -latest_file_version ${board_name}:*]
         if {$board_part ne ""} {
             set_property board_part $board_part [current_project]
@@ -149,8 +149,8 @@ if {[info exists {::AIT::boardPart}]} {
             break
         }
     }
-    if {! $board_found } {
-        AIT::utils::error_msg "Board part (${::AIT::boardPart}) is missing, design will fail. Please add the corresponding board files to the Vivado installation"
+    if {!$board_found} {
+        AIT::utils::error_msg "Board part ([string trim [dict get ${::AIT::board} "board_part"]]) is missing, design will fail. Please add the corresponding board files to the Vivado installation"
     }
 }
 
@@ -186,11 +186,11 @@ if {[file isdirectory IPs]} {
 }
 
 # If exists, add board IP repository
-if {[file isdirectory board/${::AIT::board}/IPs/]} {
-    set_property ip_repo_paths "[get_property ip_repo_paths [current_project]] board/${::AIT::board}/IPs" [current_project]
+if {[file isdirectory board/[dict get ${::AIT::board} "name"]/IPs/]} {
+    set_property ip_repo_paths "[get_property ip_repo_paths [current_project]] board/[dict get ${::AIT::board} "name"]/IPs" [current_project]
     update_ip_catalog
-    foreach {IP} [glob -nocomplain board/${::AIT::board}/IPs/*.zip] {
-        update_ip_catalog -add_ip $IP -repo_path board/${::AIT::board}/IPs
+    foreach {IP} [glob -nocomplain board/[dict get ${::AIT::board} "name"]/IPs/*.zip] {
+        update_ip_catalog -add_ip $IP -repo_path board/[dict get ${::AIT::board} "name"]/IPs
     }
 }
 
@@ -199,7 +199,7 @@ update_ip_catalog
 
 # Generate board base design from template
 set argv ${::AIT::name_Project}
-if {[catch {source -notrace board/${::AIT::board}/baseDesign.tcl}]} {
+if {[catch {source -notrace board/[dict get ${::AIT::board} "name"]/baseDesign.tcl}]} {
     AIT::utils::error_msg "Failed sourcing board base design"
 }
 
@@ -224,7 +224,7 @@ if {[catch {source -notrace tcl/templates/Picos_OmpSs_Manager.tcl}]} {
     AIT::utils::error_msg "Failed sourcing Picos_OmpSs_Manager template"
 }
 
-if {(${::AIT::arch_device} eq "zynq") || (${::AIT::arch_device} eq "zynqmp")} {
+if {([dict get ${::AIT::board} "arch" "device"] eq "zynq") || ([dict get ${::AIT::board} "arch" "device"] eq "zynqmp")} {
     AIT::board::connect_to_axi_intf [get_bd_intf_pins Hardware_Runtime/S_AXI_GP] M 1
 } else {
     AIT::board::connect_to_axi_intf [get_bd_intf_pins Hardware_Runtime/S_AXI_GP] M
@@ -317,7 +317,7 @@ foreach acc ${::AIT::accs} {
                     # AIT::AXI::add_reg_slice ip_name intf_name slr_master slr_slave {intf_pin} {num_pipelines} {prefix}
                     # num_pipelines format: master:middle:slave
                     # Pass unused optional arguments as ""
-                    set hier_inner_axi_pin [AIT::AXI::add_reg_slice ${accName}_${instanceNum} $pin_name $slr ${::AIT::board_memory_slr} $hier_inner_axi_pin ${::AIT::regslice_pipeline_stages} acc_]
+                    set hier_inner_axi_pin [AIT::AXI::add_reg_slice ${accName}_${instanceNum} $pin_name $slr [dict get ${::AIT::board} "arch" "slr" "memory"] $hier_inner_axi_pin ${::AIT::regslice_pipeline_stages} acc_]
                 }
             }
 
@@ -376,8 +376,8 @@ foreach acc ${::AIT::accs} {
                 AIT::utils::warning_msg "No placement info provided for instance ${instanceNum} of ${accName}. Slices for AXI-Stream pins will not be created"
             } else {
                 set slr [lindex [dict get ${::AIT::acc_placement} $accName] ${instanceNum}]
-                set hier_inStream [AIT::AXIS::add_reg_slice ${accName}_${instanceNum} inStream ${::AIT::board_hwruntime_slr} $slr $hier_inStream ${::AIT::regslice_pipeline_stages} acc_]
-                set hier_outStream [AIT::AXIS::add_reg_slice ${accName}_${instanceNum} outStream $slr ${::AIT::board_hwruntime_slr} $hier_outStream ${::AIT::regslice_pipeline_stages} acc_]
+                set hier_inStream [AIT::AXIS::add_reg_slice ${accName}_${instanceNum} inStream [dict get ${::AIT::board} "arch" "slr" "hwruntime"] $slr $hier_inStream ${::AIT::regslice_pipeline_stages} acc_]
+                set hier_outStream [AIT::AXIS::add_reg_slice ${accName}_${instanceNum} outStream $slr [dict get ${::AIT::board} "arch" "slr" "hwruntime"] $hier_outStream ${::AIT::regslice_pipeline_stages} acc_]
             }
         }
 
@@ -414,7 +414,7 @@ foreach acc ${::AIT::accs} {
                     # AIT::AXI::add_reg_slice ip_name intf_name slr_master slr_slave {intf_pin} {num_pipelines} {prefix}
                     # num_pipelines format: master:middle:slave
                     # Pass unused optional arguments as ""
-                    set instr_inner_axi_pin [AIT::AXI::add_reg_slice ${accName}_${instanceNum} mcxx_instr $slr ${::AIT::board_memory_slr} $instr_inner_axi_pin ${::AIT::regslice_pipeline_stages} acc_]
+                    set instr_inner_axi_pin [AIT::AXI::add_reg_slice ${accName}_${instanceNum} mcxx_instr $slr [dict get ${::AIT::board} "arch" "slr" "memory"] $instr_inner_axi_pin ${::AIT::regslice_pipeline_stages} acc_]
                 }
             }
             # Connect instr_buffer pin
@@ -457,8 +457,8 @@ foreach acc ${::AIT::accs} {
 
 # If we are generating a design for a discrete FPGA that uses DDR, check for
 # available AXI interfaces to memory and instantiate a nested interconnect, if necessary
-if {(${::AIT::arch_device} eq "alveo") && ([dict get ${::AIT::address_map} "mem_type"] eq "ddr") && ([llength $acc_axi_pins] > [AIT::board::get_available_axi_intfs])} {
-    AIT::board::create_nested_interconnect [get_bd_cells S_AXI_Inter] [dict get ${::AIT::address_map} "mem_num_banks"]
+if {([dict get ${::AIT::board} "arch" "device"] eq "alveo") && ([dict get ${::AIT::board} "memory" "type"] eq "ddr") && ([llength $acc_axi_pins] > [AIT::board::get_available_axi_intfs])} {
+    AIT::board::create_nested_interconnect [get_bd_cells S_AXI_Inter] [dict get ${::AIT::board} "memory" "num_banks"]
     save_bd_design
 }
 
@@ -475,7 +475,7 @@ save_bd_design
 
 # If using it, configure addrInterleaver IP
 if {${::AIT::interleaving_stride} ne "None"} {
-    set num_banks [dict get ${::AIT::address_map} "mem_num_banks"]
+    set num_banks [dict get ${::AIT::board} "memory" "num_banks"]
     set lg [expr {log($num_banks)/log(2)}]
     if { floor($lg) - ceil($lg) != 0 } {
         #number of banks is not power of 2
@@ -485,10 +485,10 @@ if {${::AIT::interleaving_stride} ne "None"} {
 
     set addrInterleaver [get_bd_cells -hierarchical -filter {VLNV =~ xilinx.com:module_ref:bsc_axiu_addrInterleaver:*}]
     set_property -dict [list \
-        CONFIG.BANK_SIZE [dict get ${::AIT::address_map} "mem_bank_size"] \
+        CONFIG.BANK_SIZE [dict get ${::AIT::board} "memory" "bank_size"] \
         CONFIG.NUM_BANKS $num_banks \
         CONFIG.STRIDE ${::AIT::interleaving_stride} \
-        CONFIG.BASE_ADDR [dict get ${::AIT::address_map} "mem_base_addr"] \
+        CONFIG.BASE_ADDR [dict get ${::AIT::board} "memory" "base_addr"] \
      ] $addrInterleaver
 }
 
@@ -496,7 +496,7 @@ if {${::AIT::interleaving_stride} ne "None"} {
 if {${::AIT::hwcounter} || ${::AIT::hwinst}} {
     create_bd_cell -type module -reference bsc_axiu_hwcounter HW_Counter
 
-    if {(${::AIT::arch_device} eq "zynq") || (${::AIT::arch_device} eq "zynqmp")} {
+    if {([dict get ${::AIT::board} "arch" "device"] eq "zynq") || ([dict get ${::AIT::board} "arch" "device"] eq "zynqmp")} {
         AIT::board::connect_to_axi_intf [get_bd_intf_pins HW_Counter/S_AXI] M 1
     } else {
         AIT::board::connect_to_axi_intf [get_bd_intf_pins HW_Counter/S_AXI] M
@@ -550,7 +550,7 @@ foreach bd_addr_seg $bd_addr_segments {
 }
 
 # Map bitinfo BRAM to address space
-if {(${::AIT::arch_device} ne "simulation") && (${::AIT::arch_device} ne "shell")} {
+if {([dict get ${::AIT::board} "arch" "device"] ne "simulation") && ([dict get ${::AIT::board} "arch" "device"] ne "shell")} {
     assign_bd_address [get_bd_addr_segs bitInfo_BRAM_Ctrl/S_AXI/Mem0] -range 4K -offset $addr_bitInfo
 }
 
@@ -669,11 +669,11 @@ for {set i 0} {$i < [llength $dynamic_field_sizes]} {incr i} {
 append bitInfo_coe [format %08x ${::AIT::user_id}]\n
 
 # Set the board memory for discrete devices
-if {${::AIT::arch_device} eq "alveo"} {
-    if {[dict exists ${::AIT::address_map} "mem_size"]} {
-        set size [dict get ${::AIT::address_map} "mem_size"]
+if {[dict get ${::AIT::board} "arch" "device"] eq "alveo"} {
+    if {[dict exists ${::AIT::board} "memory" "size"]} {
+        set size [dict get ${::AIT::board} "memory" "size"]
     } else {
-        set size [expr {[dict get ${::AIT::address_map} "mem_bank_size"]*[dict get ${::AIT::address_map} "mem_num_banks"]}]
+        set size [expr {[dict get ${::AIT::board} "memory" "bank_size"]*[dict get ${::AIT::board} "memory" "num_banks"]}]
     }
     set size [expr {$size/2**30}]
 } else {
@@ -704,8 +704,8 @@ update_ip_catalog -rebuild -scan_changes
 upgrade_ip -quiet [get_ips -filter UPGRADE_VERSIONS != {}]
 
 # If exists, add constraints file
-if {[file isdirectory board/${::AIT::board}/constraints/]} {
-    add_files -fileset constrs_1 -norecurse board/${::AIT::board}/constraints/
+if {[file isdirectory board/[dict get ${::AIT::board} "name"]/constraints/]} {
+    add_files -fileset constrs_1 -norecurse board/[dict get ${::AIT::board} "name"]/constraints/
 }
 
 # Delete floorplanning constrains if not needed

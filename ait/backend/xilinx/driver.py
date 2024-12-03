@@ -25,16 +25,11 @@ import json
 
 import ait.backend.xilinx.utils.checkers as checkers
 import ait.backend.xilinx.utils.parser as parser
-from ait.frontend.utils import ait_path, msg
-
-
-class JSONObject:
-    def __init__(self, dict):
-        vars(self).update(dict)
+from ait.frontend.utils import JSONDottedDict, ait_path, msg
 
 
 def load(args):
-    board = json.load(open(ait_path + '/backend/' + args.backend + '/board/' + args.board + '/basic_info.json'), object_hook=JSONObject)
+    board = JSONDottedDict(json.load(open(ait_path + '/backend/' + args.backend + '/board/' + args.board + '/board_info.json')))
 
     # Check backend-related board arguments
     parser.parser.check_board_args(args, board)

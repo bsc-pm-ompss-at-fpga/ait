@@ -23,18 +23,18 @@ connect_bd_intf_net [get_bd_intf_pins ompif_message_sender_0/ompif_message_sende
 connect_bd_intf_net [get_bd_intf_pins ompif_message_sender_0/ompif_message_sender/soMsg] [get_bd_intf_pins axis_inter_eth_tx/S01_AXIS]
 connect_bd_intf_net [get_bd_intf_pins axis_sw_dec/M01_AXIS] [get_bd_intf_pins ompif_message_sender_0/ompif_message_sender/siAck]
 
-connect_bd_net [get_bd_pins ompif_message_sender_0/ompif_message_sender/clk] [get_bd_pins ${AIT::board::ompif_clk}] [get_bd_pins ompif_message_sender_0/axis_clk_conv_in/m_axis_aclk] [get_bd_pins ompif_message_sender_0/axis_clk_conv_out/s_axis_aclk]
-connect_bd_net [get_bd_pins ompif_message_sender_0/ompif_message_sender/rstn] [get_bd_pins ${AIT::board::ompif_rstn}] [get_bd_pins ompif_message_sender_0/axis_clk_conv_in/m_axis_aresetn] [get_bd_pins ompif_message_sender_0/axis_clk_conv_out/s_axis_aresetn]
+connect_bd_net [get_bd_pins ompif_message_sender_0/ompif_message_sender/clk] [get_bd_pins [dict get ${AIT::board} "ompif" "clk"]] [get_bd_pins ompif_message_sender_0/axis_clk_conv_in/m_axis_aclk] [get_bd_pins ompif_message_sender_0/axis_clk_conv_out/s_axis_aclk]
+connect_bd_net [get_bd_pins ompif_message_sender_0/ompif_message_sender/rstn] [get_bd_pins [dict get ${AIT::board} "ompif" "rstn"]] [get_bd_pins ompif_message_sender_0/axis_clk_conv_in/m_axis_aresetn] [get_bd_pins ompif_message_sender_0/axis_clk_conv_out/s_axis_aresetn]
 AIT::board::connect_clock [get_bd_pins ompif_message_sender_0/axis_clk_conv_in/s_axis_aclk]
 connect_bd_net [get_bd_pins ompif_message_sender_0/axis_clk_conv_in/s_axis_aresetn] [get_bd_pins ompif_message_sender_0/axis_clk_conv_out/m_axis_aresetn] [get_bd_pins system_reset/clk_app_managed_rstn]
 AIT::board::connect_clock [get_bd_pins ompif_message_sender_0/axis_clk_conv_out/m_axis_aclk]
 
-AIT::board::connect_to_axi_intf [get_bd_intf_pins ompif_message_sender_0/ompif_message_sender/cntrl] M "" [get_bd_pins ${AIT::board::ompif_clk}] [get_bd_pins ${AIT::board::ompif_rstn}]
+AIT::board::connect_to_axi_intf [get_bd_intf_pins ompif_message_sender_0/ompif_message_sender/cntrl] M "" [get_bd_pins [dict get ${AIT::board} "ompif" "clk"]] [get_bd_pins [dict get ${AIT::board} "ompif" "rstn"]]
 
-if {[dict get ${::AIT::address_map} "mem_type"] == "hbm"} {
+if {[dict get ${::AIT::board} "memory" "type"] eq "hbm"} {
     connect_bd_intf_net [get_bd_intf_pins ompif_message_sender_0/ompif_message_sender/moMEM] [get_bd_intf_pins axi_inter_msg_send/axi_register_slice_0/S_AXI]
 } else {
-    AIT::board::connect_to_axi_intf [get_bd_intf_pins ompif_message_sender_0/ompif_message_sender/moMEM] S "" [get_bd_pins $AIT::board::ompif_clk] [get_bd_pins $AIT::board::ompif_rstn]
+    AIT::board::connect_to_axi_intf [get_bd_intf_pins ompif_message_sender_0/ompif_message_sender/moMEM] S "" [get_bd_pins [dict get ${AIT::board} "ompif" "clk"]] [get_bd_pins [dict get ${AIT::board} "ompif" "rstn"]]
 }
 
 set accIDWidth [expr {max(int(ceil(log(${AIT::num_accs})/log(2))), 1)}]

@@ -1,7 +1,6 @@
 {
 	"name": "alveo_u280_hbm",
 	"chip_part": "xcu280-fsvh2892-2L-e",
-	"es": "",
 	"board_part": ["xilinx.com:au280"],
 
 	"arch": {
@@ -13,19 +12,16 @@
 		}
 	},
 
-	"frequency": {
-		"min": 5,
-		"max": 933
-	},
-
-	"mem": {
+	"memory": {
 		"type": "hbm",
 		"num_banks": 32,
-		"bank_size": "256M"
+		"bank_size": "0x10000000",
+		"base_addr": "0x0",
+		"ompss_base_addr": "0x0"
 	},
 
-	"address_map": {
-		"mem_base_addr": "0x0",
-		"ompss_base_addr": "0x0"
+	"ompif": {
+		"clk": "clk_gen_slr0/clk_200",
+		"rstn": "system_reset/clk_200_managed_rstn"
 	}
 }

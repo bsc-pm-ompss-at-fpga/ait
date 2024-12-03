@@ -31,7 +31,7 @@ import time
 
 from ait.frontend.config import LONG_VERSION
 from ait.frontend.parser import ArgParser
-from ait.frontend.utils import Accelerator, ait_path, backends, msg, secondsToHumanReadable
+from ait.frontend.utils import JSONDottedDict, ait_path, backends, msg, secondsToHumanReadable
 
 
 class Logger(object):
@@ -69,8 +69,8 @@ def add_ompif_accs(accs, acc_types, acc_names, args):
         'task_creation': False,
         'ompif': False
     }
-    accs.append(Accelerator(msg_sender_config))
-    accs.append(Accelerator(msg_receiver_config))
+    accs.append(JSONDottedDict(msg_sender_config))
+    accs.append(JSONDottedDict(msg_receiver_config))
     acc_types.append(msg_sender_config['type'])
     acc_names.append(msg_sender_config['name'])
     acc_types.append(msg_receiver_config['type'])
@@ -107,7 +107,7 @@ def get_accelerators(project_path):
     for file_ in sorted(glob.glob(os.getcwd() + '/ait_*.json')):
         acc_config_json = json.load(open(file_))
         for acc_config in acc_config_json:
-            acc = Accelerator(acc_config)
+            acc = JSONDottedDict(acc_config)
 
             if not re.match('^[A-Za-z][A-Za-z0-9_]*$', acc.name):
                 msg.error('\'' + acc.name + '\' is an invalid accelerator name. Must start with a letter and contain only letters, numbers or underscores')

@@ -22,21 +22,21 @@ connect_bd_intf_net [get_bd_intf_pins ompif_message_receiver_0/ompif_message_rec
 connect_bd_intf_net [get_bd_intf_pins ompif_message_receiver_0/ompif_message_receiver/soCmd] [get_bd_intf_pins ompif_message_receiver_0/axis_clk_conv_out/S_AXIS]
 connect_bd_intf_net [get_bd_intf_pins axis_rs_dec/M_AXIS] [get_bd_intf_pins ompif_message_receiver_0/ompif_message_receiver/msg_in]
 
-connect_bd_net [get_bd_pins ompif_message_receiver_0/ompif_message_receiver/clk] [get_bd_pins ${AIT::board::ompif_clk}] [get_bd_pins ompif_message_receiver_0/axis_clk_conv_in/m_axis_aclk] [get_bd_pins ompif_message_receiver_0/axis_clk_conv_out/s_axis_aclk]
-connect_bd_net [get_bd_pins ompif_message_receiver_0/ompif_message_receiver/rstn] [get_bd_pins ${AIT::board::ompif_rstn}] [get_bd_pins ompif_message_receiver_0/axis_clk_conv_in/m_axis_aresetn] [get_bd_pins ompif_message_receiver_0/axis_clk_conv_out/s_axis_aresetn]
+connect_bd_net [get_bd_pins ompif_message_receiver_0/ompif_message_receiver/clk] [get_bd_pins [dict get ${AIT::board} "ompif" "clk"]] [get_bd_pins ompif_message_receiver_0/axis_clk_conv_in/m_axis_aclk] [get_bd_pins ompif_message_receiver_0/axis_clk_conv_out/s_axis_aclk]
+connect_bd_net [get_bd_pins ompif_message_receiver_0/ompif_message_receiver/rstn] [get_bd_pins [dict get ${AIT::board} "ompif" "rstn"]] [get_bd_pins ompif_message_receiver_0/axis_clk_conv_in/m_axis_aresetn] [get_bd_pins ompif_message_receiver_0/axis_clk_conv_out/s_axis_aresetn]
 AIT::board::connect_clock [get_bd_pins ompif_message_receiver_0/axis_clk_conv_in/s_axis_aclk]
 connect_bd_net [get_bd_pins ompif_message_receiver_0/axis_clk_conv_in/s_axis_aresetn] [get_bd_pins ompif_message_receiver_0/axis_clk_conv_out/m_axis_aresetn] [get_bd_pins system_reset/clk_app_managed_rstn]
 AIT::board::connect_clock [get_bd_pins ompif_message_receiver_0/axis_clk_conv_out/m_axis_aclk]
 
-if {[dict get ${::AIT::address_map} "mem_type"] == "hbm"} {
+if {[dict get ${::AIT::board} "memory" "type"] eq "hbm"} {
     connect_bd_intf_net [get_bd_intf_pins axi_inter_msg_recv_bufwr/axi_register_slice_0/S_AXI] [get_bd_intf_pins ompif_message_receiver_0/ompif_message_receiver/bufwr]
     connect_bd_intf_net [get_bd_intf_pins axi_inter_msg_recv_memcpy/axi_register_slice_0/S_AXI] [get_bd_intf_pins ompif_message_receiver_0/ompif_message_receiver/memcpy]
 } else {
-    AIT::board::connect_to_axi_intf [get_bd_intf_pins ompif_message_receiver_0/ompif_message_receiver/bufwr] S "" [get_bd_pins $AIT::board::ompif_clk] [get_bd_pins $AIT::board::ompif_rstn]
-    AIT::board::connect_to_axi_intf [get_bd_intf_pins ompif_message_receiver_0/ompif_message_receiver/memcpy] S "" [get_bd_pins $AIT::board::ompif_clk] [get_bd_pins $AIT::board::ompif_rstn]
+    AIT::board::connect_to_axi_intf [get_bd_intf_pins ompif_message_receiver_0/ompif_message_receiver/bufwr] S "" [get_bd_pins [dict get ${AIT::board} "ompif" "clk"]] [get_bd_pins [dict get ${AIT::board} "ompif" "rstn"]]
+    AIT::board::connect_to_axi_intf [get_bd_intf_pins ompif_message_receiver_0/ompif_message_receiver/memcpy] S "" [get_bd_pins [dict get ${AIT::board} "ompif" "clk"]] [get_bd_pins [dict get ${AIT::board} "ompif" "rstn"]]
 }
 
-AIT::board::connect_to_axi_intf [get_bd_intf_pins ompif_message_receiver_0/ompif_message_receiver/cntrl] M "" [get_bd_pins ${AIT::board::ompif_clk}] [get_bd_pins ${AIT::board::ompif_rstn}]
+AIT::board::connect_to_axi_intf [get_bd_intf_pins ompif_message_receiver_0/ompif_message_receiver/cntrl] M "" [get_bd_pins [dict get ${AIT::board} "ompif" "clk"]] [get_bd_pins [dict get ${AIT::board} "ompif" "rstn"]]
 
 set accIDWidth [expr {max(int(ceil(log(${AIT::num_accs})/log(2))), 1)}]
 # We need to insert accID to the new_task_spawner TID AXI-Stream signal

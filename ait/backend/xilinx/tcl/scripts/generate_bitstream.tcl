@@ -44,7 +44,7 @@ open_bd_design [get_files ${::AIT::name_Design}.bd]
 validate_bd_design
 
 # Generate .bin file for Zynq and ZynqMP boards
-if {(${::AIT::arch_device} eq "zynq") || (${::AIT::arch_device} eq "zynqmp")} {
+if {([dict get ${::AIT::board} "arch" "device"] eq "zynq") || ([dict get ${::AIT::board} "arch" "device"] eq "zynqmp")} {
     set_property STEPS.WRITE_BITSTREAM.ARGS.BIN_FILE {true} [get_runs impl_1]
 } else {
     set_property STEPS.WRITE_BITSTREAM.ARGS.BIN_FILE {false} [get_runs impl_1]
@@ -65,7 +65,7 @@ if {[string match "*ERROR*" [get_property STATUS [get_runs impl_1]]]} {
 
 file mkdir ${::AIT::name_Project}/${::AIT::name_Project}.sdk
 
-if {(${::AIT::arch_device} eq "zynq") || (${::AIT::arch_device} eq "zynqmp")} {
+if {([dict get ${::AIT::board} "arch" "device"] eq "zynq") || ([dict get ${::AIT::board} "arch" "device"] eq "zynqmp")} {
     # Set basic platform properties
     set_property pfm_name [get_property board_part [current_project]] [get_files [current_bd_design].bd]
     set_property PFM.CLOCK {clk_app {id "0" is_default "true" proc_sys_reset "processor_system_reset" }} [get_bd_cells clock_generator]

@@ -1,7 +1,6 @@
 {
 	"name": "alveo_u250",
 	"chip_part": "xcu250-figd2104-2l-e",
-	"es": "",
 	"board_part": ["xilinx.com:au250"],
 
 	"arch": {
@@ -13,19 +12,11 @@
 		}
 	},
 
-	"frequency": {
-		"min": 5,
-		"max": 933
-	},
-
-	"mem": {
+	"memory": {
 		"type": "ddr",
 		"num_banks": 4,
-		"bank_size": "16G"
-	},
-
-	"address_map": {
-		"mem_base_addr": "0x0",
+		"bank_size": "0x400000000",
+		"base_addr": "0x0",
 		"ompss_base_addr": "0x0"
 	}
 }

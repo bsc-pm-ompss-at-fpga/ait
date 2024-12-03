@@ -1,7 +1,6 @@
 {
 	"name": "alveo_u200",
 	"chip_part": "xcu200-fsgd2104-2-e",
-	"es": "",
 	"board_part": ["xilinx.com:au200"],
 
 	"arch": {
@@ -13,19 +12,16 @@
 		}
 	},
 
-	"frequency": {
-		"min": 5,
-		"max": 933
-	},
-
-	"mem": {
+	"memory": {
 		"type": "ddr",
 		"num_banks": 4,
-		"bank_size": "16G"
+		"bank_size": "0x400000000",
+		"base_addr": "0x0",
+		"ompss_base_addr": "0x0"
 	},
 
-	"address_map": {
-		"mem_base_addr": "0x0",
-		"ompss_base_addr": "0x0"
+	"ompif": {
+		"clk": "clock_generator/clk_200",
+		"rstn": "system_reset/clk_200_managed_rstn"
 	}
 }

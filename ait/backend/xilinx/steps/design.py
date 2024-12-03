@@ -31,7 +31,7 @@ import sys
 import ait.backend.xilinx.utils.checkers as checkers
 from ait.frontend.config import BITINFO_VERSION,  \
     VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH
-from ait.frontend.utils import ait_path, decimalFromHumanReadable, msg
+from ait.frontend.utils import ait_path, json2tcl, msg
 
 script_folder = os.path.basename(os.path.dirname(os.path.realpath(__file__)))
 
@@ -79,6 +79,7 @@ def generate_Vivado_variables_tcl():
     vivado_project_variables += '\n' \
                                 + '\t# Bitstream variables\n' \
                                 + '\tvariable user_id {}\n'                     .format(str(user_id)) \
+                                + '\tvariable clockFreq {}\n'                   .format(str(args.clock)) \
                                 + '\tvariable interconOpt {}\n'                 .format(str(args.interconnect_opt + 1)) \
                                 + '\tvariable debugInterfaces {}\n'             .format(str(args.debug_intfs)) \
                                 + '\tvariable interconRegSlice_all {}\n'        .format(regslice_all) \
@@ -95,30 +96,9 @@ def generate_Vivado_variables_tcl():
                                 + '\tvariable ompif {}\n'                       .format(str(args.ompif)) \
                                 + '\tvariable disable_creator_ports {}\n'       .format(str(args.disable_creator_ports)) \
                                 + '\n' \
-                                + '\t# {} board variables\n'                    .format(board.name) \
-                                + '\tvariable board {}\n'                       .format(board.name) \
-                                + '\tvariable chipPart {}\n'                    .format(chip_part)
-    if board.board_part:
-        vivado_project_variables += '\tvariable boardPart [list {}]\n'          .format(' '.join(board.board_part))
+                                + '\t# {} board variables\n'                    .format(board.name)
 
-    vivado_project_variables += '\tvariable clockFreq {}\n'                     .format(str(args.clock)) \
-                                + '\tvariable arch_device {}\n'                 .format(board.arch.device)
-
-    if args.slr_slices is not None or args.floorplanning_constr is not None:
-        vivado_project_variables += '\tvariable board_slr_num {}\n'          .format(str(board.arch.slr.num)) \
-                                    + '\tvariable board_hwruntime_slr {}\n'  .format(str(board.arch.slr.hwruntime)) \
-                                    + '\tvariable board_memory_slr {}\n'     .format(str(board.arch.slr.memory))
-
-    vivado_project_variables += '\tvariable address_map [dict create]\n' \
-                                + '\tdict set address_map "ompss_base_addr" {}\n'  .format(board.address_map.ompss_base_addr) \
-                                + '\tdict set address_map "mem_base_addr" {}\n'    .format(board.address_map.mem_base_addr) \
-                                + '\tdict set address_map "mem_type" {}\n'         .format(board.mem.type)
-
-    if board.arch.device == 'zynq' or board.arch.device == 'zynqmp':
-        vivado_project_variables += '\tdict set address_map "mem_size" {}\n'         .format(hex(decimalFromHumanReadable(board.mem.size)))
-    elif board.arch.device == 'alveo':
-        vivado_project_variables += '\tdict set address_map "mem_num_banks" {}\n'    .format(str(board.mem.num_banks)) \
-                                    + '\tdict set address_map "mem_bank_size" {}\n'  .format(hex(decimalFromHumanReadable(board.mem.bank_size)))
+    vivado_project_variables += json2tcl(board, 'board', 1)
 
     vivado_project_variables += '\n' \
                                 + '\t# Hardware Instrumentation variables\n' \
@@ -165,7 +145,7 @@ def generate_Vivado_variables_tcl():
     # Generate acc instance list with SLR info
     acc_pl_dict = 'set acc_placement [dict create '
     for acc in accs[0:args.num_accs]:
-        if hasattr(acc, 'SLR'):
+        if 'SLR' in acc:
             acc_pl_dict += ' ' + str(acc.name) + ' [list'
             for slrnum in acc.SLR:
                 acc_pl_dict += ' ' + str(slrnum)
@@ -177,7 +157,7 @@ def generate_Vivado_variables_tcl():
     if (args.floorplanning_constr == 'acc') or (args.floorplanning_constr == 'all'):
         accConstrFiles = open(project_board_path + '/constraints/acc_floorplan.xdc', 'w')
         for acc in accs[0:args.num_accs]:
-            if hasattr(acc, 'SLR'):
+            if 'SLR' in acc:
                 instancesToPlace = len(acc.SLR)
                 if len(acc.SLR) > acc.num_instances:
                     instancesToPlace = acc.num_instances
@@ -351,7 +331,7 @@ def run_step(project_args):
     if os.path.exists(project_board_path + '/board_files'):
         init_script_str += '\nset_param board.repoPaths [list {}]'.format(project_board_path + '/board_files')
 
-    subprocess.run('echo {} > {}/vivado.tcl'.format(init_script_str, project_backend_path), shell=True, check=True)
+    subprocess.run('echo "{}" > {}/vivado.tcl'.format(init_script_str, project_backend_path), shell=True, check=True)
 
     p = subprocess.Popen('vivado -init -nojournal -nolog -notrace -mode batch -source '
                          + project_backend_path + '/tcl/scripts/generate_design.tcl',

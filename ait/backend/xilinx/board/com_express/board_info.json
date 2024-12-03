@@ -1,25 +1,15 @@
 {
 	"name": "com_express", 
 	"chip_part": "xc7z045ffg676-2",
-	"es": "",
-	"board_part": "",
 
 	"arch": {
 		"device": "zynq"
 	},
 
-	"frequency": {
-		"min": 0,
-		"max": 250
-	},
-
-	"mem": {
+	"memory": {
 		"type": "ddr",
-		"size": "1G"
-	},
-
-	"address_map": {
-		"mem_base_addr": "0x0",
+		"size": "0x40000000",
+		"base_addr": "0x0",
 		"ompss_base_addr": "0x80000000"
 	}
 }

@@ -32,11 +32,11 @@ namespace eval AIT {
             # If interconnect priorities are enabled, set PCIe master as max priority
             if {${::AIT::interconPriority}} {
                 set data_width 32
-                if {${::AIT::arch_device} eq "alveo"} {
+                if {[dict get ${::AIT::board} "arch" "device"] eq "alveo"} {
                     set data_width 512
-                } elseif {${::AIT::arch_device} eq "zynqmp"} {
+                } elseif {[dict get ${::AIT::board} "arch" "device"] eq "zynqmp"} {
                     set data_width 128
-                } elseif {${::AIT::arch_device} eq "zynq"} {
+                } elseif {[dict get ${::AIT::board} "arch" "device"] eq "zynq"} {
                     set data_width 64
                 }
 
@@ -113,7 +113,7 @@ namespace eval AIT {
             connect_bd_net [get_bd_pins system_reset/managed_reset_AND/Op2] [get_bd_pins system_reset/proc_sys_reset_clk_app/peripheral_aresetn]
             connect_bd_net [get_bd_pins system_reset/managed_reset_AND/res] [get_bd_pins system_reset/proc_sys_reset_clk_app_managed/ext_reset_in]
 
-            if {(${::AIT::arch_device} eq "zynq") || (${::AIT::arch_device} eq "zynqmp")} {
+            if {([dict get ${::AIT::board} "arch" "device"] eq "zynq") || ([dict get ${::AIT::board} "arch" "device"] eq "zynqmp")} {
                 connect_to_axi_intf [get_bd_intf_pins bitInfo_BRAM_Ctrl/S_AXI] M 1
                 connect_to_axi_intf [get_bd_intf_pins managed_reset/S_AXI] M 1
             } else {
@@ -203,12 +203,12 @@ namespace eval AIT {
         proc configure_address_map {} {
             AIT::utils::info_msg "Using generic configure_address_map procedure"
 
-            set mem_type [dict get ${::AIT::address_map} "mem_type"]
-            set base_addr [dict get ${::AIT::address_map} "mem_base_addr"]
+            set mem_type [dict get ${::AIT::board} "memory" "type"]
+            set base_addr [dict get ${::AIT::board} "memory" "base_addr"]
 
             # Assign memory address space
-            if {(${::AIT::arch_device} eq "zynq") || (${::AIT::arch_device} eq "zynqmp")} {
-                set mem_size [dict get ${::AIT::address_map} "mem_size"]
+            if {([dict get ${::AIT::board} "arch" "device"] eq "zynq") || ([dict get ${::AIT::board} "arch" "device"] eq "zynqmp")} {
+                set mem_size [dict get ${::AIT::board} "memory" "size"]
                 # Zynq DDR address segment name format: /bridge_to_host/S_AXI_HPX/HPX_DDR_LOWOCM
                 # ZynqMP DDR address segment name format: /bridge_to_host/S_AXI_GPY/HPX_DDR_LOW, being
                 # S_AXI_HPX the AXI interface used
@@ -223,9 +223,9 @@ namespace eval AIT {
                         exclude_bd_addr_seg [get_bd_addr_segs -regexp ".*/SEG_bridge_to_host_HP\[0-9\]_${excl_seg}"]
                     }
                 }
-            } elseif {${::AIT::arch_device} eq "alveo"} {
-                set bank_size [dict get ${::AIT::address_map} "mem_bank_size"]
-                set num_banks [dict get ${::AIT::address_map} "mem_num_banks"]
+            } elseif {[dict get ${::AIT::board} "arch" "device"] eq "alveo"} {
+                set bank_size [dict get ${::AIT::board} "memory" "bank_size"]
+                set num_banks [dict get ${::AIT::board} "memory" "num_banks"]
                 if {$mem_type eq "ddr"} {
                     set bank_num 0
                     # DDR address segment name format: /bridge_to_host/memory/DDR_X/DDR/C0_DDR4_MEMORY_MAP/C0_DDR4_ADDRESS_BLOCK, being
@@ -270,21 +270,21 @@ namespace eval AIT {
 
         # Placeholder for static register slices feature
         proc static_logic_register_slices {} {
-            AIT::utils::warning_msg "Board ${::AIT::board} has no support for static logic register slices"
+            AIT::utils::warning_msg "Board [dict get ${::AIT::board} "name"] has no support for static logic register slices"
         }
 
         # Placeholder for power monitor feature
         proc add_power_monitor {} {
-            AIT::utils::warning_msg "Board ${::AIT::board} has no support for power monitoring"
+            AIT::utils::warning_msg "Board [dict get ${::AIT::board} "name"] has no support for power monitoring"
         }
 
         # Placeholder for thermal monitor feature
         proc add_thermal_monitor {} {
-            AIT::utils::warning_msg "Board ${::AIT::board} has no support for thermal monitoring"
+            AIT::utils::warning_msg "Board [dict get ${::AIT::board} "name"] has no support for thermal monitoring"
         }
 
         proc add_ethernet_subsystem {} {
-            AIT::utils::error_msg "Board ${::AIT::board} has no support for ethernet"
+            AIT::utils::error_msg "Board [dict get ${::AIT::board} "name"] has no support for ethernet"
         }
 
         # Creates and connects a tree of interconnects that allows an arbitrary number of AXI-stream slaves to connect to up to 16 AXI-stream masters
@@ -532,11 +532,11 @@ namespace eval AIT {
 
                 if {${::AIT::interconPriority}} {
                     set data_width 32
-                    if {${::AIT::arch_device} eq "alveo"} {
+                    if {[dict get ${::AIT::board} "arch" "device"] eq "alveo"} {
                         set data_width 512
-                    } elseif {${::AIT::arch_device} eq "zynqmp"} {
+                    } elseif {[dict get ${::AIT::board} "arch" "device"] eq "zynqmp"} {
                         set data_width 128
-                    } elseif {${::AIT::arch_device} eq "zynq"} {
+                    } elseif {[dict get ${::AIT::board} "arch" "device"] eq "zynq"} {
                         set data_width 64
                     }
 
@@ -614,11 +614,11 @@ namespace eval AIT {
 
             if {($mode eq "S") && ${::AIT::interconPriority}} {
                 set data_width 32
-                if {${::AIT::arch_device} eq "alveo"} {
+                if {[dict get ${::AIT::board} "arch" "device"] eq "alveo"} {
                     set data_width 512
-                } elseif {${::AIT::arch_device} eq "zynqmp"} {
+                } elseif {[dict get ${::AIT::board} "arch" "device"] eq "zynqmp"} {
                     set data_width 128
-                } elseif {${::AIT::arch_device} eq "zynq"} {
+                } elseif {[dict get ${::AIT::board} "arch" "device"] eq "zynq"} {
                     set data_width 64
                 }
 
@@ -859,7 +859,7 @@ namespace eval AIT {
             foreach axi_intf $board_axi_inters {
                 foreach {mode name occupation capacity} $axi_intf {
                     if {$occupation == 0} {
-                        set mem_type [dict get ${::AIT::address_map} "mem_type"]
+                        set mem_type [dict get ${::AIT::board} "memory" "type"]
                         if {$mem_type eq "hbm"} {
                             set intf [regsub -all {(^S_AXI_|_Inter$)} $name ""]
                             set_property CONFIG.USER_SAXI_$intf {false} [get_bd_cells -hierarchical HBM]

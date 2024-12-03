@@ -26,7 +26,7 @@ import math
 import re
 import os
 
-from ait.frontend.utils import decimalFromHumanReadable, decimalToHumanReadable, msg
+from ait.frontend.utils import decimalToHumanReadable, msg
 
 
 class StoreChoiceValue(argparse.Action):
@@ -145,26 +145,23 @@ class ArgParser():
                 msg.error('Memory interleaving is not available on neither Zynq nor ZynqMP boards')
             elif args.memory_interleaving_stride & (args.memory_interleaving_stride - 1):
                 msg.error('Memory interleaving stride must be power of 2')
-            elif math.log2(decimalFromHumanReadable(board.mem.bank_size)) - math.log2(args.memory_interleaving_stride) < math.ceil(math.log2(board.mem.num_banks)):
-                msg.error('Max allowed interleaving stride in current board: ' + decimalToHumanReadable(2**(math.log2(decimalFromHumanReadable(board.mem.bank_size)) - math.ceil(math.log2(board.mem.num_banks))), 2))
+            elif math.log2(int(board.memory.bank_size, 0)) - math.log2(args.memory_interleaving_stride) < math.ceil(math.log2(board.memory.num_banks)):
+                msg.error('Max allowed interleaving stride in current board: ' + decimalToHumanReadable(2**(math.log2(int((board.memory.bank_size, 0))) - math.ceil(math.log2(board.memory.num_banks))), 2))
 
-        if args.datainterfaces_map and (board.arch.device == 'alveo' and board.mem.type == 'ddr'):
+        if args.datainterfaces_map and (board.arch.device == 'alveo' and board.memory.type == 'ddr'):
             msg.error('Custom data interface mapping is not available for DDR-based Alveo boards')
 
         if args.interconnect_priorities and (board.arch.device == 'zynq' or board.arch.device == 'zynqmp'):
             msg.error('Memory interconnect priorities are not available on neither Zynq nor ZynqMP boards')
-        elif args.interconnect_priorities and board.mem.type != 'ddr':
+        elif args.interconnect_priorities and board.memory.type != 'ddr':
             msg.error('Memory interconnect priorities are only available for DDR memories')
 
         if args.simplify_interconnection and (board.arch.device == 'zynq' or board.arch.device == 'zynqmp'):
             msg.error('Simplify memory interconnection is not available on neither Zynq nor ZynqMP boards')
-        elif args.simplify_interconnection and board.mem.type != 'ddr':
+        elif args.simplify_interconnection and board.memory.type != 'ddr':
             msg.error('Simplify memory interconnection is only available for DDR memories')
 
-        if not board.frequency.min <= args.clock <= board.frequency.max:
-            msg.error('Clock frequency requested (' + str(args.clock) + ' MHz) is not within the board range (' + str(board.frequency.min) + '-' + str(board.frequency.max) + ' MHz)')
-
-        if (args.slr_slices is not None or args.floorplanning_constr is not None) and not hasattr(board.arch, 'slr'):
+        if (args.slr_slices is not None or args.floorplanning_constr is not None) and 'slr' not in board.arch:
             msg.error('Use of placement constraints is only available for boards with SLRs')
 
         if args.power_monitor and (board.arch.device == 'zynq' or board.arch.device == 'zynqmp'):

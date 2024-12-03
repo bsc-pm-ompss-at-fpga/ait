@@ -1,25 +1,16 @@
 {
 	"name": "zybo",
 	"chip_part": "xc7z010clg400-1",
-	"es": "",
 	"board_part": ["digilentinc.com:zybo"],
 
 	"arch": {
 		"device": "zynq"
 	},
 
-	"frequency": {
-		"min": 1,
-		"max": 250
-	},
-
-	"mem": {
+	"memory": {
 		"type": "ddr",
-		"size": "512M"
-	},
-
-	"address_map": {
-		"mem_base_addr": "0x0",
+		"size": "0x20000000",
+		"base_addr": "0x0",
 		"ompss_base_addr": "0x80000000"
 	}
 }

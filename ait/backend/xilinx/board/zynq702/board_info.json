@@ -1,25 +1,16 @@
 {
 	"name": "zynq702",
 	"chip_part": "xc7z020clg484-1",
-	"es": "",
 	"board_part": ["xilinx.com:zc702"],
 
 	"arch": {
 		"device": "zynq"
 	},
 
-	"frequency": {
-		"min": 1,
-		"max": 250
-	},
-
-	"mem": {
+	"memory": {
 		"type": "ddr",
-		"size": "1G"
-	},
-
-	"address_map": {
-		"mem_base_addr": "0x0",
+		"size": "0x40000000",
+		"base_addr": "0x0",
 		"ompss_base_addr": "0x80000000"
 	}
 }

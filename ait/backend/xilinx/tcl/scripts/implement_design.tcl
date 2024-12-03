@@ -43,7 +43,7 @@ if {[string match "*ERROR*" [get_property STATUS [get_runs synth_1]]]} {
 open_bd_design [get_files ${::AIT::name_Design}.bd]
 
 # Generate .bin file for Zynq and ZynqMP boards
-if {(${::AIT::arch_device} eq "zynq") || (${::AIT::arch_device} eq "zynqmp")} {
+if {([dict get ${::AIT::board} "arch" "device"] eq "zynq") || ([dict get ${::AIT::board} "arch" "device"] eq "zynqmp")} {
     set_property STEPS.WRITE_BITSTREAM.ARGS.BIN_FILE {true} [get_runs impl_1]
 } else {
     set_property STEPS.WRITE_BITSTREAM.ARGS.BIN_FILE {false} [get_runs impl_1]
