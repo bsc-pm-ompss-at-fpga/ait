@@ -254,6 +254,7 @@ save_bd_design
 #### User IPs
 set accID 0
 set acc_axi_pins []
+set debug_intf_pins []
 
 foreach acc ${::AIT::accs} {
     lassign [split $acc ":"] accHash accNumInstances accName taskCreator
@@ -327,6 +328,11 @@ foreach acc ${::AIT::accs} {
 
             set hier_outter_axi_pin [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 $acc_hier/$pin_name]
             connect_bd_intf_net $hier_inner_axi_pin $hier_outter_axi_pin
+
+            # Mark AXI pin for debug
+            if {(${::AIT::debugInterfaces} eq "AXI") || (${::AIT::debugInterfaces} eq "both")} {
+                lappend debug_intf_pins $hier_outter_axi_pin
+            }
 
             lappend acc_axi_pins $hier_outter_axi_pin
         }
@@ -436,8 +442,8 @@ foreach acc ${::AIT::accs} {
 
         # Mark AXI-Stream pin for debug
         if {(${::AIT::debugInterfaces} eq "stream") || (${::AIT::debugInterfaces} eq "both")} {
-            AIT::AXIS::mark_debug [get_bd_intf_pins $acc_hier/inStream]
-            AIT::AXIS::mark_debug [get_bd_intf_pins $acc_hier/outStream]
+            lappend debug_intf_pins [get_bd_intf_pins $acc_hier/inStream]
+            lappend debug_intf_pins [get_bd_intf_pins $acc_hier/outStream]
         }
 
         # Increase global acc id
@@ -464,11 +470,6 @@ if {[llength $acc_axi_pins] > [AIT::board::get_available_axi_intfs]} {
 # Connect data pins to memory interconnection
 foreach axi_pin $acc_axi_pins {
     set intf [AIT::board::connect_to_axi_intf $axi_pin S]
-
-    # Mark AXI pin for debug
-    if {(${::AIT::debugInterfaces} eq "AXI") || (${::AIT::debugInterfaces} eq "both")} {
-        AIT::AXI::mark_debug $axi_pin
-    }
 }
 save_bd_design
 
@@ -513,27 +514,25 @@ if {(${::AIT::slr_slices} eq "static") || (${::AIT::slr_slices} eq "all")} {
 AIT::board::cleanup_bd
 save_bd_design
 
-# Mark custom interfaces for debug
-if {${::AIT::debugInterfaces} eq "custom"} {
-    foreach intf ${::AIT::debugInterfaces_list} {
-        set intf_pin [get_bd_intf_pins $intf]
-        if {[llength [get_bd_intf_pins -quiet -filter {VLNV =~ xilinx.com:interface:aximm_rtl:*} $intf_pin]]} {
-            AIT::AXI::mark_debug $intf_pin
-        } elseif {[llength [get_bd_intf_pins -quiet -filter {VLNV =~ xilinx.com:interface:axis_rtl:*} $intf_pin]]} {
-            AIT::AXIS::mark_debug $intf_pin
-        } else {
-            AIT::utils::error_msg "Interface type not recognized ($intf)"
-        }
-    }
-    save_bd_design
-}
-
 # Some boards require to configure IPs after acc instantiation
 AIT::board::after_acc_configuration
 
 # Propagate parameters
 validate_bd_design -force -quiet
 save_bd_design
+
+# Mark interfaces for debug
+if {${::AIT::debugInterfaces} eq "custom"} {
+    set debug_intf_pins ${::AIT::debugInterfaces_list}
+}
+foreach intf_pin $debug_intf_pins {
+    set intf_pin [get_bd_intf_pins -quiet $intf_pin]
+    if {[llength $intf_pin]} {
+        AIT::board::debug_intf $intf_pin
+    } else {
+        AIT::utils::error_msg "Debug interface not found ($intf_pin)"
+    }
+}
 
 # Wipe clean address map
 delete_bd_objs [get_bd_addr_segs]

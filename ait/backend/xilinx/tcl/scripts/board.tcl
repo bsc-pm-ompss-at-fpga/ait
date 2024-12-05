@@ -697,18 +697,33 @@ namespace eval AIT {
 
         # Returns a clk bd_pin object from where the input parameter clk_pin is generated
         proc get_source_clk_from_clk_pin {clk_pin} {
-            set clk_domain [get_property CONFIG.CLK_DOMAIN $clk_pin]
-            set source_clk [get_bd_pins -hierarchical -filter "(TYPE == clk) && (CONFIG.CLK_DOMAIN == $clk_domain) && (DIR == O)"]
-
-            return $source_clk
+            set clk_net [get_bd_nets -of_objects $clk_pin]
+            foreach net [get_bd_nets -of_objects [get_bd_pins -of_objects $clk_net]] {
+                set source_clk [get_bd_pins -quiet -filter "(TYPE == clk) && (DIR == O)" -of_objects $net]
+                if {[llength $source_clk]} {
+                    return $source_clk
+                }
+            }
+            AIT::utils::error_msg "No source found for clock $clk_pin"
         }
 
         # Returns a clk bd_pin object of the clock associated to the input parameter intf_pin
         proc get_clk_pin_from_intf_pin {intf_pin} {
-            set ip [get_bd_cells -of_objects $intf_pin]
-            set intf_name [get_property NAME $intf_pin]
-            set clk_pin [get_bd_pins -quiet -of_objects $ip -regexp -filter "(TYPE == clk) && (CONFIG.ASSOCIATED_BUSIF =~ .*$intf_name.*)"]
-
+            if {[get_property TYPE $intf_pin] eq "ip"} {
+                set ip [get_bd_cells -of_objects $intf_pin]
+                set intf_name [get_property NAME $intf_pin]
+                set clk_pin [get_bd_pins -quiet -of_objects $ip -regexp -filter "(TYPE == clk) && (CONFIG.ASSOCIATED_BUSIF =~ .*$intf_name.*)"]
+            } elseif {[get_property TYPE $intf_pin] eq "hier"} {
+                set inner_net [get_bd_intf_nets -boundary_type lower -of_objects $intf_pin]
+                set inner_intfs [get_bd_intf_pins -of_objects $inner_net]
+                if {[get_property MODE $intf_pin] eq "Master"} {
+                    set clk_pin [get_clk_pin_from_intf_pin [lindex $inner_intfs 0]]
+                } elseif {[get_property MODE $intf_pin] eq "Slave"} {
+                    set clk_pin [get_clk_pin_from_intf_pin [lindex $inner_intfs 1]]
+                }
+            } else {
+                AIT::utils::error_msg "Unknown interface [get_property TYPE $intf_pin]"
+            }
             return $clk_pin
         }
 
@@ -727,6 +742,60 @@ namespace eval AIT {
                 }
             }
             AIT::utils::error_msg "No valid reset net found for clock pin ($clk_pin)"
+        }
+
+        # Instantiate System ILA and connect to intf_pin
+        proc debug_intf {intf_pin} {
+            # Open debuginterfaces.txt file
+            set debugInterfaces_file [open ../${::AIT::name_Project}.debuginterfaces.txt "a"]
+            set intf_pin_type [get_property VLNV $intf_pin]
+            set intf_clk_pin [AIT::board::get_clk_pin_from_intf_pin $intf_pin]
+            set src_clk [get_property NAME [AIT::board::get_source_clk_from_clk_pin $intf_clk_pin]]
+
+            set_property HDL_ATTRIBUTE.DEBUG {true} [get_bd_intf_nets -of_objects $intf_pin]
+
+            # Look for an available System ILA
+            set found_ila ""
+            foreach ila_ip [get_bd_cells -filter "(VLNV =~ xilinx.com:ip:system_ila*) && (NAME =~ system_ila_${src_clk}*)"] {
+                if {[get_property CONFIG.C_NUM_MONITOR_SLOTS $ila_ip] < 16} {
+                    set found_ila $ila_ip
+                    break
+                }
+            }
+
+            # If found available System ILA, increment used slots
+            # If not, instantiate and connect a new one
+            if {[llength $found_ila]} {
+                set slot_num [get_property CONFIG.C_NUM_MONITOR_SLOTS $ila_ip]
+                set_property -dict [list \
+                    CONFIG.C_NUM_MONITOR_SLOTS [expr {$slot_num + 1}] \
+                    CONFIG.C_SLOT_${slot_num}_INTF_TYPE [get_property VLNV $intf_pin] \
+                 ] $ila_ip
+            } else {
+                set num_ila [llength [get_bd_cells -filter {VLNV =~ xilinx.com:ip:system_ila:*} *system_ila_${src_clk}*]]
+                set ila_ip [create_bd_cell -vlnv xilinx.com:ip:system_ila:* system_ila_${src_clk}_${num_ila}]
+                set slot_num 0
+                set_property -dict [list \
+                    CONFIG.C_NUM_MONITOR_SLOTS [expr {$slot_num + 1}] \
+                    CONFIG.C_SLOT_${slot_num}_INTF_TYPE [get_property VLNV $intf_pin] \
+                 ] $ila_ip
+                AIT::board::connect_clock [get_bd_pins ${ila_ip}/clk]
+                AIT::board::connect_reset [get_bd_pins ${ila_ip}/resetn] [AIT::board::get_rst_net_from_clk_pin [get_bd_pins ${ila_ip}/clk]]
+            }
+
+            # Connect intf_pin to its corresponding port, depending on the type
+            # NOTE: We can expand this to support other types (e.g. BRAM, GPIO, etc.)
+            if {[string match "xilinx.com:interface:aximm_rtl:*" [get_property VLNV $intf_pin]]} {
+                connect_bd_intf_net $intf_pin [get_bd_intf_pins $ila_ip/SLOT_${slot_num}_AXI]
+            } elseif {[string match "xilinx.com:interface:axis_rtl:*" [get_property VLNV $intf_pin]]} {
+                connect_bd_intf_net $intf_pin [get_bd_intf_pins $ila_ip/SLOT_${slot_num}_AXIS]
+            } else {
+                AIT::utils::error_msg "Debug interface type ($intf_pin_type) not supported for interface $intf_pin"
+            }
+
+            # Add a line to debuginterfaces.txt
+            puts $debugInterfaces_file "$intf_pin"
+            close $debugInterfaces_file
         }
 
         # Sets target frequency, retrieves actual achieved frequency and returns it

@@ -144,26 +144,5 @@ namespace eval AIT {
                 connect_bd_net [get_bd_pins ${accName}_${instanceNum}/${intf_name}_awaddr_intlv] [get_bd_pins $awaddrInterleaver/out_addr]
             }
         }
-
-        # Mark AXI interface for debug
-        proc mark_debug {intf_pin} {
-            # Open debuginterfaces.txt file
-            set debugInterfaces_file [open ../${::AIT::name_Project}.debuginterfaces.txt "a"]
-            set intf_pin_net [get_bd_intf_nets -of_objects $intf_pin]
-
-            set_property HDL_ATTRIBUTE.DEBUG {true} $intf_pin_net
-
-            #FIXME: Vivado fails to create a new ILA when surpassing max of 16 probes
-            if {[llength [get_bd_intf_nets -filter {HDL_ATTRIBUTE.DEBUG == true}]] > 16} {
-                AIT::utils::warning_msg "Maximum number of debug probes reached ([llength [get_bd_intf_nets -filter {HDL_ATTRIBUTE.DEBUG == true}]] > 16). Interface $intf_pin will not be connected to an ILA"
-            } else {
-
-                apply_bd_automation -rule xilinx.com:bd_rule:debug -dict [list [get_bd_intf_nets [get_bd_intf_nets -of_objects $intf_pin]] {AXI_R_ADDRESS "Data and Trigger" AXI_R_DATA "Data and Trigger" AXI_W_ADDRESS "Data and Trigger" AXI_W_DATA "Data and Trigger" AXI_W_RESPONSE "Data and Trigger" CLK_SRC clock_generator/clk_app SYSTEM_ILA "Auto" APC_EN "0" }]
-
-                # Add a line to debuginterfaces.txt
-                puts $debugInterfaces_file "$intf_pin"
-                close $debugInterfaces_file
-            }
-        }
     }
 }
