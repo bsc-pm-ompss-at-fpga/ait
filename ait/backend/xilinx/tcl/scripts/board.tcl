@@ -709,20 +709,21 @@ namespace eval AIT {
 
         # Returns a clk bd_pin object of the clock associated to the input parameter intf_pin
         proc get_clk_pin_from_intf_pin {intf_pin} {
-            if {[get_property TYPE $intf_pin] eq "ip"} {
-                set ip [get_bd_cells -of_objects $intf_pin]
-                set intf_name [get_property NAME $intf_pin]
-                set clk_pin [get_bd_pins -quiet -of_objects $ip -regexp -filter "(TYPE == clk) && (CONFIG.ASSOCIATED_BUSIF =~ .*$intf_name.*)"]
-            } elseif {[get_property TYPE $intf_pin] eq "hier"} {
-                set inner_net [get_bd_intf_nets -boundary_type lower -of_objects $intf_pin]
-                set inner_intfs [get_bd_intf_pins -of_objects $inner_net]
-                if {[get_property MODE $intf_pin] eq "Master"} {
-                    set clk_pin [get_clk_pin_from_intf_pin [lindex $inner_intfs 0]]
-                } elseif {[get_property MODE $intf_pin] eq "Slave"} {
-                    set clk_pin [get_clk_pin_from_intf_pin [lindex $inner_intfs 1]]
+            set ip [get_bd_cells -of_objects $intf_pin]
+            set intf_name [get_property NAME $intf_pin]
+            set clk_pin [get_bd_pins -quiet -of_objects $ip -regexp -filter "(TYPE == clk) && (CONFIG.ASSOCIATED_BUSIF =~ .*$intf_name.*)"]
+            if {[llength $clk_pin] eq 0} {
+                if {[get_property TYPE $intf_pin] eq "hier"} {
+                    set inner_net [get_bd_intf_nets -boundary_type lower -of_objects $intf_pin]
+                    set inner_intfs [get_bd_intf_pins -of_objects $inner_net]
+                    if {[get_property MODE $intf_pin] eq "Master"} {
+                        set clk_pin [get_clk_pin_from_intf_pin [lindex $inner_intfs 0]]
+                    } elseif {[get_property MODE $intf_pin] eq "Slave"} {
+                        set clk_pin [get_clk_pin_from_intf_pin [lindex $inner_intfs 1]]
+                    }
+                } else {
+                    AIT::utils::error_msg "Unknown interface [get_property TYPE $intf_pin]"
                 }
-            } else {
-                AIT::utils::error_msg "Unknown interface [get_property TYPE $intf_pin]"
             }
             return $clk_pin
         }
