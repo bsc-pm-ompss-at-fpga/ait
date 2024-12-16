@@ -32,16 +32,16 @@ class PostInstallCommand(install):
 
 
 tag = subprocess.run('git describe --tags --exact-match HEAD', shell=True, capture_output=True, encoding='utf-8').stdout.strip()
-dirty = subprocess.run("git diff --quiet HEAD || echo '-dirty'", shell=True, capture_output=True, encoding='utf-8').stdout.strip()
+dirty = subprocess.run('git diff', shell=True, capture_output=True)
 commit_hash = subprocess.run('git show -s --format=%h', shell=True, capture_output=True, encoding='utf-8').stdout.strip()
 commit_file = subprocess.run('cat COMMIT', shell=True, capture_output=True, encoding='utf-8').stdout.strip()
 
 version_commit = ''
-if dirty:
+if dirty.stdout and not dirty.returncode:
     if commit_hash:
-        version_commit = 'commit: ' + commit_hash + dirty
+        version_commit = 'commit: ' + commit_hash + '-dirty'
     elif commit_file:
-        version_commit = 'commit: ' + commit_file + dirty
+        version_commit = 'commit: ' + commit_file + '-dirty'
 else:
     if tag:
         version_commit = tag
