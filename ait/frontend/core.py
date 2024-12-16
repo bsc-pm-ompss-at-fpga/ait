@@ -29,6 +29,7 @@ import subprocess
 import sys
 import time
 
+from ait.frontend.config import LONG_VERSION
 from ait.frontend.parser import ArgParser
 from ait.frontend.utils import Accelerator, ait_path, backends, msg, secondsToHumanReadable
 
@@ -193,7 +194,7 @@ def main():
     project_path = os.path.normpath(os.path.realpath(args.dir + '/' + args.name + '_ait'))
 
     sys.stdout = Logger(project_path)
-    sys.stdout.log.write(os.path.basename(sys.argv[0]) + ' ' + ' '.join(sys.argv[1:]) + '\n\n')
+    sys.stdout.log.write(LONG_VERSION + '\n' + os.path.basename(sys.argv[0]) + ' ' + ' '.join(sys.argv[1:]) + '\n\n')
 
     get_accelerators(project_path)
 
