@@ -10,12 +10,12 @@ maintainers = [
     { name = "OmpSs@FPGA team", email = "ompss-at-fpga-support@bsc.es" }
 ]
 authors = [
-    { name = "Miquel Vidal Piñol", email = "miquel.vidal@bsc.es" },
+    { name = "Miquel Vidal i Pinyol", email = "miquel.vidal@bsc.es" },
     { name = "Antonio Filgueras Izquierdo", email = "antonio.filgueras@bsc.es" },
     { name = "Juan Miguel de Haro Ruiz", email = "juan.deharoruiz@bsc.es" },
     { name = "Jaume Bosch Pons", email = "jaume.bosch@bsc.es" }
 ]
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
@@ -24,11 +24,11 @@ classifiers = [
     "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
     "Operating System :: POSIX",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Programming Language :: Tcl",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Electronic Design Automation (EDA)",
@@ -38,7 +38,7 @@ dynamic = ["version"]
 
 [project.urls]
 Homepage = "https://pm.bsc.es/ompss-at-fpga"
-Documentation = "https://pm.bsc.es/ftp/ompss-at-fpga/doc/user-guide-git/ait-options.html"
+Documentation = "https://pm.bsc.es/ftp/ompss-2-at-fpga/doc/user-guide-git/ait-options.html"
 Source = "https://github.com/bsc-pm-ompss-at-fpga/ait"
 
 [project.scripts]
