@@ -650,7 +650,7 @@ append bitInfo_coe [string range $addr_thermal_monitor 2 9]\n
 # Calculate the bitinfo offset of each variable-length field
 # Variable-length fields are appended next to the fixed-length fields
 set xtasks_config_acc_size 44
-set num_static_fields 34
+set num_static_fields 35
 set dynamic_field_sizes [list [expr {$xtasks_config_acc_size*[llength ${::AIT::accs}]}] [string length ${::AIT::ait_call}] [string length $hwruntime_vlnv] [string length ${::AIT::bitInfo_note}]]
 set dynamic_field_offsets [list]
 set offset $num_static_fields
@@ -667,6 +667,21 @@ for {set i 0} {$i < [llength $dynamic_field_sizes]} {incr i} {
     append bitInfo_coe [format %08X [expr {[lindex $dynamic_field_sizes $i] | ([lindex $dynamic_field_offsets $i] << 16)}]]\n
 }
 append bitInfo_coe [format %08x ${::AIT::user_id}]\n
+
+# Set the board memory for discrete devices
+if {${::AIT::arch_device} eq "alveo"} {
+    if {[dict exists ${::AIT::address_map} "mem_size"]} {
+        set size [dict get ${::AIT::address_map} "mem_size"]
+    } else {
+        set size [expr {[dict get ${::AIT::address_map} "mem_bank_size"]*[dict get ${::AIT::address_map} "mem_num_banks"]}]
+    }
+    set size [expr {$size/2**30}]
+} else {
+    set size 0
+}
+append bitInfo_coe [format %08x $size]\n
+
+# Variable-length fields
 append bitInfo_coe $xtasks_bin_str
 append bitInfo_coe [AIT::utils::ascii2hex ${::AIT::ait_call}]
 append bitInfo_coe [AIT::utils::ascii2hex $hwruntime_vlnv]
