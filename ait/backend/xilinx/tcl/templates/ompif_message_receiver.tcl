@@ -1,5 +1,5 @@
 set addr_width [AIT::utils::get_addr_width]
-set mbuffer_prefix [expr 2**($addr_width-30)-1]
+set mbuffer_prefix [expr {2**($addr_width - 30) - 1}]
 
 create_bd_cell -type hier ompif_message_receiver_0
 create_bd_cell -type ip -vlnv bsc:ompif:message_receiver_wrapper ompif_message_receiver_0/ompif_message_receiver

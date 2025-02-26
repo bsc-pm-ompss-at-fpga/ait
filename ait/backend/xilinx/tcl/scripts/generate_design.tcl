@@ -234,7 +234,7 @@ AIT::board::connect_clock [get_bd_pins Hardware_Runtime/clk]
 AIT::board::connect_reset [get_bd_pins Hardware_Runtime/rstn] [get_bd_pins /system_reset/clk_app_rstn]
 AIT::board::connect_reset [get_bd_pins Hardware_Runtime/managed_rstn] [get_bd_pins system_reset/clk_app_managed_rstn]
 
-if {${::AIT::hwruntime_interconnect} == "centralized"} {
+if {${::AIT::hwruntime_interconnect} eq "centralized"} {
     set hwruntime_interconnect_script "tcl/scripts/hwr_central_interconnect.tcl"
 } else {
     set hwruntime_interconnect_script "tcl/scripts/hwr_dist_interconnect.tcl"
@@ -259,7 +259,7 @@ set debug_intf_pins []
 foreach acc ${::AIT::accs} {
     lassign [split $acc ":"] accHash accNumInstances accName taskCreator
 
-    if {$accName == "ompif_message_sender"} {
+    if {$accName eq "ompif_message_sender"} {
         if {[catch {source "tcl/templates/ompif_message_sender.tcl"}]} {
             AIT::utils::error_msg "Failed sourcing ompif_message_sender template"
         }
@@ -269,7 +269,7 @@ foreach acc ${::AIT::accs} {
 
         incr accID
         continue
-    } elseif {$accName == "ompif_message_receiver"} {
+    } elseif {$accName eq "ompif_message_receiver"} {
         if {[catch {source "tcl/templates/ompif_message_receiver.tcl"}]} {
             AIT::utils::error_msg "Failed sourcing ompif_message_receiver template"
         }

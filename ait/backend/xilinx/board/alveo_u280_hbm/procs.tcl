@@ -101,7 +101,7 @@ namespace eval AIT {
             create_bd_cell -type ip -vlnv xilinx.com:ip:axi_register_slice $hier_name/axi_register_slice_2
             create_bd_cell -type ip -vlnv xilinx.com:ip:axi_protocol_converter $hier_name/axi_protocol_convert_0
 
-            if {$rw_mode == "read"} {
+            if {$rw_mode eq "read"} {
                 set_property CONFIG.READ_WRITE_MODE.VALUE_SRC USER [get_bd_cells $hier_name/axi_clock_converter_0]
                 set_property CONFIG.READ_WRITE_MODE READ_ONLY [get_bd_cells $hier_name/axi_clock_converter_0]
                 set_property -dict [list CONFIG.READ 1 CONFIG.WRITE 0] [get_bd_cells $hier_name/axiu_dwidth_downsize_0]
@@ -113,7 +113,7 @@ namespace eval AIT {
                 set_property -dict [list CONFIG.READ_WRITE_MODE READ_ONLY CONFIG.REG_AR 1] [get_bd_cells $hier_name/axi_register_slice_2]
                 set_property CONFIG.READ_WRITE_MODE.VALUE_SRC USER [get_bd_cells $hier_name/axi_protocol_convert_0]
                 set_property CONFIG.READ_WRITE_MODE READ_ONLY [get_bd_cells $hier_name/axi_protocol_convert_0]
-            } elseif {$rw_mode == "write"} {
+            } elseif {$rw_mode eq "write"} {
                 set_property CONFIG.READ_WRITE_MODE.VALUE_SRC USER [get_bd_cells $hier_name/axi_clock_converter_0]
                 set_property CONFIG.READ_WRITE_MODE WRITE_ONLY [get_bd_cells $hier_name/axi_clock_converter_0]
                 set_property -dict [list CONFIG.READ 0 CONFIG.WRITE 1] [get_bd_cells $hier_name/axiu_dwidth_downsize_0]

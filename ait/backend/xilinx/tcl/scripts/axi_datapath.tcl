@@ -34,9 +34,9 @@ namespace eval AIT {
 
                 lassign [split $num_pipeline_stages ':'] num_master_stages num_middle_stages num_slave_stages
                 lassign [split ${::AIT::regslice_pipeline_stages} ':'] num_default_master_stages num_default_middle_stages num_default_slave_stages
-                if {$num_master_stages == ""} { set num_master_stages $num_default_master_stages }
-                if {$num_middle_stages == ""} { set num_middle_stages $num_default_middle_stages }
-                if {$num_slave_stages == ""} { set num_slave_stages $num_default_slave_stages }
+                if {$num_master_stages eq ""} { set num_master_stages $num_default_master_stages }
+                if {$num_middle_stages eq ""} { set num_middle_stages $num_default_middle_stages }
+                if {$num_slave_stages eq ""} { set num_slave_stages $num_default_slave_stages }
 
                 set axiRegSlice [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_register_slice ${ip_cell}/${prefix}${intf_name}_regslice_slr_${slr_master}_${slr_slave}]
                 set_property -dict [ list \
@@ -48,7 +48,7 @@ namespace eval AIT {
                     CONFIG.REG_W {15} \
                  ] $axiRegSlice
 
-                if {$num_master_stages == "auto"} {
+                if {$num_master_stages eq "auto"} {
                     set_property CONFIG.USE_AUTOPIPELINING {1} $axiRegSlice
                 } else {
                     # Decrement number of stages by one as the IP already assumes it
@@ -96,24 +96,24 @@ namespace eval AIT {
                     lassign [get_bd_intf_pins -of_objects [get_bd_intf_nets -boundary_type lower -of_objects $intf_pin]] master_intf slave_intf
                     delete_bd_objs [get_bd_intf_nets -boundary_type lower -of_objects $intf_pin]
 
-                    if {[get_property MODE $intf_pin] == "Master"} {
+                    if {[get_property MODE $intf_pin] eq "Master"} {
                         connect_bd_intf_net [get_bd_intf_pins $axiRegSlice/M_AXI] $slave_intf
                         set intf_pin $master_intf
-                    } elseif {[get_property MODE $intf_pin] == "Slave"} {
+                    } elseif {[get_property MODE $intf_pin] eq "Slave"} {
                         connect_bd_intf_net $master_intf [get_bd_intf_pins $axiRegSlice/S_AXI]
                         set intf_pin $slave_intf
                     }
                 }
 
                 # Connect interface pin accordingly and look for its clock and reset
-                if {[get_property MODE $intf_pin] == "Master"} {
+                if {[get_property MODE $intf_pin] eq "Master"} {
                     connect_bd_intf_net $intf_pin [get_bd_intf_pins $axiRegSlice/S_AXI]
                     set new_intf_pin [get_bd_intf_pins $axiRegSlice/M_AXI]
 
                     # Set READ_WRITE_MODE according to the master interface
                     # Vivado propagates this, but we need this early in case we're using interleavers
                     set_property CONFIG.READ_WRITE_MODE [get_property CONFIG.READ_WRITE_MODE $intf_pin] $axiRegSlice
-                } elseif {[get_property MODE $intf_pin] == "Slave"} {
+                } elseif {[get_property MODE $intf_pin] eq "Slave"} {
                     connect_bd_intf_net [get_bd_intf_pins $axiRegSlice/M_AXI] $intf_pin
                     set new_intf_pin [get_bd_intf_pins $axiRegSlice/S_AXI]
                 }
