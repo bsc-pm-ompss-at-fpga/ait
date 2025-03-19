@@ -395,7 +395,7 @@ foreach acc ${::AIT::accs} {
                 CONFIG.AXI_ADDR_WIDTH {64} \
                 CONFIG.COUNTER_WIDTH {64} \
                 CONFIG.FIFO_LEN {32} \
-                CONFIG.MAX_EVENT_BUF_LEN {128} \
+                CONFIG.NUM_EVENTS_BITS {32} \
              ] $acc_hier_adapter_instr
 
             connect_bd_intf_net [get_bd_intf_pins -regexp $acc_ip/mcxx_instr(_V)*?] [get_bd_intf_pins $acc_hier/Adapter_instr/event_in]
