@@ -128,8 +128,8 @@ namespace eval AIT {
             }
         }
 
-        proc add_newtask_spawner {acc_spawnInStream hier_inStream hier_outStream accName instanceNum} {
-            set newtask_spawner [create_bd_cell -type ip -vlnv bsc:ompss:new_task_spawner_wrapper:1.0 ${accName}_${instanceNum}/new_task_spawner]
+        proc add_newtask_spawner {acc_spawnInStream hier_inStream hier_outStream accName instanceNum imp} {
+            set newtask_spawner [create_bd_cell -type ip -vlnv bsc:ompss:newtask_spawner:2.0 ${accName}_${instanceNum}/new_task_spawner]
             set clk_pin [AIT::board::get_clk_pin_from_intf_pin $acc_spawnInStream]
             AIT::board::connect_clock [get_bd_pins $newtask_spawner/clk] $clk_pin
             AIT::board::connect_reset [get_bd_pins $newtask_spawner/rstn] [AIT::board::get_rst_net_from_clk_pin $clk_pin]
@@ -141,6 +141,19 @@ namespace eval AIT {
             AIT::board::connect_clock [get_bd_pins $tid_demux/clk] [get_bd_pins ${accName}_${instanceNum}/aclk]
             connect_bd_intf_net [get_bd_intf_pins $tid_demux/m0] $hier_inStream
             connect_bd_intf_net [get_bd_intf_pins $tid_demux/m1] [get_bd_intf_pins $newtask_spawner/ack_in]
+
+            # Activate IMP if necessary
+            set_property -dict [list \
+                CONFIG.IMP $imp \
+                CONFIG.MAX_ARGS_PER_TASK ${::AIT::max_args_per_task} \
+                CONFIG.MAX_DEPS_PER_TASK ${::AIT::max_deps_per_task} \
+                CONFIG.MAX_COPS_PER_TASK ${::AIT::max_copies_per_task} \
+                CONFIG.MAX_OWNS_PER_TASK ${::AIT::max_deps_per_task} \
+            ] $newtask_spawner
+
+            if {$imp} {
+                connect_bd_net [get_bd_pins ${accName}_${instanceNum}/new_task_spawner/ompif_rank] [get_bd_pins cluster_rank_slice/Dout]
+            }
 
             return [list [get_bd_intf_pins $newtask_spawner/stream_out] [get_bd_intf_pins $tid_demux/s]]
         }

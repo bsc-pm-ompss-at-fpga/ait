@@ -148,6 +148,10 @@ def get_accelerators(project_path):
             if acc.ompif:
                 args.ompif = True
 
+            # If the json does not have IMP field, by default set it to False
+            if 'imp' not in acc_config:
+                acc.imp = False
+
     if args.num_accs == 0:
         msg.error('No accelerators found')
     elif args.num_acc_creators == 0:

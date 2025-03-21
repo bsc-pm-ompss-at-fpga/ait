@@ -257,7 +257,7 @@ set acc_axi_pins []
 set debug_intf_pins []
 
 foreach acc ${::AIT::accs} {
-    lassign [split $acc ":"] accHash accNumInstances accName taskCreator
+    lassign [split $acc ":"] accHash accNumInstances accName taskCreator imp
 
     if {$accName eq "ompif_message_sender"} {
         if {[catch {source "tcl/templates/ompif_message_sender.tcl"}]} {
@@ -364,7 +364,7 @@ foreach acc ${::AIT::accs} {
                 set acc_spawnInStream [AIT::AXIS::add_stream_adapter [get_bd_pins -regexp $acc_ip/mcxx_spawnInPort(_V)*?] $accName $instanceNum]
             }
 
-            lassign [AIT::AXIS::add_newtask_spawner $acc_spawnInStream $hier_inStream $hier_outStream $accName $instanceNum] hier_outStream hier_inStream
+            lassign [AIT::AXIS::add_newtask_spawner $acc_spawnInStream $hier_inStream $hier_outStream $accName $instanceNum $imp] hier_outStream hier_inStream
         }
 
         set hier_outStream [AIT::AXIS::add_tid_subset_converter $hier_outStream $accID $accName $instanceNum]

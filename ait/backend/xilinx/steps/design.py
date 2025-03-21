@@ -137,7 +137,7 @@ def generate_Vivado_variables_tcl():
                                 + '\tset accs [list'
 
     for acc in accs[0:args.num_accs]:
-        acc_name = str(acc.type) + ':' + str(acc.num_instances) + ':' + acc.name + ':' + str(acc.task_creation)
+        acc_name = str(acc.type) + ':' + str(acc.num_instances) + ':' + acc.name + ':' + str(acc.task_creation) + ':' + ('1' if acc.imp else '0')
         vivado_project_variables += ' ' + acc_name
 
     vivado_project_variables += '\t]\n'
