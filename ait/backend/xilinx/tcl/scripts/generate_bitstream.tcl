@@ -56,7 +56,7 @@ AIT::utils::info_msg "Launching bitstream run with $num_jobs jobs"
 reset_runs impl_1 -from_step write_bitstream
 launch_runs impl_1 -to_step write_bitstream -jobs $num_jobs
 
-wait_on_run impl_1
+wait_on_runs impl_1
 
 # Check if bitstream generation finished correctly
 if {[string match "*ERROR*" [get_property STATUS [get_runs impl_1]]]} {

@@ -53,7 +53,7 @@ AIT::utils::info_msg "Launching implementation run with $num_jobs jobs"
 
 # Launch and wait for implementation
 launch_runs impl_1 -jobs $num_jobs
-wait_on_run impl_1
+wait_on_runs impl_1
 
 # Check if implementation finished correctly
 if {[string match "*ERROR*" [get_property STATUS [get_runs impl_1]]]} {
