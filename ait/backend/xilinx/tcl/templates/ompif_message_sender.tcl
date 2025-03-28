@@ -33,6 +33,13 @@ AIT::board::connect_to_axi_intf [get_bd_intf_pins ompif_message_sender_0/ompif_m
 
 if {[dict get ${::AIT::board} "memory" "type"] eq "hbm"} {
     connect_bd_intf_net [get_bd_intf_pins ompif_message_sender_0/ompif_message_sender/moMEM] [get_bd_intf_pins axi_inter_msg_send/axi_register_slice_0/S_AXI]
+
+    if {${::AIT::interleaving_stride} ne "None"} {
+        # Sender is read-only
+        set araddrInterleaver [create_bd_cell -type module -reference bsc_axiu_addrInterleaver ompif_message_sender_0/moMEM_araddrInterleaver]
+        connect_bd_net [get_bd_pins ompif_message_sender_0/ompif_message_sender/moMEM_araddr] [get_bd_pins $araddrInterleaver/in_addr]
+        connect_bd_net [get_bd_pins $araddrInterleaver/out_addr] [get_bd_pins axi_inter_msg_send/axi_register_slice_0/S_AXI_araddr]
+    }
 } else {
     AIT::board::connect_to_axi_intf [get_bd_intf_pins ompif_message_sender_0/ompif_message_sender/moMEM] S "" [get_bd_pins [dict get ${AIT::board} "ompif" "clk"]] [get_bd_pins [dict get ${AIT::board} "ompif" "rstn"]]
 }

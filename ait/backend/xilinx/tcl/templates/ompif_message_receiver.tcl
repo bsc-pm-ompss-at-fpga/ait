@@ -31,6 +31,21 @@ AIT::board::connect_clock [get_bd_pins ompif_message_receiver_0/axis_clk_conv_ou
 if {[dict get ${::AIT::board} "memory" "type"] eq "hbm"} {
     connect_bd_intf_net [get_bd_intf_pins axi_inter_msg_recv_bufwr/axi_register_slice_0/S_AXI] [get_bd_intf_pins ompif_message_receiver_0/ompif_message_receiver/bufwr]
     connect_bd_intf_net [get_bd_intf_pins axi_inter_msg_recv_memcpy/axi_register_slice_0/S_AXI] [get_bd_intf_pins ompif_message_receiver_0/ompif_message_receiver/memcpy]
+
+    if {${::AIT::interleaving_stride} ne "None"} {
+        # quick and dirty interleavers
+        # bufwr ins write only
+        set bufwr_addrInterleaver [create_bd_cell -type module -reference bsc_axiu_addrInterleaver ompif_message_receiver_0/bufwr_addrInterleaver]
+        connect_bd_net [get_bd_pins ompif_message_receiver_0/ompif_message_receiver/bufwr_awaddr] [get_bd_pins $bufwr_addrInterleaver/in_addr]
+        connect_bd_net [get_bd_pins $bufwr_addrInterleaver/out_addr] [get_bd_pins axi_inter_msg_recv_bufwr/axi_register_slice_0/S_AXI_awaddr]
+        #memcpy is RW
+        set memcpy_r_addrInterleaver [create_bd_cell -type module -reference bsc_axiu_addrInterleaver ompif_message_receiver_0/memcpy_r_addrInterleaver]
+        connect_bd_net [get_bd_pins ompif_message_receiver_0/ompif_message_receiver/memcpy_araddr] [get_bd_pins $memcpy_r_addrInterleaver/in_addr]
+        connect_bd_net [get_bd_pins $memcpy_r_addrInterleaver/out_addr] [get_bd_pins axi_inter_msg_recv_memcpy/axi_register_slice_0/S_AXI_araddr]
+        set memcpy_w_addrInterleaver [create_bd_cell -type module -reference bsc_axiu_addrInterleaver ompif_message_receiver_0/memcpy_w_addrInterleaver]
+        connect_bd_net [get_bd_pins ompif_message_receiver_0/ompif_message_receiver/memcpy_awaddr] [get_bd_pins $memcpy_w_addrInterleaver/in_addr]
+        connect_bd_net [get_bd_pins $memcpy_w_addrInterleaver/out_addr] [get_bd_pins axi_inter_msg_recv_memcpy/axi_register_slice_0/S_AXI_awaddr]
+    }
 } else {
     AIT::board::connect_to_axi_intf [get_bd_intf_pins ompif_message_receiver_0/ompif_message_receiver/bufwr] S "" [get_bd_pins [dict get ${AIT::board} "ompif" "clk"]] [get_bd_pins [dict get ${AIT::board} "ompif" "rstn"]]
     AIT::board::connect_to_axi_intf [get_bd_intf_pins ompif_message_receiver_0/ompif_message_receiver/memcpy] S "" [get_bd_pins [dict get ${AIT::board} "ompif" "clk"]] [get_bd_pins [dict get ${AIT::board} "ompif" "rstn"]]
