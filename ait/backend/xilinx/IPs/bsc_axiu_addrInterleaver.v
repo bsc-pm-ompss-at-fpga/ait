@@ -51,15 +51,10 @@ module bsc_axiu_addrInterleaver
     // Only interleave addresses within DDR address space
     always @(*) begin
     `ifdef __ENABLE__
-        if (in_addr < BASE_ADDR + BANK_SIZE*NUM_BANKS) begin
-            r_out_addr <= {in_addr[(`__ADDR_WIDTH__-1)                  : DST_SELECTOR_BIT+NUM_SELECTOR_BITS],
-                           in_addr[SRC_SELECTOR_BIT+NUM_SELECTOR_BITS-1 : SRC_SELECTOR_BIT],
-                           in_addr[DST_SELECTOR_BIT+NUM_SELECTOR_BITS-1 : SRC_SELECTOR_BIT+NUM_SELECTOR_BITS],
-                           in_addr[SRC_SELECTOR_BIT-1                   : 0]};
-        end
-        else begin
-            r_out_addr <= in_addr;
-        end
+        r_out_addr <= {in_addr[(`__ADDR_WIDTH__-1)                  : DST_SELECTOR_BIT+NUM_SELECTOR_BITS],
+                       in_addr[SRC_SELECTOR_BIT+NUM_SELECTOR_BITS-1 : SRC_SELECTOR_BIT],
+                       in_addr[DST_SELECTOR_BIT+NUM_SELECTOR_BITS-1 : SRC_SELECTOR_BIT+NUM_SELECTOR_BITS],
+                       in_addr[SRC_SELECTOR_BIT-1                   : 0]};
     `else
         r_out_addr <= in_addr;
     `endif
