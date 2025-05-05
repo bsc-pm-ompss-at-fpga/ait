@@ -48,6 +48,8 @@ namespace eval AIT {
                     CONFIG.CLK_OUT2_PORT clk_50 \
                     CONFIG.NUM_OUT_CLKS 2 \
                 ] [get_bd_cells clock_generator]
+                create_bd_pin -dir I -type clk system_reset/clk_50
+                connect_bd_net [get_bd_pins clock_generator/clk_50] [get_bd_pins system_reset/clk_50]
             }
 
             # Add 50Mhz reset
