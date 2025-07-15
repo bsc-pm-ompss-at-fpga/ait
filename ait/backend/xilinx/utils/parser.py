@@ -22,7 +22,6 @@
 
 import argparse
 import json
-import math
 import re
 import os
 
@@ -145,8 +144,8 @@ class ArgParser():
                 msg.error('Memory interleaving is not available on neither Zynq nor ZynqMP boards')
             elif args.memory_interleaving_stride & (args.memory_interleaving_stride - 1):
                 msg.error('Memory interleaving stride must be power of 2')
-            elif math.log2(int(board.memory.bank_size, 0)) - math.log2(args.memory_interleaving_stride) < math.ceil(math.log2(board.memory.num_banks)):
-                msg.error('Max allowed interleaving stride in current board: ' + decimalToHumanReadable(2**(math.log2(int((board.memory.bank_size, 0))) - math.ceil(math.log2(board.memory.num_banks))), 2))
+            elif int(board.memory.bank_size, 0) < args.memory_interleaving_stride:
+                msg.error('Max allowed interleaving stride in current board: ' + decimalToHumanReadable(int(board.memory.bank_size, 0)))
 
         if args.datainterfaces_map and (board.arch.device == 'alveo' and board.memory.type == 'ddr'):
             msg.error('Custom data interface mapping is not available for DDR-based Alveo boards')
