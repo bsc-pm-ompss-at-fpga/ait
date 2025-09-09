@@ -129,7 +129,7 @@ namespace eval AIT {
         }
 
         proc add_newtask_spawner {acc_spawnInStream hier_inStream hier_outStream accName instanceNum imp} {
-            set newtask_spawner [create_bd_cell -type ip -vlnv bsc:ompss:newtask_spawner:2.0 ${accName}_${instanceNum}/new_task_spawner]
+            set newtask_spawner [create_bd_cell -type ip -vlnv bsc:ompss:newtask_spawner ${accName}_${instanceNum}/new_task_spawner]
             set clk_pin [AIT::board::get_clk_pin_from_intf_pin $acc_spawnInStream]
             AIT::board::connect_clock [get_bd_pins $newtask_spawner/clk] $clk_pin
             AIT::board::connect_reset [get_bd_pins $newtask_spawner/rstn] [AIT::board::get_rst_net_from_clk_pin $clk_pin]
