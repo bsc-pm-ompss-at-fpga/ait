@@ -406,12 +406,12 @@ dict with AIT::vars::aitJsonDict {
                                 ## Instrumentation port
                                 set instrAccPin [get_bd_intf_pins -quiet -regexp ${accIP}/mcxx_instr(_V)*?]
                                 if {${instrAccPin} ne ""} {
-                                    # Create and connect the Adapter_instr
-                                    set adapterInstrIP [create_bd_cell -type ip -vlnv bsc:ompss:adapter_instr ${accHier}/Adapter_instr]
-                                    connect_bd_intf_net ${instrAccPin} [get_bd_intf_pins ${adapterInstrIP}/event_in]
-                                    AIT::design::connect_clock [AIT::design::get_associated_clk_pin ${adapterInstrIP}/event_in]
-                                    AIT::design::connect_reset [AIT::design::get_associated_rst_pin [AIT::design::get_associated_clk_pin ${adapterInstrIP}/event_in]] [get_bd_pins system_reset/clk_app_managed_rstn]
-                                    set instrInnerPin [get_bd_intf_pins ${adapterInstrIP}/instr_buf]
+                                    # Create and connect the instrumentation_adapter
+                                    set instrAdapterIP [create_bd_cell -type ip -vlnv bsc:ompss:instrumentation_adapter ${accHier}/instrumentation_adapter]
+                                    connect_bd_intf_net ${instrAccPin} [get_bd_intf_pins ${instrAdapterIP}/event_in]
+                                    AIT::design::connect_clock [AIT::design::get_associated_clk_pin ${instrAdapterIP}/event_in]
+                                    AIT::design::connect_reset [AIT::design::get_associated_rst_pin [AIT::design::get_associated_clk_pin ${instrAdapterIP}/event_in]] [get_bd_pins system_reset/clk_app_managed_rstn]
+                                    set instrInnerPin [get_bd_intf_pins ${instrAdapterIP}/instr_buf]
                                     dict update interfacesDict "instr_buffer" intfDict {
                                         # Initialize interface dictionary
                                         set intfDict {}
@@ -426,7 +426,7 @@ dict with AIT::vars::aitJsonDict {
                                             append accConstrStr ${regSliceConstrStr}
                                             append accConstrStr "add_cells_to_pblock \
                                                 \[get_pblocks slr${instSLR}_pblock\] \
-                                                \[get_cells */${accName}_${instanceNum}/Adapter_instr\]\n"
+                                                \[get_cells */${accName}_${instanceNum}/instrumentation_adapter\]\n"
                                         } elseif {[dict exists ${AIT::vars::userConfig} "accs" ${accName} "instances" ${instanceNum} "regslice_pipeline_stages"]} {
                                             lassign [AIT::AXI::add_reg_slice ${instrInnerPin} "" "" ${instRegslicePipelineStages} instr ${accName}_${instanceNum}] instrInnerPin regSliceConstrStr
                                         }
