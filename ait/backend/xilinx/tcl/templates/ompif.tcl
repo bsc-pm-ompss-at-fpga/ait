@@ -137,7 +137,7 @@ proc create_message_sender_hier {} {
     set siAckIntfPin [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 siAck]
     set cntrlIntfPin [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 cntrl]
 
-    set messageSenderIP [create_bd_cell -type ip -vlnv bsc:ompif:message_sender_wrapper ompif_message_sender]
+    set messageSenderIP [create_bd_cell -type ip -vlnv bsc:ompif:message_sender ompif_message_sender]
     set_property -dict [list \
         CONFIG.MAX_DEVICES {96} \
         CONFIG.MAX_TIMEOUT {1000000} \
