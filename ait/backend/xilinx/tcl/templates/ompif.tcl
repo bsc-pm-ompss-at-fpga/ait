@@ -71,7 +71,7 @@ proc create_OMPIF_hier {} {
         CONFIG.M00_AXIS_HIGHTDEST {0xFFFFFFFF} \
     ] ${ethTxSwitchIP}
 
-    set packetDecoderIP [create_bd_cell -type ip -vlnv bsc:ompif:packet_decoder_wrapper packet_decoder]
+    set packetDecoderIP [create_bd_cell -type ip -vlnv bsc:ompif:packet_decoder packet_decoder]
     set_property -dict [list \
         CONFIG.DATA_WIDTH {512} \
         CONFIG.MAX_CLUSTER_SIZE {96} \
