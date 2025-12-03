@@ -1,5 +1,5 @@
 #------------------------------------------------------------------------#
-#    (C) Copyright 2017-2024 Barcelona Supercomputing Center             #
+#    (C) Copyright 2017-2025 Barcelona Supercomputing Center             #
 #                            Centro Nacional de Supercomputacion         #
 #                                                                        #
 #    This file is part of OmpSs@FPGA toolchain.                          #
@@ -21,22 +21,23 @@
 namespace eval AIT {
     namespace eval board {
         proc static_logic_register_slices {} {
-            # AIT::AXI::add_reg_slice ip_name intf_name slr_master slr_slave {intf_pin} {num_pipelines} {prefix}
-            # num_pipelines format: master:middle:slave
-            # Pass unused optional arguments as ""
-
-            # Hardware Runtime
-            AIT::AXI::add_reg_slice Hardware_Runtime S_AXI_GP 0 [dict get ${::AIT::board} "arch" "slr" "hwruntime"] "" "" static_
-
             # DDR 0
-            AIT::AXI::add_reg_slice DDR_0 S_AXI [dict get ${::AIT::board} "arch" "slr" "memory"] 0 "" "" static_
-            AIT::AXI::add_reg_slice DDR_0 S_AXI_CTRL [dict get ${::AIT::board} "arch" "slr" "memory"] 0 "" "" static_
+            lassign [AIT::AXI::add_reg_slice S_AXI [dict get ${AIT::vars::board} "arch" "slr" "memory"] 0 "" "" bridge_to_host/memory/DDR_0] intfPin regSliceConstr
+            append constrStr ${regSliceConstr}
+            lassign [AIT::AXI::add_reg_slice S_AXI_CTRL [dict get ${AIT::vars::board} "arch" "slr" "memory"] 0 "" "" bridge_to_host/memory/DDR_0] intfPin regSliceConstr
+            append constrStr ${regSliceConstr}
 
             # DDR 1
-            AIT::AXI::add_reg_slice DDR_1 S_AXI [dict get ${::AIT::board} "arch" "slr" "memory"] 1 "" "" static_
-            AIT::AXI::add_reg_slice DDR_1 S_AXI_CTRL [dict get ${::AIT::board} "arch" "slr" "memory"] 1 "" "" static_
+            lassign [AIT::AXI::add_reg_slice S_AXI [dict get ${AIT::vars::board} "arch" "slr" "memory"] 1 "" "" bridge_to_host/memory/DDR_1] intfPin regSliceConstr
+            append constrStr ${regSliceConstr}
+            lassign [AIT::AXI::add_reg_slice S_AXI_CTRL [dict get ${AIT::vars::board} "arch" "slr" "memory"] 1 "" "" bridge_to_host/memory/DDR_1] intfPin regSliceConstr
+            append constrStr ${regSliceConstr}
 
-            save_bd_design
+            # Hardware Runtime
+            lassign [AIT::AXI::add_reg_slice S_AXI_GP 0 [dict get ${AIT::vars::board} "arch" "slr" "hwruntime"] "" "" Hardware_Runtime] intfPin regSliceConstr
+            append constrStr ${regSliceConstr}
+
+            save_bd_design -quiet
         }
 
         proc add_power_monitor {} {
@@ -55,8 +56,8 @@ namespace eval AIT {
             ] [get_bd_cells clock_generator]
 
             # Connect CMS clock and reset
-            connect_clock [get_bd_pins power_monitor_sys_rst/slowest_sync_clk] [get_bd_pins clock_generator/power_monitor_clk]
-            connect_reset [get_bd_pins power_monitor_sys_rst/ext_reset_in] [get_bd_pins processor_system_reset/ext_reset_in]
+            AIT::design::connect_clock [get_bd_pins power_monitor_sys_rst/slowest_sync_clk] [get_bd_pins clock_generator/power_monitor_clk]
+            AIT::design::connect_reset [get_bd_pins power_monitor_sys_rst/ext_reset_in] [get_bd_pins processor_system_reset/ext_reset_in]
 
             # Add and connect external ports
             set satellite_uart [create_bd_intf_port -mode Master -vlnv xilinx.com:interface:uart_rtl:1.0 satellite_uart]
@@ -66,7 +67,7 @@ namespace eval AIT {
             connect_bd_net $satellite_gpio [get_bd_pins cms_subsystem/satellite_gpio]
 
             # Connect CMS to the M_AXI interconnect
-            connect_to_axi_intf [get_bd_intf_pins cms_subsystem/s_axi_ctrl] M "" [get_bd_pins clock_generator/power_monitor_clk] [get_bd_pins power_monitor_sys_rst/peripheral_aresetn]
+            AIT::AXI::connect_to_mem_intf [get_bd_intf_pins cms_subsystem/s_axi_ctrl] "" [get_bd_pins clock_generator/power_monitor_clk] [get_bd_pins power_monitor_sys_rst/peripheral_aresetn]
         }
 
         proc add_thermal_monitor {} {
@@ -85,11 +86,11 @@ namespace eval AIT {
             ] [get_bd_cells clock_generator]
 
             # Connect System Management clock and reset
-            connect_clock [get_bd_pins thermal_monitor_sys_rst/slowest_sync_clk] [get_bd_pins clock_generator/thermal_monitor_clk]
-            connect_reset [get_bd_pins thermal_monitor_sys_rst/ext_reset_in] [get_bd_pins processor_system_reset/ext_reset_in]
+            AIT::design::connect_clock [get_bd_pins thermal_monitor_sys_rst/slowest_sync_clk] [get_bd_pins clock_generator/thermal_monitor_clk]
+            AIT::design::connect_reset [get_bd_pins thermal_monitor_sys_rst/ext_reset_in] [get_bd_pins processor_system_reset/ext_reset_in]
 
             # Connect System Management to the M_AXI interconnect
-            connect_to_axi_intf [get_bd_intf_pins system_management/S_AXI_LITE] M "" [get_bd_pins clock_generator/thermal_monitor_clk] [get_bd_pins thermal_monitor_sys_rst/peripheral_aresetn]
+            AIT::AXI::connect_to_mem_intf [get_bd_intf_pins system_management/S_AXI_LITE] "" [get_bd_pins clock_generator/thermal_monitor_clk] [get_bd_pins thermal_monitor_sys_rst/peripheral_aresetn]
         }
     }
 }

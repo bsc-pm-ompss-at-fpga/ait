@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-#
 # ------------------------------------------------------------------------ #
-#     (C) Copyright 2017-2024 Barcelona Supercomputing Center              #
+#     (C) Copyright 2017-2025 Barcelona Supercomputing Center              #
 #                             Centro Nacional de Supercomputacion          #
 #                                                                          #
 #     This file is part of OmpSs@FPGA toolchain.                           #
@@ -68,23 +67,23 @@ class Messages:
         self.verbose = verbose
 
     def success(self, msg):
-        print(self.__getHeader() + Color.GREEN + msg + Color.END)
+        print(f'{self.__getHeader()}{Color.GREEN}{msg}{Color.END}')
 
     def info(self, msg):
-        print(self.__getHeader() + Color.CYAN + 'INFO: ' + msg + Color.END)
+        print(f'{self.__getHeader()}{Color.CYAN}INFO: {msg}{Color.END}')
 
     def warning(self, msg):
-        print(self.__getHeader() + Color.YELLOW + 'WARNING: ' + msg + Color.END)
+        print(f'{self.__getHeader()}{Color.YELLOW}WARNING: {msg}{Color.END}')
 
     def error(self, msg, start_time=None, simple=True):
         if self.name and not simple:
-            print(self.__getHeader() + Color.RED + 'ERROR: ' + msg + ' after ' + secondsToHumanReadable(int(time.time() - start_time)) + '. Check ' + self.name + '.ait.log for more information' + Color.END)
+            print(f'{self.__getHeader()}{Color.RED}ERROR: {msg} after {secondsToHumanReadable(int(time.time() - start_time))}. Check {self.name}.ait.log for more information{Color.END}')
         else:
-            print(self.__getHeader() + Color.RED + 'ERROR: ' + msg + Color.END)
+            print(f'{self.__getHeader()}{Color.RED}ERROR: {msg}{Color.END}')
         sys.exit(1)
 
     def log(self, msg):
-        print(self.__getHeader() + msg)
+        print(f'{self.__getHeader()}{msg}')
 
 
 def decimalToHumanReadable(number, precision=0):
@@ -165,37 +164,30 @@ def json2tcl(data, name, base_level=0, indent_level=None):
 
     string = ''
     if isinstance(data, list):
-        string += ' '
         for elem in data:
-            string += json2tcl(elem, name, base_level, indent_level + 1)
-            string += ' '
+            string += json2tcl(elem, name, base_level, indent_level)
     elif isinstance(data, dict):
         for key in data.keys():
             string += indentString(indent_level)
             if indent_level == base_level:
                 string += 'dict set {} '.format(name)
             string += '"{}" '.format(key)
-            if isinstance(data[key], dict):
+            if isinstance(data[key], dict) or isinstance(data[key], list):
                 string += '{\n'
-            elif isinstance(data[key], list):
-                string += '{'
             string += json2tcl(data[key], name, base_level, indent_level + 1)
-            if isinstance(data[key], dict):
+            if isinstance(data[key], dict) or isinstance(data[key], list):
                 string += indentString(indent_level)
-                string += '}'
-            elif isinstance(data[key], list):
-                string += '}'
-            string += '\n'
+                string += '}\n'
     else:
-        string += '{{{}}}'.format(data)
+        string += '"{}"\n'.format(data)
     return string
 
 
-ait_path = os.path.normpath(os.path.dirname(os.path.realpath(__file__)) + '/..')
+ait_path = os.path.normpath(f'{os.path.dirname(os.path.realpath(__file__))}/..')
 
 backends = dict()
-for backend_subpkg in setuptools.find_packages(where=ait_path + '/backend', exclude=['*.*']):
-    backend = importlib.import_module('ait.backend.%s.info' % (backend_subpkg))
+for backend_subpkg in setuptools.find_packages(where=f'{ait_path}/backend', exclude=['*.*']):
+    backend = importlib.import_module(f'ait.backend.{backend_subpkg}.info')
     backends[backend.NAME] = backend.info
 
 msg = Messages()

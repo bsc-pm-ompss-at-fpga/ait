@@ -1,1 +1,0 @@
-../../common/constraints/static_common_floorplan.xdc

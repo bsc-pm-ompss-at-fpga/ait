@@ -39,7 +39,6 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 
 # The design that will be created by this Tcl script contains the following 
 # module references:
-# addrInterleaver
 
 # Please add the sources of those modules before sourcing this Tcl script.
 
@@ -56,7 +55,7 @@ if { $list_projs eq "" } {
 
 # CHANGE DESIGN NAME HERE
 variable design_name
-set design_name ${argv}_design
+set design_name [lindex ${argv} 0]_design
 
 # If you do not already have an existing IP Integrator design open,
 # you can create a design using the following command:
@@ -130,8 +129,6 @@ set bCheckIPsPassed 1
 set bCheckIPs 1
 if { $bCheckIPs == 1 } {
    set list_check_ips "\ 
-xilinx.com:ip:blk_mem_gen:*\
-xilinx.com:ip:axi_bram_ctrl:*\
 xilinx.com:ip:clk_wiz:*\
 xilinx.com:ip:proc_sys_reset:*\
 xilinx.com:ip:ddr4:*\
@@ -164,7 +161,6 @@ xilinx.com:ip:util_ds_buf:*\
 set bCheckModules 1
 if { $bCheckModules == 1 } {
    set list_check_mods "\ 
-bsc_axiu_addrInterleaver\
 "
 
    set list_mods_missing ""
@@ -234,8 +230,6 @@ proc create_hier_cell_QDMA { parentCell nameHier } {
   create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 pcie_refclk
 
   # Create pins
-  create_bd_pin -dir O -from 63 -to 0 QDMA_m_axi_araddr
-  create_bd_pin -dir O -from 63 -to 0 QDMA_m_axi_awaddr
   create_bd_pin -dir O -type clk aclk
   create_bd_pin -dir O -type rst aresetn
   create_bd_pin -dir I -type rst pcie_perstn
@@ -301,8 +295,6 @@ proc create_hier_cell_QDMA { parentCell nameHier } {
   # Create port connections
   connect_bd_net -net QDMA_axi_aclk [get_bd_pins aclk] [get_bd_pins QDMA/axi_aclk]
   connect_bd_net -net QDMA_axi_aresetn [get_bd_pins aresetn] [get_bd_pins QDMA/axi_aresetn]
-  connect_bd_net -net QDMA_m_axi_araddr [get_bd_pins QDMA_m_axi_araddr] [get_bd_pins QDMA/m_axi_araddr]
-  connect_bd_net -net QDMA_m_axi_awaddr [get_bd_pins QDMA_m_axi_awaddr] [get_bd_pins QDMA/m_axi_awaddr]
   connect_bd_net -net const_1_dout [get_bd_pins QDMA/st_rx_msg_rdy] [get_bd_pins QDMA/tm_dsc_sts_rdy] [get_bd_pins const_1/dout]
   connect_bd_net -net pcie_perstn_1 [get_bd_pins pcie_perstn] [get_bd_pins QDMA/soft_reset_n] [get_bd_pins QDMA/sys_rst_n]
   connect_bd_net -net util_ds_buf_IBUF_DS_ODIV2 [get_bd_pins QDMA/sys_clk] [get_bd_pins util_ds_buf/IBUF_DS_ODIV2]
@@ -365,7 +357,6 @@ proc create_hier_cell_DDR_0 { parentCell nameHier } {
   # Create instance: DDR, and set properties
   set DDR [ create_bd_cell -type ip -vlnv xilinx.com:ip:ddr4 DDR ]
   set_property -dict [list \
-   CONFIG.ADDN_UI_CLKOUT1_FREQ_HZ {100} \
    CONFIG.C0.DDR4_AUTO_AP_COL_A3 {true} \
    CONFIG.C0.DDR4_AxiAddressWidth {34} \
    CONFIG.C0.DDR4_AxiDataWidth {512} \
@@ -458,7 +449,6 @@ proc create_hier_cell_DDR_1 { parentCell nameHier } {
   # Create instance: DDR, and set properties
   set DDR [ create_bd_cell -type ip -vlnv xilinx.com:ip:ddr4 DDR ]
   set_property -dict [list \
-   CONFIG.ADDN_UI_CLKOUT1_FREQ_HZ {100} \
    CONFIG.C0.DDR4_AUTO_AP_COL_A3 {true} \
    CONFIG.C0.DDR4_AxiAddressWidth {34} \
    CONFIG.C0.DDR4_AxiDataWidth {512} \
@@ -624,11 +614,13 @@ proc create_hier_cell_bridge_to_host { parentCell nameHier } {
   current_bd_instance $hier_obj
 
   # Create interface pins
+  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 M_AXI
   create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 M_AXI_LITE
   create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:ddr4_rtl:1.0 DDR_0_SDRAM
   create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:ddr4_rtl:1.0 DDR_1_SDRAM
   create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:pcie_7x_mgt_rtl:1.0 pci_express_x8
-  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S_AXI
+  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 DDR_0_S_AXI
+  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 DDR_1_S_AXI
   create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 DDR_0_SYS_CLK
   create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 DDR_1_SYS_CLK
   create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 pcie_refclk
@@ -642,13 +634,6 @@ proc create_hier_cell_bridge_to_host { parentCell nameHier } {
   # Create instance: memory
   create_hier_cell_memory $hier_obj memory
 
-  # Create instance: DDR_S_AXI_Inter, and set properties
-  set DDR_S_AXI_Inter [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect DDR_S_AXI_Inter ]
-  set_property -dict [ list \
-   CONFIG.NUM_MI {2} \
-   CONFIG.NUM_SI {2} \
- ] $DDR_S_AXI_Inter
-
   # Create instance: QDMA
   create_hier_cell_QDMA $hier_obj QDMA
 
@@ -658,34 +643,12 @@ proc create_hier_cell_bridge_to_host { parentCell nameHier } {
    CONFIG.NUM_MI {3} \
  ] $QDMA_M_AXI_LITE_Inter
 
-  # Create instance: bridge_to_host_araddrInterleaver, and set properties
-  set block_name bsc_axiu_addrInterleaver
-  set block_cell_name bridge_to_host_araddrInterleaver
-  if { [catch {set bridge_to_host_araddrInterleaver [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
-     catch {common::send_msg_id "BD_TCL-105" "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
-     return 1
-   } elseif { $bridge_to_host_araddrInterleaver eq "" } {
-     catch {common::send_msg_id "BD_TCL-106" "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
-     return 1
-   }
-
-  # Create instance: bridge_to_host_awaddrInterleaver, and set properties
-  set block_name bsc_axiu_addrInterleaver
-  set block_cell_name bridge_to_host_awaddrInterleaver
-  if { [catch {set bridge_to_host_awaddrInterleaver [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
-     catch {common::send_msg_id "BD_TCL-105" "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
-     return 1
-   } elseif { $bridge_to_host_awaddrInterleaver eq "" } {
-     catch {common::send_msg_id "BD_TCL-106" "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
-     return 1
-   }
-
   # Create interface connections
-  connect_bd_intf_net -intf_net DDR_0_S_AXI_1 [get_bd_intf_pins memory/DDR_0_S_AXI] [get_bd_intf_pins DDR_S_AXI_Inter/M00_AXI]
-  connect_bd_intf_net -intf_net DDR_1_S_AXI_1 [get_bd_intf_pins memory/DDR_1_S_AXI] [get_bd_intf_pins DDR_S_AXI_Inter/M01_AXI]
+  connect_bd_intf_net -intf_net DDR_0_S_AXI_1 [get_bd_intf_pins DDR_0_S_AXI] [get_bd_intf_pins memory/DDR_0_S_AXI]
+  connect_bd_intf_net -intf_net DDR_1_S_AXI_1 [get_bd_intf_pins DDR_1_S_AXI] [get_bd_intf_pins memory/DDR_1_S_AXI]
   connect_bd_intf_net -intf_net memory_DDR_0_SDRAM [get_bd_intf_pins DDR_0_SDRAM] [get_bd_intf_pins memory/DDR_0_SDRAM]
   connect_bd_intf_net -intf_net memory_DDR_1_SDRAM [get_bd_intf_pins DDR_1_SDRAM] [get_bd_intf_pins memory/DDR_1_SDRAM]
-  connect_bd_intf_net -intf_net QDMA_M_AXI [get_bd_intf_pins DDR_S_AXI_Inter/S00_AXI] [get_bd_intf_pins QDMA/M_AXI]
+  connect_bd_intf_net -intf_net QDMA_M_AXI [get_bd_intf_pins QDMA/M_AXI] [get_bd_intf_pins M_AXI]
   connect_bd_intf_net -intf_net QDMA_M_AXI_LITE [get_bd_intf_pins QDMA/M_AXI_LITE] [get_bd_intf_pins QDMA_M_AXI_LITE_Inter/S00_AXI]
   connect_bd_intf_net -intf_net QDMA_M_AXI_LITE_Inter_M00_AXI [get_bd_intf_pins memory/DDR_0_S_AXI_CTRL] [get_bd_intf_pins QDMA_M_AXI_LITE_Inter/M00_AXI]
   connect_bd_intf_net -intf_net QDMA_M_AXI_LITE_Inter_M01_AXI [get_bd_intf_pins memory/DDR_1_S_AXI_CTRL] [get_bd_intf_pins QDMA_M_AXI_LITE_Inter/M01_AXI]
@@ -693,24 +656,19 @@ proc create_hier_cell_bridge_to_host { parentCell nameHier } {
   connect_bd_intf_net -intf_net DDR_0_SYS_CLK_1 [get_bd_intf_pins DDR_0_SYS_CLK] [get_bd_intf_pins memory/DDR_0_SYS_CLK]
   connect_bd_intf_net -intf_net DDR_1_SYS_CLK_1 [get_bd_intf_pins DDR_1_SYS_CLK] [get_bd_intf_pins memory/DDR_1_SYS_CLK]
   connect_bd_intf_net -intf_net QDMA_pci_express_x8 [get_bd_intf_pins pci_express_x8] [get_bd_intf_pins QDMA/pci_express_x8]
-  connect_bd_intf_net -intf_net S_AXI_1 [get_bd_intf_pins S_AXI] [get_bd_intf_pins DDR_S_AXI_Inter/S01_AXI]
   connect_bd_intf_net -intf_net pcie_refclk_1 [get_bd_intf_pins pcie_refclk] [get_bd_intf_pins QDMA/pcie_refclk]
 
   # Create port connections
-  connect_bd_net [get_bd_pins memory/DDR_0_peripheral_aresetn] [get_bd_pins DDR_S_AXI_Inter/M00_ARESETN] [get_bd_pins QDMA_M_AXI_LITE_Inter/M00_ARESETN]
-  connect_bd_net [get_bd_pins ui_clk] [get_bd_pins memory/DDR_0_ui_clk] [get_bd_pins DDR_S_AXI_Inter/M00_ACLK] [get_bd_pins QDMA_M_AXI_LITE_Inter/M00_ACLK]
-  connect_bd_net [get_bd_pins memory/DDR_1_peripheral_aresetn] [get_bd_pins DDR_S_AXI_Inter/M01_ARESETN] [get_bd_pins QDMA_M_AXI_LITE_Inter/M01_ARESETN]
-  connect_bd_net [get_bd_pins memory/DDR_1_ui_clk] [get_bd_pins DDR_S_AXI_Inter/M01_ACLK] [get_bd_pins QDMA_M_AXI_LITE_Inter/M01_ACLK]
-  connect_bd_net [get_bd_pins QDMA/QDMA_m_axi_araddr] [get_bd_pins bridge_to_host_araddrInterleaver/in_addr]
-  connect_bd_net [get_bd_pins QDMA/QDMA_m_axi_awaddr] [get_bd_pins bridge_to_host_awaddrInterleaver/in_addr]
-  connect_bd_net [get_bd_pins DDR_S_AXI_Inter/S00_ACLK] [get_bd_pins QDMA/aclk] [get_bd_pins QDMA_M_AXI_LITE_Inter/S00_ACLK]
-  connect_bd_net [get_bd_pins DDR_S_AXI_Inter/S00_ARESETN] [get_bd_pins QDMA/aresetn] [get_bd_pins QDMA_M_AXI_LITE_Inter/S00_ARESETN]
-  connect_bd_net [get_bd_pins DDR_S_AXI_Inter/S00_AXI_araddr] [get_bd_pins bridge_to_host_araddrInterleaver/out_addr]
-  connect_bd_net [get_bd_pins DDR_S_AXI_Inter/S00_AXI_awaddr] [get_bd_pins bridge_to_host_awaddrInterleaver/out_addr]
-  connect_bd_net [get_bd_pins clk_app] [get_bd_pins DDR_S_AXI_Inter/ACLK] [get_bd_pins DDR_S_AXI_Inter/S01_ACLK] [get_bd_pins QDMA_M_AXI_LITE_Inter/ACLK] [get_bd_pins QDMA_M_AXI_LITE_Inter/M02_ACLK]
-  connect_bd_net [get_bd_pins clk_app_rstn] [get_bd_pins DDR_S_AXI_Inter/ARESETN] [get_bd_pins QDMA_M_AXI_LITE_Inter/ARESETN]
+  connect_bd_net [get_bd_pins memory/DDR_0_peripheral_aresetn] [get_bd_pins QDMA_M_AXI_LITE_Inter/M00_ARESETN]
+  connect_bd_net [get_bd_pins ui_clk] [get_bd_pins memory/DDR_0_ui_clk] [get_bd_pins QDMA_M_AXI_LITE_Inter/M00_ACLK]
+  connect_bd_net [get_bd_pins memory/DDR_1_peripheral_aresetn] [get_bd_pins QDMA_M_AXI_LITE_Inter/M01_ARESETN]
+  connect_bd_net [get_bd_pins memory/DDR_1_ui_clk] [get_bd_pins QDMA_M_AXI_LITE_Inter/M01_ACLK]
+  connect_bd_net [get_bd_pins QDMA/aclk] [get_bd_pins QDMA_M_AXI_LITE_Inter/S00_ACLK]
+  connect_bd_net [get_bd_pins QDMA/aresetn] [get_bd_pins QDMA_M_AXI_LITE_Inter/S00_ARESETN]
+  connect_bd_net [get_bd_pins clk_app] [get_bd_pins QDMA_M_AXI_LITE_Inter/ACLK] [get_bd_pins QDMA_M_AXI_LITE_Inter/M02_ACLK]
+  connect_bd_net [get_bd_pins clk_app_rstn] [get_bd_pins QDMA_M_AXI_LITE_Inter/ARESETN]
   connect_bd_net [get_bd_pins pcie_perstn] [get_bd_pins memory/DDR_rst] [get_bd_pins QDMA/pcie_perstn]
-  connect_bd_net [get_bd_pins clk_app_rstn] [get_bd_pins DDR_S_AXI_Inter/S01_ARESETN] [get_bd_pins QDMA_M_AXI_LITE_Inter/M02_ARESETN]
+  connect_bd_net [get_bd_pins clk_app_rstn] [get_bd_pins QDMA_M_AXI_LITE_Inter/M02_ARESETN]
 
   # Restore current instance
   current_bd_instance $oldCurInst
@@ -815,18 +773,6 @@ proc create_root_design { parentCell } {
    CONFIG.POLARITY {ACTIVE_LOW} \
  ] $pcie_perstn
 
-  # Create instance: M_AXI_Inter, and set properties
-  set M_AXI_Inter [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect M_AXI_Inter ]
-  set_property -dict [ list \
-   CONFIG.NUM_MI {1} \
- ] $M_AXI_Inter
-
-  # Create instance: S_AXI_Inter, and set properties
-  set S_AXI_Inter [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect S_AXI_Inter ]
-  set_property -dict [ list \
-   CONFIG.NUM_MI {1} \
- ] $S_AXI_Inter
-
   # Create instance: bridge_to_host
   create_hier_cell_bridge_to_host [current_bd_instance .] bridge_to_host
 
@@ -859,8 +805,6 @@ proc create_root_design { parentCell } {
   # Create interface connections
   connect_bd_intf_net -intf_net sysclk0_1 [get_bd_intf_ports sysclk0] [get_bd_intf_pins bridge_to_host/DDR_0_SYS_CLK]
   connect_bd_intf_net -intf_net sysclk1_1 [get_bd_intf_ports sysclk1] [get_bd_intf_pins bridge_to_host/DDR_1_SYS_CLK]
-  connect_bd_intf_net -intf_net S00_AXI_1 [get_bd_intf_pins M_AXI_Inter/S00_AXI] [get_bd_intf_pins bridge_to_host/M_AXI_LITE]
-  connect_bd_intf_net -intf_net S_AXI_Inter_M00_AXI [get_bd_intf_pins S_AXI_Inter/M00_AXI] [get_bd_intf_pins bridge_to_host/S_AXI]
   connect_bd_intf_net -intf_net bridge_to_host_ddr4_sdram_c0 [get_bd_intf_ports ddr4_sdram_c0] [get_bd_intf_pins bridge_to_host/DDR_0_SDRAM]
   connect_bd_intf_net -intf_net bridge_to_host_ddr4_sdram_c1 [get_bd_intf_ports ddr4_sdram_c1] [get_bd_intf_pins bridge_to_host/DDR_1_SDRAM]
   connect_bd_intf_net -intf_net pcie_refclk_1 [get_bd_intf_ports pcie_refclk] [get_bd_intf_pins bridge_to_host/pcie_refclk]
@@ -868,12 +812,11 @@ proc create_root_design { parentCell } {
 
   # Create port connections
   connect_bd_net [get_bd_pins bridge_to_host/ui_clk] [get_bd_pins clock_generator/clk_in1]
-  connect_bd_net [get_bd_pins M_AXI_Inter/ACLK] [get_bd_pins M_AXI_Inter/M00_ACLK] [get_bd_pins M_AXI_Inter/S00_ACLK] [get_bd_pins S_AXI_Inter/ACLK] [get_bd_pins S_AXI_Inter/M00_ACLK] [get_bd_pins S_AXI_Inter/S00_ACLK] [get_bd_pins bridge_to_host/clk_app] [get_bd_pins clock_generator/clk_app] [get_bd_pins system_reset/clk_app]
+  connect_bd_net [get_bd_pins bridge_to_host/clk_app] [get_bd_pins clock_generator/clk_app] [get_bd_pins system_reset/clk_app]
   connect_bd_net [get_bd_pins clock_generator/locked] [get_bd_pins system_reset/clk_gen_locked]
   connect_bd_net [get_bd_ports HBM_CATTRIP] [get_bd_pins HBM_CATTRIP_constant/dout]
   connect_bd_net [get_bd_ports pcie_perstn] [get_bd_pins bridge_to_host/pcie_perstn] [get_bd_pins clock_generator/resetn] [get_bd_pins system_reset/pcie_perstn]
-  connect_bd_net [get_bd_pins M_AXI_Inter/ARESETN] [get_bd_pins S_AXI_Inter/ARESETN] [get_bd_pins system_reset/clk_app_rstn]
-  connect_bd_net [get_bd_pins M_AXI_Inter/M00_ARESETN] [get_bd_pins M_AXI_Inter/S00_ARESETN] [get_bd_pins S_AXI_Inter/M00_ARESETN] [get_bd_pins S_AXI_Inter/S00_ARESETN] [get_bd_pins bridge_to_host/clk_app_rstn] [get_bd_pins system_reset/clk_app_rstn]
+  connect_bd_net [get_bd_pins bridge_to_host/clk_app_rstn] [get_bd_pins system_reset/clk_app_rstn]
 
   # Restore current instance
   current_bd_instance $oldCurInst

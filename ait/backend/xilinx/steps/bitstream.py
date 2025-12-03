@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-#
 # ------------------------------------------------------------------------ #
-#     (C) Copyright 2017-2024 Barcelona Supercomputing Center              #
+#     (C) Copyright 2017-2025 Barcelona Supercomputing Center              #
 #                             Centro Nacional de Supercomputacion          #
 #                                                                          #
 #     This file is part of OmpSs@FPGA toolchain.                           #
@@ -39,8 +38,8 @@ def gen_utilization_report(out_path):
     util_resources = {}
 
     # Check implementation reports path
-    rpt_path = project_backend_path + '/' + args.name + '/' + args.name + '.runs/impl_1'
-    rpt_path += '/' + args.name + '_design_wrapper_utilization_placed.rpt'
+    rpt_path = f'{project_backend_path}/{args.name}/{args.name}.runs/impl_1'
+    rpt_path += f'/{args.name}_design_wrapper_utilization_placed.rpt'
     if not os.path.exists(rpt_path):
         msg.warning('Cannot find rpt file. Skipping bitstream utilization report')
         return
@@ -123,7 +122,7 @@ def gen_utilization_report(out_path):
         report_string_formatted = report_string.format(name, used_resources[name],
                                                        av_resources[name], util_resources[name])
         msg.log(report_string_formatted)
-        resources_file.write(report_string_formatted + '\n')
+        resources_file.write(f'{report_string_formatted}\n')
     resources_file.close()
 
 
@@ -134,8 +133,8 @@ def gen_wns_report(out_path):
     num_total = 0
 
     # Check implementation reports path
-    rpt_path = project_backend_path + '/' + args.name + '/' + args.name + '.runs/impl_1'
-    rpt_path += '/' + args.name + '_design_wrapper_timing_summary_routed.rpt'
+    rpt_path = f'{project_backend_path}/{args.name}/{args.name}.runs/impl_1'
+    rpt_path += f'/{args.name}_design_wrapper_timing_summary_routed.rpt'
     if not os.path.exists(rpt_path):
         msg.warning('Cannot find rpt file. Skipping WNS report')
         return
@@ -158,17 +157,15 @@ def gen_wns_report(out_path):
 
     msg.log('Worst Negative Slack (WNS) summary')
     if wns >= 0.0:
-        msg.success(str(num_fail) + ' endpoints of ' + str(num_total) + ' have negative slack (WNS: '
-                    + str(wns) + ')')
+        msg.success(f'{num_fail} endpoints of {num_total} have negative slack (WNS: {wns})')
     else:
-        msg.warning(str(num_fail) + ' endpoints of ' + str(num_total) + ' have negative slack (WNS: '
-                    + str(wns) + ', TNS: ' + str(tns) + ')')
+        msg.warning(f'{num_fail} endpoints of {num_total} have negative slack (WNS: {wns}, TNS: {tns})')
 
     with open(out_path, 'w') as timing_file:
-        timing_file.write('WNS ' + str(wns) + '\n')
-        timing_file.write('TNS ' + str(tns) + '\n')
-        timing_file.write('NUM_ENDPOINTS ' + str(num_total) + '\n')
-        timing_file.write('NUM_FAIL_ENDPOINTS ' + str(num_fail))
+        timing_file.write(f'WNS {wns}\n')
+        timing_file.write(f'TNS {tns}\n')
+        timing_file.write(f'NUM_ENDPOINTS {num_total}\n')
+        timing_file.write(f'NUM_FAIL_ENDPOINTS {num_fail}')
 
 
 def run_step(project_args):
@@ -185,15 +182,17 @@ def run_step(project_args):
     project_path = project_args['path']
 
     chip_part = board.chip_part + ('-' + board.es if (board.es and not args.ignore_eng_sample) else '')
-    ait_backend_path = ait_path + '/backend/' + args.backend
-    project_backend_path = project_path + '/' + args.backend
+    ait_backend_path = f'{ait_path}/backend/{args.backend}'
+    project_backend_path = f'{project_path}/{args.backend}'
 
     # Check if Vivado requirements are met
     checkers.check_vivado()
 
-    if os.path.isfile(project_backend_path + '/' + args.name + '/' + args.name + '.xpr'):
-        p = subprocess.Popen('vivado -init -nojournal -nolog -notrace -mode batch -source '
-                             + project_backend_path + '/tcl/scripts/generate_bitstream.tcl '
+    if os.path.isfile(f'{project_backend_path}/{args.name}/{args.name}.xpr'):
+        p = subprocess.Popen('vivado -init -nojournal -nolog -notrace -mode batch '
+                             + f'-source {project_backend_path}/tcl/project.tcl '
+                             + f'-source {project_backend_path}/tcl/scripts/ait.tcl '
+                             + f'-source {project_backend_path}/tcl/scripts/generate_bitstream.tcl '
                              + '-tclargs ' + (str(args.jobs) if args.jobs is not None else str(getNumJobs(args.mem_per_job))),
                              cwd=project_backend_path,
                              stdout=sys.stdout.subprocess,
@@ -208,14 +207,14 @@ def run_step(project_args):
             msg.error('Bitstream generation failed', start_time, False)
         else:
             if board.arch.device == 'zynq' and checkers.check_bootgen():
-                bif_file = open(project_backend_path + '/' + args.name + '/' + args.name + '.runs/impl_1/bitstream.bif', 'w')
+                bif_file = open(f'{project_backend_path}/{args.name}/{args.name}.runs/impl_1/bitstream.bif', 'w')
                 bif_file.write('all:\n'
                                + '{\n'
-                               + '\t' + args.name + '_design_wrapper.bit\n'
+                               + f'\t{args.name}_design_wrapper.bit\n'
                                + '}')
                 bif_file.close()
                 p = subprocess.Popen('bootgen -image bitstream.bif -arch zynq -process_bitstream bin -w',
-                                     cwd=project_backend_path + '/' + args.name + '/' + args.name + '.runs/impl_1',
+                                     cwd=f'{project_backend_path}/{args.name}/{args.name}.runs/impl_1',
                                      stdout=sys.stdout.subprocess,
                                      stderr=sys.stdout.subprocess, shell=True)
 
@@ -227,19 +226,21 @@ def run_step(project_args):
                 if retval:
                     msg.warning('Could not create .bit.bin file')
                 else:
-                    shutil.copy2(glob.glob(project_backend_path + '/' + args.name + '/' + args.name
-                                 + '.runs/impl_1/' + args.name + '*.bit.bin')[0],
-                                 project_path + '/' + args.name + '.bit.bin')
+                    shutil.copy2(glob.glob(f'{project_backend_path}/{args.name}/'
+                                 + f'{args.name}.runs/impl_1/{args.name}*.bit.bin')[0],
+                                 f'{project_path}/{args.name}.bit.bin')
 
-            shutil.copy2(glob.glob(project_backend_path + '/' + args.name + '/' + args.name
-                         + '.runs/impl_1/' + args.name + '*.bit')[0],
-                         project_path + '/' + args.name + '.bit')
             if board.arch.device == 'zynq' or board.arch.device == 'zynqmp':
-                shutil.copy2(glob.glob(project_backend_path + '/' + args.name + '/' + args.name
-                             + '.runs/impl_1/' + args.name + '*.bin')[0],
-                             project_path + '/' + args.name + '.bin')
-            gen_utilization_report(project_path + '/' + args.name + '.resources-impl.txt')
-            gen_wns_report(project_path + '/' + args.name + '.timing-impl.txt')
+                shutil.copy2(glob.glob(f'{project_backend_path}/{args.name}/'
+                             + f'{args.name}.runs/impl_1/{args.name}*.bin')[0],
+                             f'{project_path}/{args.name}.bin')
+
+            shutil.copy2(glob.glob(f'{project_backend_path}/{args.name}/'
+                         + f'{args.name}.runs/impl_1/{args.name}*.bit')[0],
+                         f'{project_path}/{args.name}.bit')
+
+            gen_utilization_report(f'{project_path}/{args.name}.resources-impl.txt')
+            gen_wns_report(f'{project_path}/{args.name}.timing-impl.txt')
             msg.success('Bitstream generated')
     else:
         msg.error('No Vivado .xpr file exists for the current project. Bitstream generation failed')

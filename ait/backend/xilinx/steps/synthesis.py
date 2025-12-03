@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-#
 # ------------------------------------------------------------------------ #
-#     (C) Copyright 2017-2024 Barcelona Supercomputing Center              #
+#     (C) Copyright 2017-2025 Barcelona Supercomputing Center              #
 #                             Centro Nacional de Supercomputacion          #
 #                                                                          #
 #     This file is part of OmpSs@FPGA toolchain.                           #
@@ -45,16 +44,18 @@ def run_step(project_args):
     project_path = project_args['path']
 
     chip_part = board.chip_part + ('-' + board.es if (board.es and not args.ignore_eng_sample) else '')
-    ait_backend_path = ait_path + '/backend/' + args.backend
-    project_backend_path = project_path + '/' + args.backend
-    project_board_path = project_backend_path + '/board/' + board.name
+    ait_backend_path = f'{ait_path}/backend/{args.backend}'
+    project_backend_path = f'{project_path}/{args.backend}'
+    project_board_path = f'{project_backend_path}/board/'
 
     # Check if the requirements are met
     checkers.check_vivado()
 
-    if os.path.isfile(project_backend_path + '/' + args.name + '/' + args.name + '.xpr'):
-        p = subprocess.Popen('vivado -init -nojournal -nolog -notrace -mode batch -source '
-                             + project_backend_path + '/tcl/scripts/synthesize_design.tcl '
+    if os.path.isfile(f'{project_backend_path}/{args.name}/{args.name}.xpr'):
+        p = subprocess.Popen('vivado -init -nojournal -nolog -notrace -mode batch '
+                             + f'-source {project_backend_path}/tcl/project.tcl '
+                             + f'-source {project_backend_path}/tcl/scripts/ait.tcl '
+                             + f'-source {project_backend_path}/tcl/scripts/synthesize_design.tcl '
                              + '-tclargs ' + (str(args.jobs) if args.jobs is not None else str(getNumJobs(args.mem_per_job))),
                              cwd=project_backend_path,
                              stdout=sys.stdout.subprocess,

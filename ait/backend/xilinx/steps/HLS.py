@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-#
 # ------------------------------------------------------------------------ #
-#     (C) Copyright 2017-2024 Barcelona Supercomputing Center              #
+#     (C) Copyright 2017-2025 Barcelona Supercomputing Center              #
 #                             Centro Nacional de Supercomputacion          #
 #                                                                          #
 #     This file is part of OmpSs@FPGA toolchain.                           #
@@ -159,9 +158,9 @@ def run_step(project_args):
     used_resources = dict()
     available_resources = dict()
 
-    for acc in range(0, args.num_accs):
-        if accs[acc].name != 'ompif_message_sender' and accs[acc].name != 'ompif_message_receiver':
-            synthesize_accelerator(accs[acc])
+    for acc_dict in accs:
+        for acc_key in acc_dict.keys():
+            synthesize_accelerator(acc_dict[acc_key])
 
     if len(accs) > args.num_accs:
         msg.info('Synthesizing ' + str(len(accs) - args.num_accs) + ' additional auxiliary IP' + ('s' if len(accs) - args.num_accs > 1 else ''))

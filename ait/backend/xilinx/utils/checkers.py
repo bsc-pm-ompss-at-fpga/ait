@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-#
 # ------------------------------------------------------------------------ #
-#     (C) Copyright 2017-2024 Barcelona Supercomputing Center              #
+#     (C) Copyright 2017-2025 Barcelona Supercomputing Center              #
 #                             Centro Nacional de Supercomputacion          #
 #                                                                          #
 #     This file is part of OmpSs@FPGA toolchain.                           #
@@ -36,9 +35,9 @@ def check_vivado():
     global vivado_version
 
     if shutil.which('vivado'):
-        vivado_version = subprocess.run('vivado -version | head -n1 | sed "s/\(Vivado.\+v\)\(\([0-9]\|\.\)\+\).\+/\\2/"', shell=True, capture_output=True, encoding='utf-8').stdout.strip()
+        vivado_version = subprocess.run('vivado -version | grep -oP "(V|v)ivado v\K([0-9.]*)"', shell=True, capture_output=True, encoding='utf-8').stdout.strip()
         if vivado_version < MIN_VIVADO_VERSION:
-            msg.error('Installed Vivado version ({}) not supported (>= {})'.format(vivado_version, MIN_VIVADO_VERSION))
+            msg.error(f'Installed Vivado version ({vivado_version}) not supported (>= {MIN_VIVADO_VERSION})')
     else:
         msg.error('vivado not found. Please set PATH correctly')
 
@@ -51,7 +50,7 @@ def check_vitis_hls():
     if shutil.which('vitis_hls'):
         vitis_hls_version = subprocess.run('vitis_hls -version | head -n1 | sed "s/\(Vitis.\+v\)\(\([0-9]\|\.\)\+\).\+/\\2/"', shell=True, capture_output=True, encoding='utf-8').stdout.strip()
         if vitis_hls_version < MIN_VITIS_HLS_VERSION:
-            msg.error('Installed Vitis HLS version ({}) not supported (>= {})'.format(vitis_hls_version, MIN_VITIS_HLS_VERSION))
+            msg.error(f'Installed Vitis HLS version ({vitis_hls_version}) not supported (>= {MIN_VITIS_HLS_VERSION})')
     else:
         msg.error('vitis_hls not found. Please set PATH correctly')
 
@@ -71,7 +70,7 @@ def check_petalinux():
 
     petalinux_build_path = os.getenv('PETALINUX_BUILD', 'empty')
     if not os.path.exists(petalinux_build_path):
-        msg.error('PETALINUX_BUILD (' + petalinux_build_path + ') variable not properly set')
+        msg.error(f'PETALINUX_BUILD ({petalinux_build_path}) variable not properly set')
 
     petalinux_version = os.getenv('PETALINUX_VER', '')
 
@@ -82,22 +81,23 @@ def check_petalinux():
     elif not shutil.which('petalinux-package'):
         msg.error('petalinux-package command not found. Please correctly source Petalinux settings.sh')
     elif petalinux_version < MIN_PETALINUX_VERSION:
-        msg.error('Installed Petalinux version ({}) not supported (>= {})'.format(petalinux_version, MIN_PETALINUX_VERSION))
+        msg.error(f'Installed Petalinux version ({petalinux_version}) not supported (>= {MIN_PETALINUX_VERSION})')
 
     return True
 
 
 def check_board_support(chip_part):
+    global vivado_version
     check_vivado()
 
     tmp_dir = os.popen('mktemp -d --suffix=_ait').read().rstrip()
 
-    os.mkdir(tmp_dir + '/scripts')
+    os.mkdir(f'{tmp_dir}/scripts')
 
-    os.system('echo "enable_beta_device ' + chip_part + '" >' + tmp_dir + '/scripts/vivado.tcl')
-    os.system('echo "if {[llength [get_parts ' + chip_part + ']] == 0} {exit 1}" > ' + tmp_dir + '/scripts/ait_part_check.tcl')
-    p = subprocess.Popen('vivado -init -nojournal -nolog -mode batch -source ' + tmp_dir + '/scripts/ait_part_check.tcl', shell=True, stdout=open(os.devnull, 'w'), cwd=tmp_dir + '/scripts')
+    os.system(f'echo "enable_beta_device {chip_part}" > {tmp_dir}/scripts/vivado.tcl')
+    os.system(f'echo "if {{[llength [get_parts {chip_part}]] == 0}} {{exit 1}}" > {tmp_dir}/scripts/ait_part_check.tcl')
+    p = subprocess.Popen(f'vivado -init -nojournal -nolog -mode batch -source {tmp_dir}/scripts/ait_part_check.tcl', shell=True, stdout=open(os.devnull, 'w'), cwd=f'{tmp_dir}/scripts')
     retval = p.wait()
-    os.system('rm -rf ' + tmp_dir)
+    os.system(f'rm -rf {tmp_dir}')
     if (int(retval) == 1):
-        msg.error('Your current version of Vivado does not support part ' + chip_part)
+        msg.error(f'Your current version of Vivado ({vivado_version}) does not support part {chip_part}')

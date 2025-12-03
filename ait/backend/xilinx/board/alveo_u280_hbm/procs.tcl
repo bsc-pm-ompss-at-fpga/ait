@@ -1,5 +1,5 @@
 #------------------------------------------------------------------------#
-#    (C) Copyright 2017-2024 Barcelona Supercomputing Center             #
+#    (C) Copyright 2017-2025 Barcelona Supercomputing Center             #
 #                            Centro Nacional de Supercomputacion         #
 #                                                                        #
 #    This file is part of OmpSs@FPGA toolchain.                          #
@@ -21,19 +21,24 @@
 namespace eval AIT {
     namespace eval board {
         proc static_logic_register_slices {} {
-            # AIT::AXI::add_reg_slice ip_name intf_name slr_master slr_slave {intf_pin} {num_pipelines} {prefix}
-            # num_pipelines format: master:middle:slave
-            # Pass unused optional arguments as ""
-
             # Hardware Runtime
-            AIT::AXI::add_reg_slice Hardware_Runtime S_AXI_GP 0 [dict get ${::AIT::board} "arch" "slr" "hwruntime"] "" "" static_
+            lassign [AIT::AXI::add_reg_slice S_AXI_GP 0 [dict get ${AIT::vars::board} "arch" "slr" "hwruntime"] "" hwruntime Hardware_Runtime] intfPin regSliceConstr
+            append constrStr ${regSliceConstr}
 
-            if {${AIT::ompif}} {
-                AIT::AXIS::add_reg_slice ompif_message_sender_0 S_AXIS 1 0 "" "" static_
-                AIT::AXIS::add_reg_slice ompif_message_receiver_0 S_AXIS 1 0 "" "" static_
-                AIT::AXIS::add_reg_slice ompif_message_sender_0 M_AXIS 0 1 "" "" static_
-                AIT::AXIS::add_reg_slice ompif_message_receiver_0 M_AXIS 0 1 "" "" static_
+            if {[dict get ${AIT::vars::aitConfig} "ompif"]} {
+                lassign [AIT::AXIS::add_reg_slice siCmd 1 0 "" sender_siCmd OMPIF/message_sender] intfPin regSliceConstr
+                append constrStr ${regSliceConstr}
+                lassign [AIT::AXIS::add_reg_slice siCmd 1 0 "" receiver_siCmd OMPIF/message_receiver] intfPin regSliceConstr
+                append constrStr ${regSliceConstr}
+                lassign [AIT::AXIS::add_reg_slice soCmd 0 1 "" sender_soCmd OMPIF/message_sender] intfPin regSliceConstr
+                append constrStr ${regSliceConstr}
+                lassign [AIT::AXIS::add_reg_slice soCmd 0 1 "" receiver_soCmd OMPIF/message_receiver] intfPin regSliceConstr
+                append constrStr ${regSliceConstr}
             }
+
+            save_bd_design -quiet
+
+            return ${constrStr}
         }
 
         proc add_power_monitor {} {
@@ -41,7 +46,7 @@ namespace eval AIT {
             create_bd_cell -type ip -vlnv xilinx.com:ip:cms_subsystem cms_subsystem
 
             # If ompif is not enabled, add 50MHz clock
-            if {!$AIT::ompif} {
+            if {![dict get ${AIT::vars::aitConfig} "ompif"]} {
                 set_property -dict [list \
                     CONFIG.CLKOUT2_REQUESTED_OUT_FREQ 50 \
                     CONFIG.CLKOUT2_USED true \
@@ -69,7 +74,7 @@ namespace eval AIT {
             connect_bd_net $satellite_gpio [get_bd_pins cms_subsystem/satellite_gpio]
 
             # Connect CMS to the M_AXI interconnect
-            connect_to_axi_intf [get_bd_intf_pins cms_subsystem/s_axi_ctrl] M "" [get_bd_pins clock_generator/clk_50] [get_bd_pins system_reset/clk_50_rstn]
+            AIT::AXI::connect_to_mem_intf [get_bd_intf_pins cms_subsystem/s_axi_ctrl] "" [get_bd_pins clock_generator/clk_50] [get_bd_pins system_reset/clk_50_rstn]
 
             connect_bd_net [get_bd_pins bridge_to_host/memory/HBM/DRAM_1_STAT_TEMP] [get_bd_pins cms_subsystem/hbm_temp_2]
             connect_bd_net [get_bd_pins bridge_to_host/memory/HBM/DRAM_0_STAT_TEMP] [get_bd_pins cms_subsystem/hbm_temp_1]
@@ -82,17 +87,18 @@ namespace eval AIT {
             create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset thermal_monitor_sys_rst
 
             # Connect System Management clock and reset
-            connect_clock [get_bd_pins thermal_monitor_sys_rst/slowest_sync_clk] [get_bd_pins clk_gen_slr0/clk_100]
-            connect_reset [get_bd_pins thermal_monitor_sys_rst/ext_reset_in] [get_bd_pins system_reset/clk_100_slr0_rstn]
+            AIT::design::connect_clock [get_bd_pins thermal_monitor_sys_rst/slowest_sync_clk] [get_bd_pins clk_gen_slr0/clk_100]
+            AIT::design::connect_reset [get_bd_pins thermal_monitor_sys_rst/ext_reset_in] [get_bd_pins system_reset/clk_100_slr0_rstn]
 
             # Connect System Management to the M_AXI interconnect
-            connect_to_axi_intf [get_bd_intf_pins system_management/S_AXI_LITE] M "" [get_bd_pins clock_generator/thermal_monitor_clk] [get_bd_pins thermal_monitor_sys_rst/peripheral_aresetn]
+            AIT::AXI::connect_to_mem_intf [get_bd_intf_pins system_management/S_AXI_LITE] "" [get_bd_pins clock_generator/thermal_monitor_clk] [get_bd_pins thermal_monitor_sys_rst/peripheral_aresetn]
         }
 
         # Create a custom AXI interconnect from a 512-bit 200MHz clock to a 256-bit 400MHz clock
         # because Xilinx interconnects don't give good timing results
         proc add_custom_axi_interconnect {hier_name rw_mode} {
             create_bd_cell -type hier $hier_name
+            create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 $hier_name/S_AXI
             create_bd_cell -type ip -vlnv xilinx.com:ip:axi_register_slice $hier_name/axi_register_slice_0
             create_bd_cell -type ip -vlnv xilinx.com:ip:axi_clock_converter $hier_name/axi_clock_converter_0
             create_bd_cell -type ip -vlnv xilinx.com:ip:axi_register_slice $hier_name/axi_register_slice_1
@@ -132,6 +138,7 @@ namespace eval AIT {
                 set_property -dict [list CONFIG.REG_AR 1 CONFIG.REG_AW 1 CONFIG.REG_B 1] [get_bd_cells $hier_name/axi_register_slice_2]
             }
 
+            connect_bd_intf_net [get_bd_intf_pins $hier_name/S_AXI] [get_bd_intf_pins $hier_name/axi_register_slice_0/S_AXI]
             connect_bd_intf_net [get_bd_intf_pins $hier_name/axi_register_slice_0/M_AXI] [get_bd_intf_pins $hier_name/axi_clock_converter_0/S_AXI]
             connect_bd_intf_net [get_bd_intf_pins $hier_name/axi_clock_converter_0/M_AXI] [get_bd_intf_pins $hier_name/axi_register_slice_1/S_AXI]
             connect_bd_intf_net [get_bd_intf_pins $hier_name/axi_register_slice_1/M_AXI] [get_bd_intf_pins $hier_name/axiu_dwidth_downsize_0/slv]
@@ -144,15 +151,19 @@ namespace eval AIT {
             connect_bd_net [get_bd_pins system_reset/clk_400_rstn] [get_bd_pins $hier_name/axi_clock_converter_0/m_axi_aresetn] [get_bd_pins $hier_name/axi_register_slice_1/aresetn] [get_bd_pins $hier_name/axiu_dwidth_downsize_0/rstn] [get_bd_pins $hier_name/axi_register_slice_2/aresetn] [get_bd_pins $hier_name/axi_protocol_convert_0/aresetn]
         }
 
-        proc add_ethernet_subsystem {} {
-            if {[catch {source -notrace tcl/templates/eth_subsys.tcl}]} {
-                AIT::utils::error_msg "Failed sourcing ethernet subsystem template"
-            }
-            set_property -dict [list CONFIG.DIFFCLK_BOARD_INTERFACE qsfp0_156mhz CONFIG.ETHERNET_BOARD_INTERFACE qsfp0_4x CONFIG.RX_FLOW_CONTROL 0 CONFIG.TX_FLOW_CONTROL 0 CONFIG.USER_INTERFACE AXIS CONFIG.GT_DRP_CLK 50] [get_bd_cells eth100gb]
-            set_property CONFIG.FREQ_HZ 156250000 [get_bd_intf_ports QSFP_CLK]
-            validate_bd_design
-            save_bd_design
-            current_bd_design ${::AIT::name_Project}_design
+        proc configure_ethernet_subsystem {} {
+            set_property -dict [list \
+                CONFIG.DIFFCLK_BOARD_INTERFACE {qsfp0_156mhz} \
+                CONFIG.ETHERNET_BOARD_INTERFACE {qsfp0_4x} \
+                CONFIG.RX_FLOW_CONTROL {0} \
+                CONFIG.TX_FLOW_CONTROL {0} \
+                CONFIG.USER_INTERFACE {AXIS} \
+                CONFIG.GT_DRP_CLK {50} \
+            ] [get_bd_cells eth100gb]
+            set_property CONFIG.FREQ_HZ {156250000} [get_bd_intf_ports QSFP_CLK]
+        }
+
+        proc instantiate_ethernet_subsystem {} {
             create_bd_cell -type container -reference ethernet_subsystem ethernet_subsystem
 
             create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 QSFP_CLK
@@ -209,27 +220,14 @@ namespace eval AIT {
             connect_bd_net [get_bd_pins clk_gen_slr0/clk_400] [get_bd_pins system_reset/clk_400]
             connect_bd_net [get_bd_pins clock_generator/clk_50] [get_bd_pins system_reset/clk_50]
 
-            create_bd_cell -type ip -vlnv bsc:ompif:packet_decoder_wrapper meep_packet_decoder
-            set_property -dict [list CONFIG.DATA_WIDTH 512 CONFIG.MAX_CLUSTER_SIZE 96] [get_bd_cells meep_packet_decoder]
-            create_bd_cell -type ip -vlnv xilinx.com:ip:axis_switch axis_inter_eth_tx
-            set_property CONFIG.HAS_TLAST.VALUE_SRC USER [get_bd_cells axis_inter_eth_tx]
-            set_property -dict [list CONFIG.HAS_TLAST 1 CONFIG.ARB_ON_MAX_XFERS 0 CONFIG.ARB_ON_TLAST 1 CONFIG.M00_AXIS_HIGHTDEST 0xFFFFFFFF] [get_bd_cells axis_inter_eth_tx]
             create_bd_cell -type ip -vlnv xilinx.com:ip:jtag_axi jtag_axi_0
             set_property CONFIG.PROTOCOL 2 [get_bd_cells jtag_axi_0]
             create_bd_cell -type ip -vlnv xilinx.com:ip:axi_gpio jtag_gpio
             set_property -dict [list CONFIG.C_GPIO_WIDTH 2 CONFIG.C_GPIO2_WIDTH 16 CONFIG.C_IS_DUAL 1 CONFIG.C_DOUT_DEFAULT 0x00000002 CONFIG.C_ALL_OUTPUTS 1 CONFIG.C_ALL_OUTPUTS_2 1] [get_bd_cells jtag_gpio]
             create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset system_reset/proc_sys_reset_eth_subsys
             set_property CONFIG.C_EXT_RST_WIDTH 1 [get_bd_cells system_reset/proc_sys_reset_eth_subsys]
-            create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice cluster_size_slice
-            set_property -dict [list CONFIG.DIN_FROM 7 CONFIG.DIN_WIDTH 16 CONFIG.DOUT_WIDTH 8] [get_bd_cells cluster_size_slice]
-            create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice cluster_rank_slice
-            set_property -dict [list CONFIG.DIN_FROM 15 CONFIG.DIN_TO 8 CONFIG.DIN_WIDTH 16 CONFIG.DOUT_WIDTH 8] [get_bd_cells cluster_rank_slice]
             create_bd_cell -type ip -vlnv xilinx.com:ip:axi_crossbar jtag_axi_xbar
             set_property -dict [list CONFIG.NUM_SI 2 CONFIG.STRATEGY 1] [get_bd_cells jtag_axi_xbar]
-            create_bd_cell -type ip -vlnv xilinx.com:ip:axis_switch axis_sw_dec
-            set_property -dict [list CONFIG.NUM_SI 1 CONFIG.NUM_MI 2 CONFIG.DECODER_REG 1] [get_bd_cells axis_sw_dec]
-            create_bd_cell -type ip -vlnv xilinx.com:ip:axis_register_slice axis_rs_dec
-
             create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice system_reset/slice_eth_subsys
             set_property -dict [list CONFIG.DIN_WIDTH 2 CONFIG.DIN_FROM 0 CONFIG.DIN_TO 0 CONFIG.DOUT_WIDTH 1] [get_bd_cells system_reset/slice_eth_subsys]
             create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice system_reset/slice_eth_cntrl
@@ -239,31 +237,24 @@ namespace eval AIT {
             connect_bd_net [get_bd_pins system_reset/slice_eth_cntrl/Dout] [get_bd_pins system_reset/eth_cntrl_rst]
             connect_bd_net [get_bd_pins clk_gen_slr0/clk_100] [get_bd_pins ethernet_subsystem/clk_100]
             connect_bd_net [get_bd_pins system_reset/clk_100_slr0_rstn] [get_bd_pins ethernet_subsystem/clk_100_rstn]
-            connect_bd_net [get_bd_pins system_reset/clk_200_rstn] [get_bd_pins axis_rs_dec/aresetn] [get_bd_pins ethernet_subsystem/clk_200_rstn] [get_bd_pins axis_inter_eth_tx/aresetn] [get_bd_pins axis_sw_dec/aresetn]
+            connect_bd_net [get_bd_pins system_reset/clk_200_rstn] [get_bd_pins ethernet_subsystem/clk_200_rstn]
             connect_bd_net [get_bd_pins system_reset/jtag_rstn] [get_bd_pins system_reset/slice_eth_subsys/Din]
             connect_bd_net [get_bd_pins system_reset/slice_eth_subsys/Dout] [get_bd_pins system_reset/proc_sys_reset_eth_subsys/ext_reset_in]
             connect_bd_net [get_bd_pins system_reset/clk_50] [get_bd_pins system_reset/proc_sys_reset_eth_subsys/slowest_sync_clk] [get_bd_pins ethernet_subsystem/init_clk]
             connect_bd_net [get_bd_pins system_reset/eth_subsys_rst] [get_bd_pins system_reset/proc_sys_reset_eth_subsys/peripheral_reset]
             connect_bd_net [get_bd_pins system_reset/clk_gen_slr0_locked] [get_bd_pins system_reset/proc_sys_reset_eth_subsys/dcm_locked]
             connect_bd_net [get_bd_pins jtag_gpio/gpio_io_o] [get_bd_pins system_reset/jtag_rstn]
-            connect_bd_net [get_bd_pins axis_rs_dec/aclk] [get_bd_pins meep_packet_decoder/clk] [get_bd_pins clk_gen_slr0/clk_200] [get_bd_pins axis_inter_eth_tx/aclk] [get_bd_pins ethernet_subsystem/clk_200] [get_bd_pins axis_sw_dec/aclk]
-            connect_bd_net [get_bd_pins meep_packet_decoder/rstn] [get_bd_pins system_reset/clk_200_managed_rstn]
+            connect_bd_net [get_bd_pins clk_gen_slr0/clk_200] [get_bd_pins ethernet_subsystem/clk_200]
             connect_bd_net [get_bd_pins jtag_axi_0/aclk] [get_bd_pins clk_gen_slr0/clk_100] [get_bd_pins jtag_axi_xbar/aclk] [get_bd_pins jtag_gpio/s_axi_aclk]
             connect_bd_net [get_bd_pins jtag_axi_0/aresetn] [get_bd_pins system_reset/clk_100_slr0_rstn] [get_bd_pins jtag_axi_xbar/aresetn] [get_bd_pins jtag_gpio/s_axi_aresetn]
-            connect_bd_net [get_bd_pins jtag_gpio/gpio2_io_o] [get_bd_pins cluster_size_slice/Din] [get_bd_pins cluster_rank_slice/Din]
             connect_bd_net [get_bd_pins ethernet_subsystem/eth_subsys_rst] [get_bd_pins system_reset/eth_subsys_rst]
             connect_bd_net [get_bd_pins system_reset/eth_cntrl_rst] [get_bd_pins ethernet_subsystem/eth_cntrl_rst]
 
-            connect_bd_intf_net [get_bd_intf_pins meep_packet_decoder/si] -boundary_type upper [get_bd_intf_pins ethernet_subsystem/msg_rx]
-            connect_bd_intf_net [get_bd_intf_pins meep_packet_decoder/soEnc] -boundary_type upper [get_bd_intf_pins axis_inter_eth_tx/S00_AXIS]
-            connect_bd_intf_net -boundary_type upper [get_bd_intf_pins axis_inter_eth_tx/M00_AXIS] [get_bd_intf_pins ethernet_subsystem/S_AXIS]
             connect_bd_intf_net -boundary_type upper [get_bd_intf_pins jtag_axi_0/M_AXI] [get_bd_intf_pins jtag_axi_xbar/S00_AXI]
             connect_bd_intf_net -boundary_type upper [get_bd_intf_pins ethernet_subsystem/S_AXI] [get_bd_intf_pins jtag_axi_xbar/M01_AXI]
             connect_bd_intf_net -boundary_type upper [get_bd_intf_pins jtag_gpio/S_AXI] [get_bd_intf_pins jtag_axi_xbar/M00_AXI]
-            connect_bd_intf_net [get_bd_intf_pins meep_packet_decoder/soRole] [get_bd_intf_pins axis_sw_dec/S00_AXIS]
-            connect_bd_intf_net [get_bd_intf_pins axis_rs_dec/S_AXIS] [get_bd_intf_pins axis_sw_dec/M00_AXIS]
 
-            connect_to_axi_intf [get_bd_intf_pins jtag_axi_xbar/S01_AXI] M "" [get_bd_pins clk_gen_slr0/clk_100] [get_bd_pins system_reset/clk_100_slr0_rstn]
+            AIT::AXI::connect_to_mem_intf [get_bd_intf_pins jtag_axi_xbar/S01_AXI] "" [get_bd_pins clk_gen_slr0/clk_100] [get_bd_pins system_reset/clk_100_slr0_rstn]
 
             add_custom_axi_interconnect axi_inter_msg_send read
             add_custom_axi_interconnect axi_inter_msg_recv_bufwr write
@@ -290,7 +281,7 @@ namespace eval AIT {
 
         # This is done after acc instantiation because the HBM memory IP changes automatically the switch clock when connecting other AXI slaves
         proc after_acc_configuration {} {
-            if {!$AIT::ompif} {
+            if {![dict get ${AIT::vars::aitConfig} "ompif"]} {
                 return
             }
             # Set switch 0 to 400Mhz clock to avoid bandwidth loss

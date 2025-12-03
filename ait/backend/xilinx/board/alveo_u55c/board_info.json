@@ -6,22 +6,60 @@
 	"arch": {
 		"device": "alveo",
 		"slr": {
-			"num": 3,
-			"hwruntime": 1,
-			"memory": 0
+			"num": "3",
+			"hwruntime": "1",
+			"memory": "0"
 		}
 	},
 
 	"memory": {
 		"type": "hbm",
-		"num_banks": 32,
+		"num_banks": "32",
 		"bank_size": "0x20000000",
 		"base_addr": "0x0",
-		"ompss_base_addr": "0x0"
+		"ompss_base_addr": "0x0",
+		"interfaces": {
+			"master": [
+				"/bridge_to_host/M_AXI_LITE"
+			],
+			"slave": [
+                "/bridge_to_host/memory/HBM/SAXI_00_8HI",
+                "/bridge_to_host/memory/HBM/SAXI_01_8HI",
+                "/bridge_to_host/memory/HBM/SAXI_02_8HI",
+                "/bridge_to_host/memory/HBM/SAXI_03_8HI",
+                "/bridge_to_host/memory/HBM/SAXI_04_8HI",
+                "/bridge_to_host/memory/HBM/SAXI_05_8HI",
+                "/bridge_to_host/memory/HBM/SAXI_06_8HI",
+                "/bridge_to_host/memory/HBM/SAXI_07_8HI",
+                "/bridge_to_host/memory/HBM/SAXI_08_8HI",
+                "/bridge_to_host/memory/HBM/SAXI_09_8HI",
+                "/bridge_to_host/memory/HBM/SAXI_10_8HI",
+                "/bridge_to_host/memory/HBM/SAXI_11_8HI",
+                "/bridge_to_host/memory/HBM/SAXI_12_8HI",
+                "/bridge_to_host/memory/HBM/SAXI_13_8HI",
+                "/bridge_to_host/memory/HBM/SAXI_14_8HI",
+                "/bridge_to_host/memory/HBM/SAXI_15_8HI",
+                "/bridge_to_host/memory/HBM/SAXI_16_8HI",
+                "/bridge_to_host/memory/HBM/SAXI_17_8HI",
+                "/bridge_to_host/memory/HBM/SAXI_18_8HI",
+                "/bridge_to_host/memory/HBM/SAXI_19_8HI",
+                "/bridge_to_host/memory/HBM/SAXI_20_8HI",
+                "/bridge_to_host/memory/HBM/SAXI_21_8HI",
+                "/bridge_to_host/memory/HBM/SAXI_22_8HI",
+                "/bridge_to_host/memory/HBM/SAXI_23_8HI",
+                "/bridge_to_host/memory/HBM/SAXI_24_8HI",
+                "/bridge_to_host/memory/HBM/SAXI_25_8HI",
+                "/bridge_to_host/memory/HBM/SAXI_26_8HI",
+                "/bridge_to_host/memory/HBM/SAXI_27_8HI",
+                "/bridge_to_host/memory/HBM/SAXI_28_8HI",
+                "/bridge_to_host/memory/HBM/SAXI_29_8HI",
+                "/bridge_to_host/memory/HBM/SAXI_30_8HI"
+			]
+		}
 	},
 
 	"ompif": {
 		"clk": "clk_gen_slr0/clk_200",
-		"rstn": "system_reset/clk_200_managed_rstn"
+		"rst": "system_reset/clk_200_managed_rstn"
 	}
 }

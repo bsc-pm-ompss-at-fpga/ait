@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-#
 # ------------------------------------------------------------------------ #
-#     (C) Copyright 2017-2024 Barcelona Supercomputing Center              #
+#     (C) Copyright 2017-2025 Barcelona Supercomputing Center              #
 #                             Centro Nacional de Supercomputacion          #
 #                                                                          #
 #     This file is part of OmpSs@FPGA toolchain.                           #
@@ -33,7 +32,7 @@ from ait.frontend.utils import backends, decimalFromHumanReadable, \
     decimalToHumanReadable, getNumJobs, msg
 
 for backend in backends:
-    importlib.import_module('ait.backend.%s.info' % (backend))
+    importlib.import_module(f'ait.backend.{backend}.info')
 
 
 # Custom argparse type representing a power of 2 int
@@ -57,11 +56,11 @@ class IntPowerType:
         if value is not None and (value & (value - 1)):
             return argparse.ArgumentTypeError('must be power of 2')
         elif self.imin is not None and self.imax is not None:
-            return argparse.ArgumentTypeError('must be an integer power of 2 in the range [{}, {}]'.format(self.imin, self.imax))
+            return argparse.ArgumentTypeError(f'must be an integer power of 2 in the range [{self.imin}, {self.imax}]')
         elif self.imin is not None:
-            return argparse.ArgumentTypeError('must be an integer power of 2 >= {}'.format(self.imin))
+            return argparse.ArgumentTypeError(f'must be an integer power of 2 >= {self.imin}')
         elif self.imax is not None:
-            return argparse.ArgumentTypeError('must be an integer power of 2 <= {}'.format(self.imax))
+            return argparse.ArgumentTypeError(f'must be an integer power of 2 <= {self.imax}')
         else:
             return argparse.ArgumentTypeError('must be an integer power of 2')
 
@@ -83,11 +82,11 @@ class IntRangeType:
 
     def exception(self):
         if self.imin is not None and self.imax is not None:
-            return argparse.ArgumentTypeError('must be an integer in the range [{}, {}]'.format(self.imin, self.imax))
+            return argparse.ArgumentTypeError(f'must be an integer in the range [{self.imin}, {self.imax}]')
         elif self.imin is not None:
-            return argparse.ArgumentTypeError('must be an integer >= {}'.format(self.imin))
+            return argparse.ArgumentTypeError(f'must be an integer >= {self.imin}')
         elif self.imax is not None:
-            return argparse.ArgumentTypeError('must be an integer <= {}'.format(self.imax))
+            return argparse.ArgumentTypeError(f'must be an integer <= {self.imax}')
         else:
             return argparse.ArgumentTypeError('must be an integer')
 
@@ -121,11 +120,11 @@ class HumanReadableType:
 
     def rangeException(self):
         if self.vmin is not None and self.vmax is not None:
-            return argparse.ArgumentTypeError('value must be in the range [{}, {}]'.format(decimalToHumanReadable(self.vmin), decimalToHumanReadable(self.vmax)))
+            return argparse.ArgumentTypeError(f'value must be in the range [{decimalToHumanReadable(self.vmin)}, {decimalToHumanReadable(self.vmax)}]')
         elif self.vmin is not None:
-            return argparse.ArgumentTypeError('value must be >= {}'.format(decimalToHumanReadable(self.vmin)))
+            return argparse.ArgumentTypeError(f'value must be >= {decimalToHumanReadable(self.vmin)}')
         elif self.vmax is not None:
-            return argparse.ArgumentTypeError('value must be <= {}'.format(decimalToHumanReadable(self.vmax)))
+            return argparse.ArgumentTypeError(f'value must be <= {decimalToHumanReadable(self.vmax)}')
 
 
 # Custom argparse type representing a path
@@ -152,18 +151,24 @@ class StoreChoiceValue(argparse.Action):
 
 
 class ChangedArg(argparse.Action):
+    def __init__(self, option_strings, new_arg, *args, **kwargs):
+        self.new_arg = new_arg
+        super(ChangedArg, self).__init__(option_strings=option_strings, *args, **kwargs)
+
+    # Warn the user that the argument has changed, but try to set the new one with the received value
     def __call__(self, parser, namespace, values, option_string=None):
-        msg.warning('Argument ' + '/'.join(self.option_strings) + ' has changed. Check `ait -h` and fix your program call')
+        msg.warning(f'Argument {"/".join(self.option_strings)} has changed to --{self.new_arg}. Check `ait -h` and fix your program call')
+        setattr(namespace, self.new_arg, values)
 
 
-class RemovedArg(argparse.Action):
+class DeprecatedArg(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
-        msg.info('Argument ' + '/'.join(self.option_strings) + ' is no longer used. Please remove it from the program call')
+        msg.warning(f'Argument {"/".join(self.option_strings)} is deprecated. Please remove it from the program call')
 
 
 class CustomParser(argparse.ArgumentParser):
     def error(self, message):
-        sys.stderr.write('usage: ait -b BOARD -n NAME\nait error: %s\n' % message)
+        sys.stderr.write(f'usage: ait -b BOARD -n NAME\nait error: {message}\n')
         sys.exit(2)
 
 
@@ -174,7 +179,7 @@ class ArgParser:
 
         # IP cache location defaults
         defaults[backend]['IP_cache_location'] = {
-            'value': '/var/tmp/ait/' + backend + '/IP_cache',
+            'value': f'/var/tmp/ait/{backend}/IP_cache',
             'used': False
         }
 
@@ -187,7 +192,7 @@ class ArgParser:
         # Load vendor-specific parsers
         self.backend_parser = dict()
         for backend in backends:
-            backend_parser = 'ait.backend.{}.utils.parser'.format(backend)
+            backend_parser = f'ait.backend.{backend}.utils.parser'
             if importlib.util.find_spec(backend_parser):
                 self.backend_parser[backend] = importlib.import_module(backend_parser)
 
@@ -196,91 +201,318 @@ class ArgParser:
 
         # Required arguments
         required_args = self.parser.add_argument_group('Required')
-        required_args.add_argument('-b', '--board', help='board model. Supported boards by vendor:\n' + '\n'.join(backend + ': ' + ', '.join(board for board in backends[backend]['boards']) for backend in backends), choices=[board for board in backends[backend]['boards'] for backend in backends], metavar='BOARD', type=str.lower, required=True)
-        required_args.add_argument('-n', '--name', help='project name', metavar='NAME', required='--dump_board_info' not in sys.argv)
+        required_args.add_argument('-b', '--board',
+                                   help='board model. Supported boards by vendor:\n' + '\n'.join(backend + ': ' + ', '.join(board for board in backends[backend]['boards']) for backend in backends),
+                                   choices=[board for board in backends[backend]['boards'] for backend in backends],
+                                   metavar='BOARD',
+                                   type=str.lower,
+                                   required=True)
+
+        required_args.add_argument('-n', '--name',
+                                   help='project name',
+                                   metavar='NAME',
+                                   required='--dump_board_info' not in sys.argv)
 
         # Generation flow arguments
         flow_args = self.parser.add_argument_group('Generation flow')
-        flow_args.add_argument('-d', '--dir', help='path where the project directory tree will be created\n(def: \'./\')', type=PathType(), default='./')
-        flow_args.add_argument('--disable_IP_caching', help='disable IP caching. Significantly increases generation time', action='store_true', default=False)
-        flow_args.add_argument('--disable_utilization_check', help='disable resources utilization check during HLS generation', action='store_true', default=False)
-        flow_args.add_argument('--disable_board_support_check', help='disable board support check', action='store_true', default=False)
-        flow_args.add_argument('--from_step', help='initial generation step. Generation steps by vendor:\n' + '\n'.join(backend + ': ' + ', '.join(step for step in backends[backend]['steps']) + "\n(def: '{}')".format(backends[backend]['initial_step']) for backend in backends), choices=[step for step in backends[backend]['steps'] for backend in backends], metavar='FROM_STEP', default='HLS')
-        flow_args.add_argument('--IP_cache_location', help='path where the IP cache will be located\n(def: \'/var/tmp/ait/<vendor>/IP_cache/\')', type=PathType())
-        flow_args.add_argument('--to_step', help='final generation step. Generation steps by vendor:\n' + '\n'.join(backend + ': ' + ', '.join(step for step in backends[backend]['steps']) + "\n(def: '{}')".format(backends[backend]['final_step']) for backend in backends), choices=[step for step in backends[backend]['steps'] for backend in backends], metavar='TO_STEP', default='bitstream')
+        flow_args.add_argument('-d', '--dir',
+                               help='path where the project directory tree will be created \
+                                    \n(def: .)',
+                               type=PathType(),
+                               default='.')
+
+        flow_args.add_argument('--disable_IP_caching',
+                               help='disable IP caching \
+                                    \nSignificantly increases generation time',
+                               action='store_true',
+                               default=False)
+
+        flow_args.add_argument('--disable_utilization_check',
+                               help='disable resources utilization check during HLS generation',
+                               action='store_true',
+                               default=False)
+
+        flow_args.add_argument('--disable_board_support_check',
+                               help='disable board support check',
+                               action='store_true',
+                               default=False)
+
+        flow_args.add_argument('--from_step',
+                               help='initial generation step \
+                                    \nGeneration steps by vendor:\n' + '\n'.join(backend + ': ' + ', '.join(step for step in backends[backend]['steps']) + "\n(def: '{}')".format(backends[backend]['initial_step']) for backend in backends),
+                               choices=[step for step in backends[backend]['steps'] for backend in backends],
+                               metavar='FROM_STEP',
+                               default='HLS')
+
+        flow_args.add_argument('--IP_cache_location',
+                               help='path where the IP cache will be located \
+                                    \n(def: /var/tmp/ait/<vendor>/IP_cache/)',
+                               type=PathType())
+
+        flow_args.add_argument('--to_step',
+                               help='final generation step \
+                                    \nGeneration steps by vendor:\n' + '\n'.join(backend + ': ' + ', '.join(step for step in backends[backend]['steps']) + "\n(def: '{}')".format(backends[backend]['final_step']) for backend in backends),
+                               choices=[step for step in backends[backend]['steps'] for backend in backends],
+                               metavar='TO_STEP',
+                               default='bitstream')
 
         # Bitstream configuration arguments
         bitstream_args = self.parser.add_argument_group('Bitstream configuration')
-        bitstream_args.add_argument('-c', '--clock', help='FPGA clock frequency in MHz\n(def: \'100\')', type=int, default='100')
-        bitstream_args.add_argument('--hwruntime', help=argparse.SUPPRESS, action=RemovedArg)
-        bitstream_args.add_argument('--hwcounter', help='add a hardware counter to the bitstream', action='store_true', default=False)
-        bitstream_args.add_argument('--wrapper_version', help='version of accelerator wrapper shell. This information will be placed in the bitstream information', type=int)
-        bitstream_args.add_argument('--bitinfo_note', help='custom note to add to the bitInfo', type=ascii, default=None)
+        bitstream_args.add_argument('-c', '--clock',
+                                    help='FPGA clock frequency in MHz \
+                                         \n(def: 100)',
+                                    type=int,
+                                    default='100')
+
+        bitstream_args.add_argument('--hwcounter',
+                                    help='add a hardware counter to the bitstream',
+                                    action='store_true',
+                                    default=False)
+
+        bitstream_args.add_argument('--bitinfo_note',
+                                    help='custom note to add to the bitinfo',
+                                    type=ascii)
+
+        bitstream_args.add_argument('--disable_static_constraints',
+                                    help='disable static constraints \
+                                         \nMay impact negatively on timing',
+                                    action='store_true',
+                                    default=False)
 
         # Data path arguments
         datapath_args = self.parser.add_argument_group('Data path')
-        datapath_args.add_argument('--datainterfaces_map', help='path of mappings file for the data interfaces', type=FileType())
-        datapath_args.add_argument('--memory_interleaving_stride', help='size in bytes of the stride of the memory interleaving. By default there is no interleaving', metavar='MEM_INTERLEAVING_STRIDE', type=HumanReadableType(vmin='4K'))
-        datapath_args.add_argument('--disable_creator_ports', help='Disable memory access ports in the task-creation accelerators', action='store_true', default=False)
+        datapath_args.add_argument('--memory_interleaving_stride',
+                                   help='size in bytes of the stride of the memory interleaving \
+                                        \nMust be power of 2 \
+                                        \nIf set to 0 bytes, interleaving will not be enabled \
+                                        \n(def: 0)',
+                                   metavar='MEM_INTERLEAVING_STRIDE',
+                                   type=HumanReadableType(vmin='4K'),
+                                   default=0)
 
         # Hardware Runtime arguments
         hwruntime_args = self.parser.add_argument_group('Hardware Runtime')
-        hwruntime_args.add_argument('--cmdin_queue_len', help='maximum length (64-bit words) of the queue for the hwruntime command in\nThis argument is mutually exclusive with --cmdin_subqueue_len', type=IntRangeType(imin=4))
-        hwruntime_args.add_argument('--cmdin_subqueue_len', help='length (64-bit words) of each accelerator subqueue for the hwruntime command in.\nThis argument is mutually exclusive with --cmdin_queue_len\nMust be power of 2\nDef. max(64, 1024/num_accs)', type=IntPowerType(imin=4))
-        hwruntime_args.add_argument('--cmdout_queue_len', help='maximum length (64-bit words) of the queue for the hwruntime command out\nThis argument is mutually exclusive with --cmdout_subqueue_len', type=IntRangeType(imin=2))
-        hwruntime_args.add_argument('--cmdout_subqueue_len', help='length (64-bit words) of each accelerator subqueue for the hwruntime command out. This argument is mutually exclusive with --cmdout_queue_len\nMust be power of 2\nDef. max(64, 1024/num_accs)', type=IntPowerType(imin=2))
-        hwruntime_args.add_argument('--disable_spawn_queues', help='disable the hwruntime spawn in/out queues', action='store_true', default=False)
-        hwruntime_args.add_argument('--spawnin_queue_len', help='length (64-bit words) of the hwruntime spawn in queue. Must be power of 2\n(def: \'1024\')', type=IntPowerType(imin=4), default=1024)
-        hwruntime_args.add_argument('--spawnout_queue_len', help='length (64-bit words) of the hwruntime spawn out queue. Must be power of 2\n(def: \'1024\')', type=IntPowerType(imin=4), default=1024)
-        hwruntime_args.add_argument('--hwruntime_interconnect', help='type of hardware runtime interconnection with accelerators\ncentralized\ndistributed\n(def: \'centralized\')', choices=['centralized', 'distributed'], metavar='HWR_INTERCONNECT', default='centralized')  # TODO: Explain what does each option do
-        hwruntime_args.add_argument('--max_args_per_task', help='maximum number of arguments for any task in the bitstream\n(def: \'15\')', type=IntRangeType(imin=1), default=15)
-        hwruntime_args.add_argument('--max_deps_per_task', help='maximum number of dependencies for any task in the bitstream\n(def: \'8\')', type=IntRangeType(imin=2), default=8)
-        hwruntime_args.add_argument('--max_copies_per_task', help='maximum number of copies for any task in the bitstream\n(def: \'15\')', type=IntRangeType(imin=1), default=15)
-        hwruntime_args.add_argument('--enable_pom_axilite', help='enable the POM axilite interface with debug counters\n', action='store_true', default=False)
+        cmdin_len = hwruntime_args.add_mutually_exclusive_group()
+        cmdin_len.add_argument('--cmdin_queue_len',
+                               help='maximum length (64-bit words) of the queue for the hwruntime command in \
+                                    \nThis argument is mutually exclusive with --cmdin_subqueue_len',
+                               type=IntRangeType(imin=4))
+        cmdin_len.add_argument('--cmdin_subqueue_len',
+                               help='length (64-bit words) of each accelerator subqueue for the hwruntime command in \
+                                    \nThis argument is mutually exclusive with --cmdin_queue_len \
+                                    \nMust be power of 2 \
+                                    \n(def: max(64, 1024/num_instances))',
+                               type=IntPowerType(imin=4))
+
+        cmdout_len = hwruntime_args.add_mutually_exclusive_group()
+        cmdout_len.add_argument('--cmdout_queue_len',
+                                help='maximum length (64-bit words) of the queue for the hwruntime command out \
+                                     \nThis argument is mutually exclusive with --cmdout_subqueue_len',
+                                type=IntRangeType(imin=2))
+
+        cmdout_len.add_argument('--cmdout_subqueue_len',
+                                help='length (64-bit words) of each accelerator subqueue for the hwruntime command out \
+                                     \nThis argument is mutually exclusive with --cmdout_queue_len \
+                                     \nMust be power of 2 \
+                                     \n(def: max(64, 1024/num_instances))',
+                                type=IntPowerType(imin=2))
+
+        hwruntime_args.add_argument('--disable_spawn_queues',
+                                    help='disable the hwruntime spawn in/out queues',
+                                    action='store_true',
+                                    default=False)
+
+        hwruntime_args.add_argument('--spawnin_queue_len',
+                                    help='length (64-bit words) of the hwruntime spawn in queue \
+                                         \nMust be power of 2 \
+                                         \n(def: 1024)',
+                                    type=IntPowerType(imin=4),
+                                    default=1024)
+
+        hwruntime_args.add_argument('--spawnout_queue_len',
+                                    help='length (64-bit words) of the hwruntime spawn out queue \
+                                         \nMust be power of 2 \
+                                         \n(def: 1024)',
+                                    type=IntPowerType(imin=4),
+                                    default=1024)
+
+        hwruntime_args.add_argument('--hwruntime_interconnect',
+                                    help='type of hardware runtime interconnection with accelerators \
+                                         \ncentralized \
+                                         \ndistributed \
+                                         \n(def: centralized)',
+                                    choices=['centralized', 'distributed'],
+                                    metavar='HWR_INTERCONNECT',
+                                    default='centralized')  # TODO: Explain what does each option do
+
+        hwruntime_args.add_argument('--max_args_per_task',
+                                    help='maximum number of arguments for any task in the bitstream \
+                                         \n(def: 15)',
+                                    type=IntRangeType(imin=1),
+                                    default=15)
+
+        hwruntime_args.add_argument('--max_deps_per_task',
+                                    help='maximum number of dependencies for any task in the bitstream \
+                                         \n(def: 8)',
+                                    type=IntRangeType(imin=2),
+                                    default=8)
+
+        hwruntime_args.add_argument('--max_copies_per_task',
+                                    help='maximum number of copies for any task in the bitstream \
+                                         \n(def: 15)',
+                                    type=IntRangeType(imin=1),
+                                    default=15)
+
+        hwruntime_args.add_argument('--enable_pom_axilite',
+                                    help='enable the POM axilite interface with debug counters',
+                                    action='store_true',
+                                    default=False)
 
         # Picos arguments
         picos_args = self.parser.add_argument_group('Picos')
-        picos_args.add_argument('--picos_num_dcts', help='number of DCTs instantiated\n(def: \'1\')', choices=['1', '2', '4'], metavar='NUM_DCTS', default=1)
-        picos_args.add_argument('--picos_tm_size', help='size of the TM memory\n(def: \'128\')', type=IntRangeType(imin=2), default=128)
-        picos_args.add_argument('--picos_dm_size', help='size of the DM memory\n(def: \'512\')', type=IntRangeType(imin=2), default=512)
-        picos_args.add_argument('--picos_vm_size', help='size of the VM memory\n(def: \'512\')', type=IntRangeType(imin=2), default=512)
-        picos_args.add_argument('--picos_dm_ds', help='data structure of the DM memory\nBINTREE: Binary search tree (not autobalanced)\nLINKEDLIST: Linked list\n(def: \'BINTREE\')', choices=['BINTREE', 'LINKEDLIST'], metavar='DATA_STRUCT', default='BINTREE')
-        picos_args.add_argument('--picos_dm_hash', help='hashing function applied to dependence addresses\nP_PEARSON: Parallel Pearson function\nXOR\n(def: \'P_PEARSON\')', choices=['P_PEARSON', 'XOR'], metavar='HASH_FUN', default='P_PEARSON')  # TODO: Explain what XOR does
-        picos_args.add_argument('--picos_hash_t_size', help='DCT hash table size\n(def: \'64\')', type=IntRangeType(imin=2), default=64)
+        picos_args.add_argument('--picos_num_dcts',
+                                help='number of DCTs to instantiate \
+                                     \n(def: 1)',
+                                type=int,
+                                choices=[1, 2, 4],
+                                metavar='NUM_DCTS',
+                                default=1)
+
+        picos_args.add_argument('--picos_tm_size',
+                                help='size of the TM memory \
+                                     \n(def: 128)',
+                                type=IntRangeType(imin=2),
+                                default=128)
+
+        picos_args.add_argument('--picos_dm_size',
+                                help='size of the DM memory \
+                                     \n(def: 512)',
+                                type=IntRangeType(imin=2),
+                                default=512)
+
+        picos_args.add_argument('--picos_vm_size',
+                                help='size of the VM memory \
+                                     \n(def: 512)',
+                                type=IntRangeType(imin=2),
+                                default=512)
+
+        picos_args.add_argument('--picos_dm_ds',
+                                help='data structure of the DM memory \
+                                     \nBINTREE: Binary search tree (not autobalanced) \
+                                     \nLINKEDLIST: Linked list \
+                                     \n(def: BINTREE)',
+                                choices=['BINTREE', 'LINKEDLIST'],
+                                metavar='DATA_STRUCT',
+                                default='BINTREE')
+
+        picos_args.add_argument('--picos_dm_hash',
+                                help='hashing function applied to dependence addresses \
+                                     \nP_PEARSON: Parallel Pearson function \
+                                     \nXOR \
+                                     \n(def: P_PEARSON)',
+                                choices=['P_PEARSON', 'XOR'],
+                                metavar='HASH_FUN',
+                                default='P_PEARSON')  # TODO: Explain what XOR does
+
+        picos_args.add_argument('--picos_hash_t_size',
+                                help='DCT hash table size \
+                                     \n(def: 64)',
+                                type=IntRangeType(imin=2),
+                                default=64)
 
         # User-defined files arguments
         user_args = self.parser.add_argument_group('User-defined files')
-        user_args.add_argument('--user_constraints', help='path of user defined constraints file', type=FileType())
-        user_args.add_argument('--user_pre_design', help='path of user TCL script to be executed before the design step (not after the board base design)', type=FileType())
-        user_args.add_argument('--user_post_design', help='path of user TCL script to be executed after the design step', type=FileType())
+        user_args.add_argument('--user_config',
+                               help='path to the JSON file containing user configuration',
+                               type=FileType())
+
+        user_args.add_argument('--user_constraints',
+                               help='path to the user defined constraints file',
+                               type=FileType())
+
+        user_args.add_argument('--user_pre_design',
+                               help='path to the user TCL script to be executed before the design step (not after the board base design)',
+                               type=FileType())
+
+        user_args.add_argument('--user_post_design',
+                               help='path to the user TCL script to be executed after the design step',
+                               type=FileType())
 
         # Miscellaneous arguments
         misc_args = self.parser.add_argument_group('Miscellaneous')
-        misc_args.add_argument('-h', '--help', action='help', help='show this help message and exit')
-        misc_args.add_argument('-i', '--verbose_info', help='print extra information messages', action='store_true', default=False)
-        misc_args.add_argument('--dump_board_info', help='dump board info json for the specified board', action='store_true', default=False)
-        misc_args.add_argument('-j', '--jobs', help='specify the number of jobs to run simultaneously\nBy default it will use as many jobs as cores with at least 5GB of dedicated free memory, or the value returned by `nproc`, whichever is less.', type=IntRangeType(imin=1), default=None)
-        misc_args.add_argument('--mem_per_job', help='specify the memory per core used to estimate the number of jobs to launch (def: 5G)', type=HumanReadableType(vmin='1G'), default='5G')
-        misc_args.add_argument('-k', '--keep_files', help='keep files on error', action='store_true', default=False)
-        misc_args.add_argument('-v', '--verbose', help='print vendor backend messages', action='store_true', default=False)
-        misc_args.add_argument('--version', help='print AIT version and exits', action='version', version=str(LONG_VERSION))
+        misc_args.add_argument('-h', '--help',
+                               action='help',
+                               help='show this help message and exit')
+
+        misc_args.add_argument('-i', '--verbose_info',
+                               help='print extra information messages',
+                               action='store_true',
+                               default=False)
+
+        misc_args.add_argument('--dump_board_info',
+                               help='dump board info json for the specified board',
+                               action='store_true',
+                               default=False)
+
+        misc_args.add_argument('-j', '--jobs',
+                               help='specify the number of jobs to run simultaneously \
+                                    \nBy default it will use as many jobs as cores with at least 5GB of dedicated free memory, or the value returned by `nproc`, whichever is less.',
+                               type=IntRangeType(imin=1),
+                               default=None)
+
+        misc_args.add_argument('--mem_per_job',
+                               help='specify the memory per core used to estimate the number of jobs to launch \
+                                    \n(def: 5G)',
+                               type=HumanReadableType(vmin='1G'),
+                               default='5G')
+
+        misc_args.add_argument('-k', '--keep_files',
+                               help='keep files on error',
+                               action='store_true',
+                               default=False)
+
+        misc_args.add_argument('-v', '--verbose',
+                               help='print vendor backend messages',
+                               action='store_true',
+                               default=False)
+
+        misc_args.add_argument('--version',
+                               help='print AIT version and exits',
+                               action='version',
+                               version=str(LONG_VERSION))
 
         # Hidden arguments
         hidden_args = self.parser.add_argument_group('Hidden')
-        hidden_args.add_argument('--task_creation', help=argparse.SUPPRESS, action='store_true', default=False)
-        hidden_args.add_argument('--deps_hwruntime', help=argparse.SUPPRESS, action='store_true', default=False)
-        hidden_args.add_argument('--lock_hwruntime', help=argparse.SUPPRESS, action='store_true', default=False)
+        hidden_args.add_argument('--wrapper_version',
+                                 help=argparse.SUPPRESS,
+                                 type=int,
+                                 default=0)
+
+        hidden_args.add_argument('--task_creation',
+                                 help=argparse.SUPPRESS,
+                                 action='store_true',
+                                 default=False)
+
+        hidden_args.add_argument('--deps_hwruntime',
+                                 help=argparse.SUPPRESS,
+                                 action='store_true',
+                                 default=False)
+
+        hidden_args.add_argument('--lock_hwruntime',
+                                 help=argparse.SUPPRESS,
+                                 action='store_true',
+                                 default=False)
 
     def parse_args(self):
         # Check if configuration file exists and parse its values
-        config_file_path = os.path.expanduser('~') + '/.ait/config.json'
+        config_file_path = f'{os.path.expanduser("~")}/.ait/config.json'
         if os.path.exists(config_file_path):
             with open(config_file_path) as config_file:
                 try:
                     config = json.load(config_file)
                     self.parser.set_defaults(**config)
                 except ValueError as err:
-                    print('Invalid configuration file (' + config_file_path + '). ' + str(err))
+                    print(f'Invalid configuration file ({config_file_path}). {err}')
                     print('================')
                     config_file.seek(0)
                     print(config_file.read())
@@ -296,7 +528,7 @@ class ArgParser:
         if (args.backend in self.backend_parser):
             args, extras = self.backend_parser[args.backend].parser.parse_known_args(extras, namespace=args)
         if len(extras):
-            self.parser.error('unrecognized arguments: ' + ','.join(extras) + '. Try \'ait -h\' for more information.')
+            self.parser.error(f"unrecognized arguments: {','.join(extras)}. Try 'ait -h' for more information.")
 
         # Set default values for non-provided options
         for arg in self.defaults[args_vars['backend']]:
@@ -322,22 +554,22 @@ class ArgParser:
             if re.search('(^[^A-Za-z])|(\W|__)|([^A-Za-z0-9]$)', args.name):
                 msg.error('Invalid project name. Must start with a letter, contain only letters, numbers or non-consecutive underscores, and end with a letter or number')
 
-            if not os.path.exists(args.dir + '/' + args.name + '_ait'):
-                os.mkdir(args.dir + '/' + args.name + '_ait')
+            if not os.path.exists(f'{args.dir}/{args.name}_ait'):
+                os.mkdir(f'{args.dir}/{args.name}_ait')
 
             if args.wrapper_version and args.wrapper_version < MIN_WRAPPER_VERSION:
-                msg.error('Unsupported wrapper version (' + str(args.wrapper_version) + '). Minimum version is ' + str(MIN_WRAPPER_VERSION))
+                msg.error(f'Unsupported wrapper version ({args.wrapper_version}). Minimum version is {MIN_WRAPPER_VERSION}')
 
     def check_flow_args(self, args):
         # Validate flow args
         if args.from_step not in backends[args.backend]['steps']:
-            msg.error('Initial step \'' + args.from_step + '\' is not a valid generation step for \'' + args.backend + '\' backend. Set it correctly')
+            msg.error(f"Initial step '{args.from_step}' is not a valid generation step for '{args.backend}' backend. Set it correctly")
 
         if args.to_step not in backends[args.backend]['steps']:
-            msg.error('Final step \'' + args.to_step + '\' is not a valid generation step for \'' + args.backend + '\' backend. Set it correctly')
+            msg.error(f"Final step '{args.to_step}' is not a valid generation step for '{args.backend}' backend. Set it correctly")
 
         if backends[args.backend]['steps'].index(args.from_step) > backends[args.backend]['steps'].index(args.to_step):
-            msg.error('Initial step \'' + args.from_step + '\' is posterior to the final step \'' + args.to_step + '\'. Set them correctly')
+            msg.error(f"Initial step '{args.from_step}' is posterior to the final step '{args.to_step}'. Set them correctly")
 
         if not args.disable_IP_caching and not os.path.isdir(args.IP_cache_location):
             if self.is_default('IP_cache_location', args.backend):
@@ -345,56 +577,54 @@ class ArgParser:
                 os.makedirs(args.IP_cache_location)
                 os.chmod(args.IP_cache_location, 0o777)
             else:
-                msg.error('Cache location (' + args.IP_cache_location + ') does not exist or is not a folder')
+                msg.error(f'Cache location ({args.IP_cache_location}) does not exist or is not a folder')
 
     def check_bitstream_args(self, args):
         # Validate bitstream args
         if args.bitinfo_note and len(args.bitinfo_note) > 256:
-            msg.error('Length of bitInfo note must be less than 256 ASCII chars')
+            msg.error('Length of bitinfo note must be less than 256 ASCII chars')
 
-    # This check has to be delayed because arguments are parsed before the number of accelerators is calculated
-    def check_hardware_runtime_args(self, args, num_accs):
-        # Validate hardware runtime args
+    # Validate hardware runtime args
+    def check_hardware_runtime_args(self, args):
+        # This check has to be delayed because arguments are parsed before the number of accelerators is calculated
         def prev_power_of_2(num):
             if num & (num - 1) != 0:
                 num = int(math.log2(num))
                 num = int(pow(2, num))
             return num
 
-        if args.cmdin_subqueue_len is not None and args.cmdin_queue_len is not None:
-            msg.error('--cmdin_subqueue_len and --cmdin_queue_len are mutually exclusive')
-        if args.cmdout_subqueue_len is not None and args.cmdout_queue_len is not None:
-            msg.error('--cmdout_subqueue_len and --cmdout_queue_len are mutually exclusive')
+        if args.num_accs > 16:
+            msg.error(f'Max number of accelerator types supported by POM is 16, but design has {args.num_accs}')
 
         if args.cmdin_queue_len is not None:
-            args.cmdin_subqueue_len = prev_power_of_2(int(args.cmdin_queue_len / num_accs))
-            msg.info('Setting --cmdin_subqueue_len to {}'.format(args.cmdin_subqueue_len))
+            args.cmdin_subqueue_len = prev_power_of_2(int(args.cmdin_queue_len / max(2, args.num_instances)))
+            msg.info(f'Setting --cmdin_subqueue_len to {args.cmdin_subqueue_len}')
         elif args.cmdin_subqueue_len is None:
-            args.cmdin_subqueue_len = max(64, prev_power_of_2(int(1024 / num_accs)))
+            args.cmdin_subqueue_len = max(64, prev_power_of_2(int(1024 / max(2, args.num_instances))))
         if args.cmdout_queue_len is not None:
-            args.cmdout_subqueue_len = prev_power_of_2(int(args.cmdout_queue_len / num_accs))
-            msg.info('Setting --cmdout_subqueue_len to {}'.format(args.cmdout_subqueue_len))
+            args.cmdout_subqueue_len = prev_power_of_2(int(args.cmdout_queue_len / max(2, args.num_instances)))
+            msg.info(f'Setting --cmdout_subqueue_len to {args.cmdout_subqueue_len}')
         elif args.cmdout_subqueue_len is None:
-            args.cmdout_subqueue_len = max(64, prev_power_of_2(int(1024 / num_accs)))
+            args.cmdout_subqueue_len = max(64, prev_power_of_2(int(1024 / max(2, args.num_instances))))
 
         # The subqueue length has to be checked here in the case the user provides the cmdin queue length
         if args.cmdin_subqueue_len < 34:
-            msg.warning('Value of --cmdin_subqueue_len={} is less than 34, which is the length of the longest command possible. This design might not work with tasks with enough arguments.'.format(args.cmdin_subqueue_len))
+            msg.warning(f'Value of --cmdin_subqueue_len={args.cmdin_subqueue_len} is less than 34, which is the length of the longest command possible. This design might not work with tasks with enough arguments.')
         if not args.disable_spawn_queues and args.spawnout_queue_len < 79:
-            msg.warning('Value of --spawnout_queue_len={} is less than 79, which is the length of the longest task possible. This design might not work if an accelerator creates SMP tasks with enough copies, dependencies and/or arguments.'.format(args.spawnout_queue_len))
+            msg.warning(f'Value of --spawnout_queue_len={args.spawnout_queue_len} is less than 79, which is the length of the longest task possible. This design might not work if an accelerator creates SMP tasks with enough copies, dependencies and/or arguments.')
 
     def check_picos_args(self, args):
         # Validate Picos args
         if (args.picos_dm_hash == 'P_PEARSON' and args.picos_hash_t_size != 64):
-            msg.error('With P_PEARSON hash function, --picos_hash_t_size must be 64')
+            msg.error('With P_PEARSON hash function, picos_hash_t_size must be 64')
         if (args.picos_hash_t_size > args.picos_dm_size):
-            msg.error('Invalid --picos_hash_t_size ({}), maximum value is --picos_dm_size ({})'.format(args.picos_hash_t_size, args.picos_dm_size))
+            msg.error(f'Invalid picos_hash_t_size ({args.picos_hash_t_size}) value, maximum value is picos_dm_size ({args.picos_dm_size})')
         if (math.ceil(math.log2(args.picos_hash_t_size)) + math.ceil(math.log2(args.picos_num_dcts)) > 8):
-            msg.error('Invalid combination of --picos_hash_t_size and --picos_num_dcts, math.ceil(math.log2(args.picos_hash_t_size))+math.ceil(math.log2(args.picos_num_dcts)) <= 8')
+            msg.error(f'Binary representation of (picos_hash_t_size + picos_num_dcts) must be smaller than 8 bits ({math.ceil(math.log2(args.picos_hash_t_size)) + math.ceil(math.log2(args.picos_num_dcts))} > 8)')
 
     def check_misc_args(self, args):
         if args.jobs and args.jobs > getNumJobs(args.mem_per_job):
-            msg.warning('Using more Vivado jobs ({}) than the recommended default ({}). Performance of the compilation process might be affected'.format(args.jobs, getNumJobs(args.mem_per_job)))
+            msg.warning(f'Using more Vivado jobs ({args.jobs}) than the recommended default ({getNumJobs(args.mem_per_job)}). Performance of the compilation process might be affected')
 
     def is_default(self, dest, backend):
         value = False

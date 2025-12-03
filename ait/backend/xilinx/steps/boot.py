@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-#
 # ------------------------------------------------------------------------ #
-#     (C) Copyright 2017-2024 Barcelona Supercomputing Center              #
+#     (C) Copyright 2017-2025 Barcelona Supercomputing Center              #
 #                             Centro Nacional de Supercomputacion          #
 #                                                                          #
 #     This file is part of OmpSs@FPGA toolchain.                           #
@@ -41,22 +40,22 @@ def run_step(project_args):
     board = project_args['board']
     args = project_args['args']
 
-    project_backend_path = project_path + '/' + args.backend
+    project_backend_path = f'{project_path}/{args.backend}'
 
     # Check if Petalinux requirements are met
     checkers.check_petalinux()
 
-    xsa_path = project_backend_path + '/' + args.name + '/' + args.name + '.sdk/'
+    xsa_path = f'{project_backend_path}/{args.name}/{args.name}.sdk/'
     petalinux_build_path = os.path.realpath(os.getenv('PETALINUX_BUILD'))
 
-    project_boot_path = project_path + '/boot'
+    project_boot_path = f'{project_path}/boot'
     shutil.rmtree(project_boot_path, ignore_errors=True)
     os.mkdir(project_boot_path)
 
-    command = 'petalinux-config --silentconfig --get-hw-description=' + xsa_path
+    command = f'petalinux-config --silentconfig --get-hw-description={xsa_path}'
 
     if args.verbose_info:
-        msg.log('> ' + command)
+        msg.log(f'> {command}')
     p = subprocess.Popen(command, stdout=sys.stdout.subprocess, stderr=sys.stdout.subprocess,
                          cwd=petalinux_build_path, shell=True)
 
@@ -68,21 +67,21 @@ def run_step(project_args):
     if retval:
         msg.error('Configuration of petalinux project failed', start_time, False)
 
-    petalinux_overlay_config = subprocess.run('grep -q CONFIG_SUBSYSTEM_DTB_OVERLAY=y {}/project-spec/configs/config'.format(petalinux_build_path), shell=True).returncode == 0
+    petalinux_overlay_config = subprocess.run(f'grep -q CONFIG_SUBSYSTEM_DTB_OVERLAY=y {petalinux_build_path}/project-spec/configs/config', shell=True).returncode == 0
 
     if petalinux_overlay_config:
         if args.verbose_info:
             msg.log('Fixing devicetree (overlay mode)')
-        project_dtsi_overlay_file = project_backend_path + '/board/' + board.name + '/boot/overlay_ompss_at_fpga.dtsi'
-        petalinux_build_dtsi_overlay_file = petalinux_build_path + '/components/plnx_workspace/device-tree/device-tree/pl-custom.dtsi'
+        project_dtsi_overlay_file = f'{project_backend_path}/board/boot/overlay_ompss_at_fpga.dtsi'
+        petalinux_build_dtsi_overlay_file = f'{petalinux_build_path}/components/plnx_workspace/device-tree/device-tree/pl-custom.dtsi'
         shutil.copy2(project_dtsi_overlay_file, petalinux_build_dtsi_overlay_file)
     else:
         if args.verbose_info:
             msg.log('Fixing devicetree')
-        petalinux_build_dts_path = petalinux_build_path + '/project-spec/meta-user/recipes-bsp/device-tree/files/'
+        petalinux_build_dts_path = f'{petalinux_build_path}/project-spec/meta-user/recipes-bsp/device-tree/files/'
 
         content_dtsi = None
-        with open(petalinux_build_dts_path + '/system-user.dtsi', 'r') as file:
+        with open(f'{petalinux_build_dts_path}/system-user.dtsi', 'r') as file:
             content_dtsi = file.read().splitlines()
 
         # Remove old includes to pl_ompss_at_fpga.dtsi and insert the new one
@@ -90,27 +89,27 @@ def run_step(project_args):
         for line in lines:
             content_dtsi.pop(line)
 
-        project_dtsi_file = project_backend_path + '/board/' + board.name + '/boot/pl_ompss_at_fpga.dtsi'
+        project_dtsi_file = f'{project_backend_path}/board/boot/pl_ompss_at_fpga.dtsi'
         if os.path.exists(project_dtsi_file):
-            shutil.copy2(project_backend_path + '/board/' + board.name + '/boot/pl_ompss_at_fpga.dtsi', petalinux_build_dts_path)
-            content_dtsi.insert(len(content_dtsi), '/include/ \"pl_ompss_at_fpga.dtsi\"')
+            shutil.copy2(f'{project_backend_path}/board/boot/pl_ompss_at_fpga.dtsi', petalinux_build_dts_path)
+            content_dtsi.insert(len(content_dtsi), '/include/ "pl_ompss_at_fpga.dtsi"')
 
         # Remove old includes to <board>_boot.dtsi and insert the new one
-        lines = [idx for idx in range(len(content_dtsi)) if content_dtsi[idx].find(board.name + '_boot.dtsi') != -1]
+        lines = [idx for idx in range(len(content_dtsi)) if content_dtsi[idx].find(f'{board.name}_boot.dtsi') != -1]
         for line in lines:
             content_dtsi.pop(line)
 
-        project_dtsi_fix_file = project_backend_path + '/board/' + board.name + '/boot/' + board.name + '_boot.dtsi'
+        project_dtsi_fix_file = f'{project_backend_path}/board/boot/{board.name}_boot.dtsi'
         if os.path.exists(project_dtsi_fix_file):
             shutil.copy2(project_dtsi_fix_file, petalinux_build_dts_path)
-            content_dtsi.insert(len(content_dtsi), '/include/ \"' + board.name + '_boot.dtsi' + '\"')
+            content_dtsi.insert(len(content_dtsi), f'/include/ "{board.name}_boot.dtsi"')
 
-        with open(petalinux_build_dts_path + '/system-user.dtsi', 'w') as file:
+        with open(f'{petalinux_build_dts_path}/system-user.dtsi', 'w') as file:
             file.write('\n'.join(content_dtsi))
 
     command = 'petalinux-build'
     if args.verbose_info:
-        msg.log('> ' + command)
+        msg.log(f'> {command}')
     p = subprocess.Popen(command, stdout=sys.stdout.subprocess, stderr=sys.stdout.subprocess,
                          cwd=petalinux_build_path, shell=True)
     if args.verbose:
@@ -121,11 +120,11 @@ def run_step(project_args):
     if retval:
         msg.error('Petalinux project build failed', start_time, False)
 
-    bitstream_path = project_path + '/' + args.name + '.bit'
+    bitstream_path = f'{project_path}/{args.name}.bit'
     command = 'petalinux-package --force --boot --fsbl ./images/linux/*_fsbl.elf'
-    command += ' --fpga ' + bitstream_path + ' --u-boot ./images/linux/u-boot.elf'
+    command += f' --fpga {bitstream_path} --u-boot ./images/linux/u-boot.elf'
     if args.verbose_info:
-        msg.log('> ' + command)
+        msg.log(f'> {command}')
     p = subprocess.Popen(command, stdout=sys.stdout.subprocess, stderr=sys.stdout.subprocess,
                          cwd=petalinux_build_path, shell=True)
     if args.verbose:
@@ -136,9 +135,9 @@ def run_step(project_args):
     if retval:
         msg.error('Generation of petalinux boot files failed', start_time, False)
     else:
-        shutil.copy2(petalinux_build_path + '/images/linux/BOOT.BIN', project_boot_path)
-        shutil.copy2(petalinux_build_path + '/images/linux/image.ub', project_boot_path)
-        shutil.copy2(petalinux_build_path + '/images/linux/boot.scr', project_boot_path)
+        shutil.copy2(f'{petalinux_build_path}/images/linux/BOOT.BIN', project_boot_path)
+        shutil.copy2(f'{petalinux_build_path}/images/linux/image.ub', project_boot_path)
+        shutil.copy2(f'{petalinux_build_path}/images/linux/boot.scr', project_boot_path)
         if petalinux_overlay_config:
-            shutil.copy2(petalinux_build_path + '/images/linux/pl.dtbo', project_boot_path)
+            shutil.copy2(f'{petalinux_build_path}/images/linux/pl.dtbo', project_boot_path)
         msg.success('Petalinux boot files generated')

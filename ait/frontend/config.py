@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-#
 # ------------------------------------------------------------------------ #
-#     (C) Copyright 2017-2024 Barcelona Supercomputing Center              #
+#     (C) Copyright 2017-2025 Barcelona Supercomputing Center              #
 #                             Centro Nacional de Supercomputacion          #
 #                                                                          #
 #     This file is part of OmpSs@FPGA toolchain.                           #
@@ -20,9 +19,9 @@
 #     License along with this code. If not, see <www.gnu.org/licenses/>.   #
 # ------------------------------------------------------------------------ #
 
-MIN_PYTHON_VERSION = (3, 7)
+MIN_PYTHON_VERSION = (3, 8)
 MIN_WRAPPER_VERSION = 13
-BITINFO_VERSION = 14
+BITINFO_VERSION = 15
 VERSION_MAJOR = 7
 VERSION_MINOR = 11
 VERSION_PATCH = 6
@@ -30,5 +29,5 @@ VERSION_PATCH = 6
 # NOTE: The variable will be overwritten during installation, do not manually modify.
 VERSION_COMMIT = ''
 
-SHORT_VERSION = str('.'.join([str(VERSION_MAJOR), str(VERSION_MINOR), str(VERSION_PATCH)]))  # Short numerical version
-LONG_VERSION = str(SHORT_VERSION + ' (' + ', '.join(filter(None, [VERSION_COMMIT, 'bitinfo: ' + str(BITINFO_VERSION)])) + ')')  # Long version including commit hash/release tag and bitinfo version
+SHORT_VERSION = f'{".".join([str(VERSION_MAJOR), str(VERSION_MINOR), str(VERSION_PATCH)])}'  # Short numerical version
+LONG_VERSION = f'{SHORT_VERSION} ({", ".join(filter(None, [VERSION_COMMIT, f"bitinfo: {BITINFO_VERSION}"]))})'  # Long version including commit hash/release tag and bitinfo version

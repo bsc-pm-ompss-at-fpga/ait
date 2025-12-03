@@ -8,9 +8,9 @@
 		"device": "BOARD_DEVICE",
 		"slr": {
 			"_comment": "Use this for boards with SLRs",
-			"num": NUM_SLRS,
-			"hwruntime": HWRUNTIME_SLR,
-			"memory": MEMORY_SLR
+			"num": "NUM_SLRS",
+			"hwruntime": "HWRUNTIME_SLR",
+			"memory": "MEMORY_SLR"
 		}
 	},
 
@@ -19,15 +19,31 @@
 		"type": "MEM_TYPE",
 		"size": "DDR_SIZE",
 		"base_addr": "BASE_ADDR",
-		"ompss_base_addr": "OMPSS_BASE_ADDR"
+		"ompss_base_addr": "OMPSS_BASE_ADDR",
+		"interfaces": {
+			"master": [
+				"/path/to/master/pin"
+			],
+			"slave": [
+				["/path/to/slave/block/pin0", "/path/to/slave/block/pin1"]
+			]
+		}
 	},
 
 	"memory": {
 		"_comment": "Use this for FPGA boards",
 		"type": "MEM_TYPE",
-		"num_banks": NUM_BANKS,
+		"num_banks": "NUM_BANKS",
 		"bank_size": "BANK_SIZE",
 		"base_addr": "BASE_ADDR",
-		"ompss_base_addr": "OMPSS_BASE_ADDR"
+		"ompss_base_addr": "OMPSS_BASE_ADDR",
+		"interfaces": {
+			"master": [
+				"/path/to/master/pin"
+			],
+			"slave": [
+				["/path/to/slave/block/pin0", "/path/to/slave/block/pin1"]
+			]
+		}
 	}
 }

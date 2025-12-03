@@ -49,7 +49,7 @@ if { $list_projs eq "" } {
 
 # CHANGE DESIGN NAME HERE
 variable design_name
-set design_name ${argv}_design
+set design_name [lindex ${argv} 0]_design
 
 # If you do not already have an existing IP Integrator design open,
 # you can create a design using the following command:
@@ -242,48 +242,6 @@ proc create_root_design { parentCell } {
   set FIXED_IO [ create_bd_intf_port -mode Master -vlnv xilinx.com:display_processing_system7:fixedio_rtl:1.0 FIXED_IO ]
 
   # Create ports
-
-  # Create instance: M_AXI_0_Inter, and set properties
-  set M_AXI_0_Inter [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect M_AXI_0_Inter ]
-  set_property -dict [ list \
-   CONFIG.NUM_MI {1} \
-   CONFIG.STRATEGY {0} \
- ] $M_AXI_0_Inter
-
-  # Create instance: M_AXI_1_Inter, and set properties
-  set M_AXI_1_Inter [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect M_AXI_1_Inter ]
-  set_property -dict [ list \
-   CONFIG.NUM_MI {1} \
-   CONFIG.STRATEGY {0} \
- ] $M_AXI_1_Inter
-
-  # Create instance: S_AXI_0_Inter, and set properties
-  set S_AXI_0_Inter [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect S_AXI_0_Inter ]
-  set_property -dict [ list \
-   CONFIG.NUM_MI {1} \
-   CONFIG.STRATEGY {0} \
- ] $S_AXI_0_Inter
-
-  # Create instance: S_AXI_1_Inter, and set properties
-  set S_AXI_1_Inter [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect S_AXI_1_Inter ]
-  set_property -dict [ list \
-   CONFIG.NUM_MI {1} \
-   CONFIG.STRATEGY {0} \
- ] $S_AXI_1_Inter
-
-  # Create instance: S_AXI_2_Inter, and set properties
-  set S_AXI_2_Inter [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect S_AXI_2_Inter ]
-  set_property -dict [ list \
-   CONFIG.NUM_MI {1} \
-   CONFIG.STRATEGY {0} \
- ] $S_AXI_2_Inter
-
-  # Create instance: S_AXI_3_Inter, and set properties
-  set S_AXI_3_Inter [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect S_AXI_3_Inter ]
-  set_property -dict [ list \
-   CONFIG.NUM_MI {1} \
-   CONFIG.STRATEGY {0} \
- ] $S_AXI_3_Inter
 
   # Create instance: bridge_to_host, and set properties
   set bridge_to_host [ create_bd_cell -type ip -vlnv xilinx.com:ip:processing_system7 bridge_to_host ]
@@ -689,14 +647,15 @@ proc create_root_design { parentCell } {
    CONFIG.PCW_USB_RESET_SELECT {<Select>} \
    CONFIG.PCW_USE_DEFAULT_ACP_USER_VAL {1} \
    CONFIG.PCW_USE_FABRIC_INTERRUPT {1} \
-   CONFIG.PCW_USE_M_AXI_GP1 {1} \
-   CONFIG.PCW_USE_S_AXI_ACP {1} \
-   CONFIG.PCW_USE_S_AXI_GP0 {1} \
-   CONFIG.PCW_USE_S_AXI_GP1 {1} \
-   CONFIG.PCW_USE_S_AXI_HP0 {1} \
-   CONFIG.PCW_USE_S_AXI_HP1 {1} \
-   CONFIG.PCW_USE_S_AXI_HP2 {1} \
-   CONFIG.PCW_USE_S_AXI_HP3 {1} \
+   CONFIG.PCW_USE_M_AXI_GP0 {0} \
+   CONFIG.PCW_USE_M_AXI_GP1 {0} \
+   CONFIG.PCW_USE_S_AXI_ACP {0} \
+   CONFIG.PCW_USE_S_AXI_GP0 {0} \
+   CONFIG.PCW_USE_S_AXI_GP1 {0} \
+   CONFIG.PCW_USE_S_AXI_HP0 {0} \
+   CONFIG.PCW_USE_S_AXI_HP1 {0} \
+   CONFIG.PCW_USE_S_AXI_HP2 {0} \
+   CONFIG.PCW_USE_S_AXI_HP3 {0} \
    CONFIG.preset {ZC702} \
  ] $bridge_to_host
 
@@ -714,21 +673,13 @@ proc create_root_design { parentCell } {
  ] $clock_generator
 
   # Create interface connections
-  connect_bd_intf_net -intf_net S_AXI_0_Inter_M00_AXI [get_bd_intf_pins S_AXI_0_Inter/M00_AXI] [get_bd_intf_pins bridge_to_host/S_AXI_HP0]
-  connect_bd_intf_net -intf_net S_AXI_1_Inter_M00_AXI [get_bd_intf_pins S_AXI_1_Inter/M00_AXI] [get_bd_intf_pins bridge_to_host/S_AXI_HP1]
-  connect_bd_intf_net -intf_net S_AXI_2_Inter_M00_AXI [get_bd_intf_pins S_AXI_2_Inter/M00_AXI] [get_bd_intf_pins bridge_to_host/S_AXI_HP2]
-  connect_bd_intf_net -intf_net S_AXI_3_Inter_M00_AXI [get_bd_intf_pins S_AXI_3_Inter/M00_AXI] [get_bd_intf_pins bridge_to_host/S_AXI_HP3]
   connect_bd_intf_net -intf_net bridge_to_host_DDR [get_bd_intf_ports DDR] [get_bd_intf_pins bridge_to_host/DDR]
   connect_bd_intf_net -intf_net bridge_to_host_FIXED_IO [get_bd_intf_ports FIXED_IO] [get_bd_intf_pins bridge_to_host/FIXED_IO]
-  connect_bd_intf_net -intf_net bridge_to_host_M_AXI_GP0 [get_bd_intf_pins M_AXI_0_Inter/S00_AXI] [get_bd_intf_pins bridge_to_host/M_AXI_GP0]
-  connect_bd_intf_net -intf_net bridge_to_host_M_AXI_GP1 [get_bd_intf_pins M_AXI_1_Inter/S00_AXI] [get_bd_intf_pins bridge_to_host/M_AXI_GP1]
 
   # Create port connections
-  connect_bd_net [get_bd_pins M_AXI_0_Inter/ARESETN] [get_bd_pins M_AXI_1_Inter/ARESETN] [get_bd_pins S_AXI_0_Inter/ARESETN] [get_bd_pins S_AXI_1_Inter/ARESETN] [get_bd_pins S_AXI_2_Inter/ARESETN] [get_bd_pins S_AXI_3_Inter/ARESETN] [get_bd_pins system_reset/clk_app_rstn]
-  connect_bd_net [get_bd_pins M_AXI_0_Inter/S00_ARESETN] [get_bd_pins M_AXI_1_Inter/S00_ARESETN] [get_bd_pins S_AXI_0_Inter/M00_ARESETN] [get_bd_pins S_AXI_1_Inter/M00_ARESETN] [get_bd_pins S_AXI_2_Inter/M00_ARESETN] [get_bd_pins S_AXI_3_Inter/M00_ARESETN] [get_bd_pins system_reset/clk_app_rstn]
   connect_bd_net [get_bd_pins bridge_to_host/FCLK_CLK0] [get_bd_pins clock_generator/clk_in1]
   connect_bd_net [get_bd_pins bridge_to_host/FCLK_RESET0_N] [get_bd_pins clock_generator/resetn] [get_bd_pins system_reset/FCLK_RESET0_N]
-  connect_bd_net [get_bd_pins M_AXI_0_Inter/ACLK] [get_bd_pins M_AXI_0_Inter/S00_ACLK] [get_bd_pins M_AXI_1_Inter/ACLK] [get_bd_pins M_AXI_1_Inter/S00_ACLK] [get_bd_pins S_AXI_0_Inter/ACLK] [get_bd_pins S_AXI_0_Inter/M00_ACLK] [get_bd_pins S_AXI_1_Inter/ACLK] [get_bd_pins S_AXI_1_Inter/M00_ACLK] [get_bd_pins S_AXI_2_Inter/ACLK] [get_bd_pins S_AXI_2_Inter/M00_ACLK] [get_bd_pins S_AXI_3_Inter/ACLK] [get_bd_pins S_AXI_3_Inter/M00_ACLK] [get_bd_pins bridge_to_host/M_AXI_GP0_ACLK] [get_bd_pins bridge_to_host/M_AXI_GP1_ACLK] [get_bd_pins bridge_to_host/S_AXI_ACP_ACLK] [get_bd_pins bridge_to_host/S_AXI_GP0_ACLK] [get_bd_pins bridge_to_host/S_AXI_GP1_ACLK] [get_bd_pins bridge_to_host/S_AXI_HP0_ACLK] [get_bd_pins bridge_to_host/S_AXI_HP1_ACLK] [get_bd_pins bridge_to_host/S_AXI_HP2_ACLK] [get_bd_pins bridge_to_host/S_AXI_HP3_ACLK] [get_bd_pins clock_generator/clk_app] [get_bd_pins system_reset/clk_app]
+  connect_bd_net [get_bd_pins clock_generator/clk_app] [get_bd_pins system_reset/clk_app]
   connect_bd_net [get_bd_pins clock_generator/locked] [get_bd_pins system_reset/clk_gen_locked]
 
   # Restore current instance

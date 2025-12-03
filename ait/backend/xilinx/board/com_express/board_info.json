@@ -10,6 +10,18 @@
 		"type": "ddr",
 		"size": "0x40000000",
 		"base_addr": "0x0",
-		"ompss_base_addr": "0x80000000"
+		"ompss_base_addr": "0x80000000",
+		"interfaces": {
+			"master": [
+				"/bridge_to_host/M_AXI_GP0",
+				"/bridge_to_host/M_AXI_GP1"
+			],
+			"slave": [
+				"/bridge_to_host/S_AXI_HP0",
+				"/bridge_to_host/S_AXI_HP1",
+				"/bridge_to_host/S_AXI_HP2",
+				"/bridge_to_host/S_AXI_HP3"
+			]
+		}
 	}
 }

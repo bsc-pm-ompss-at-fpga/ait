@@ -1,5 +1,5 @@
 #------------------------------------------------------------------------#
-#    (C) Copyright 2017-2024 Barcelona Supercomputing Center             #
+#    (C) Copyright 2017-2025 Barcelona Supercomputing Center             #
 #                            Centro Nacional de Supercomputacion         #
 #                                                                        #
 #    This file is part of OmpSs@FPGA toolchain.                          #
@@ -26,22 +26,22 @@ set po_inter_rstn [get_bd_pins Hardware_Runtime/hwr_outStream/rstn]
 set po_peri_rstn [get_bd_pins Hardware_Runtime/hwr_outStream/rstn]
 
 set num_common_hwruntime_intf 1
-set num_acc_no_creators [expr {${::AIT::num_accs} - ${::AIT::num_acc_creators}}]
-if {${::AIT::lock_hwruntime}} {
+set num_acc_no_creators [expr {[dict get ${AIT::vars::aitConfig} "num_instances"] - [dict get ${AIT::vars::aitConfig} "num_acc_creators"]}]
+if {[dict get ${AIT::vars::aitConfig} "lock_hwruntime"]} {
     incr num_common_hwruntime_intf
 }
 
-AIT::board::create_inStream_Inter_tree Hardware_Runtime/hwr_inStream/inS_common_Inter $num_common_hwruntime_intf ${::AIT::num_accs} $pi_clk $pi_inter_rstn $pi_peri_rstn
-set max_level_common [AIT::board::create_outStream_Inter_tree Hardware_Runtime/hwr_outStream/outS_common_Inter $num_common_hwruntime_intf ${::AIT::num_accs} $po_clk $po_inter_rstn $po_peri_rstn]
-if {${::AIT::advanced_hwruntime}} {
+AIT::AXIS::create_inStream_Inter_tree Hardware_Runtime/hwr_inStream/inS_common_Inter $num_common_hwruntime_intf [dict get ${AIT::vars::aitConfig} "num_instances"] $pi_clk $pi_inter_rstn $pi_peri_rstn
+set max_level_common [AIT::AXIS::create_outStream_Inter_tree Hardware_Runtime/hwr_outStream/outS_common_Inter $num_common_hwruntime_intf [dict get ${AIT::vars::aitConfig} "num_instances"] $po_clk $po_inter_rstn $po_peri_rstn]
+if {[dict get ${AIT::vars::aitConfig} "advanced_hwruntime"]} {
     # spawn + taskwait
-    AIT::board::create_inStream_Inter_tree Hardware_Runtime/hwr_inStream/inS_ext_Inter 2 ${::AIT::num_acc_creators} $pi_clk $pi_inter_rstn $pi_peri_rstn
-    set max_level_ext [AIT::board::create_outStream_Inter_tree Hardware_Runtime/hwr_outStream/outS_ext_Inter 2 ${::AIT::num_acc_creators} $po_clk $po_inter_rstn $po_peri_rstn]
+    AIT::AXIS::create_inStream_Inter_tree Hardware_Runtime/hwr_inStream/inS_ext_Inter 2 [dict get ${AIT::vars::aitConfig} "num_acc_creators"] $pi_clk $pi_inter_rstn $pi_peri_rstn
+    set max_level_ext [AIT::AXIS::create_outStream_Inter_tree Hardware_Runtime/hwr_outStream/outS_ext_Inter 2 [dict get ${AIT::vars::aitConfig} "num_acc_creators"] $po_clk $po_inter_rstn $po_peri_rstn]
 }
 
-set ninter [expr {int(ceil(${::AIT::num_accs}/16.))}]
+set ninter [expr {int(ceil([dict get ${AIT::vars::aitConfig} "num_instances"]/16.))}]
 for {set i 0} {$i < $ninter} {incr i} {
-    if {${::AIT::lock_hwruntime}} {
+    if {[dict get ${AIT::vars::aitConfig} "lock_hwruntime"]} {
         # Accelerator that do not create tasks never use the spawn_in/out nor the taskwait_in/out streams
         set_property -dict [list \
             CONFIG.M00_AXIS_BASETDEST {0x00000000} \
@@ -58,8 +58,8 @@ for {set i 0} {$i < $ninter} {incr i} {
     }
 }
 
-if {${::AIT::advanced_hwruntime}} {
-    set ninter [expr {int(ceil(${::AIT::num_acc_creators}/16.))}]
+if {[dict get ${AIT::vars::aitConfig} "advanced_hwruntime"]} {
+    set ninter [expr {int(ceil([dict get ${AIT::vars::aitConfig} "num_acc_creators"]/16.))}]
     for {set i 0} {$i < $ninter} {incr i} {
         set_property -dict [list \
             CONFIG.M00_AXIS_BASETDEST {0x00000002} \
@@ -70,11 +70,11 @@ if {${::AIT::advanced_hwruntime}} {
     }
 }
 
-for {set i 0} {$i < ${::AIT::num_accs}} {incr i} {
+for {set i 0} {$i < [dict get ${AIT::vars::aitConfig} "num_instances"]} {incr i} {
     set inter_i [expr {int($i/16)}]
     set intf_i [format %02u [expr {$i%16}]]
 
-    if {$i < ${::AIT::num_acc_creators}} {
+    if {$i < [dict get ${AIT::vars::aitConfig} "num_acc_creators"]} {
         set inter_name Hardware_Runtime/hwr_outStream/outS_extacc_Inter_${i}
         set inter [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_interconnect $inter_name]
         set_property -dict [list \
@@ -115,7 +115,7 @@ for {set i 0} {$i < ${::AIT::num_accs}} {incr i} {
     }
 }
 
-if {${::AIT::advanced_hwruntime}} {
+if {[dict get ${AIT::vars::aitConfig} "advanced_hwruntime"]} {
     if {$max_level_ext == 0} {
         connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_inStream/inS_ext_Inter_lvl0_0/M00_AXIS] [get_bd_intf_pins Hardware_Runtime/hwr_inStream/spawn_in]
         connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_inStream/inS_ext_Inter_lvl0_0/M01_AXIS] [get_bd_intf_pins Hardware_Runtime/hwr_inStream/taskwait_in]
@@ -132,7 +132,7 @@ if {${::AIT::advanced_hwruntime}} {
 if {$max_level_common == 0} {
     connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_inStream/inS_common_Inter_lvl0_0/M00_AXIS] [get_bd_intf_pins Hardware_Runtime/hwr_inStream/cmdout_in]
     connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_outStream/cmdin_out] [get_bd_intf_pins Hardware_Runtime/hwr_outStream/outS_common_Inter_lvl0_0/S00_AXIS]
-    if {${::AIT::lock_hwruntime}} {
+    if {[dict get ${AIT::vars::aitConfig} "lock_hwruntime"]} {
         connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_inStream/inS_common_Inter_lvl0_0/M01_AXIS] [get_bd_intf_pins Hardware_Runtime/hwr_inStream/lock_in]
         connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_outStream/lock_out] [get_bd_intf_pins Hardware_Runtime/hwr_outStream/outS_common_Inter_lvl0_0/S01_AXIS]
     }
@@ -140,35 +140,39 @@ if {$max_level_common == 0} {
     set max_level $max_level_common
     connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_inStream/inS_common_Inter_lvl${max_level}_m0_0/M00_AXIS] [get_bd_intf_pins Hardware_Runtime/hwr_inStream/cmdout_in]
     connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_outStream/cmdin_out] [get_bd_intf_pins Hardware_Runtime/hwr_outStream/outS_common_Inter_lvl${max_level}_s0_0/S00_AXIS]
-    if {${::AIT::lock_hwruntime}} {
+    if {[dict get ${AIT::vars::aitConfig} "lock_hwruntime"]} {
         connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_inStream/inS_common_Inter_lvl${max_level}_m1_0/M00_AXIS] [get_bd_intf_pins Hardware_Runtime/hwr_inStream/lock_in]
         connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_outStream/lock_out] [get_bd_intf_pins Hardware_Runtime/hwr_outStream/outS_common_Inter_lvl${max_level}_s1_0/S00_AXIS]
     }
 }
 
-if {${::AIT::interconRegSlice_hwruntime} || ${::AIT::interconRegSlice_all}} {
-    set inStream_interconnects [get_bd_cells Hardware_Runtime/hwr_inStream/inS_common_Inter_lvl0_*]
-    set outStream_interconnects [get_bd_cells Hardware_Runtime/hwr_outStream/outS_common_Inter_lvl0_*]
-    if {${::AIT::advanced_hwruntime}} {
-        lappend inStream_interconnects [get_bd_cells Hardware_Runtime/hwr_inStream/inS_ext_Inter_lvl0_*]
-        lappend outStream_interconnects [get_bd_cells Hardware_Runtime/hwr_outStream/outS_ext_Inter_lvl0_*]
-    }
-
-    foreach inter $inStream_interconnects {
-        for {set i 0} {$i < [get_property CONFIG.NUM_MI $inter]} {incr i} {
-            set_property CONFIG.M[format %02u $i]_HAS_REGSLICE {1} $inter
-        }
-        for {set i 0} {$i < [get_property CONFIG.NUM_SI $inter]} {incr i} {
-            set_property CONFIG.S[format %02u $i]_HAS_REGSLICE {1} $inter
-        }
-    }
-    foreach inter $outStream_interconnects {
-        for {set i 0} {$i < [get_property CONFIG.NUM_MI $inter]} {incr i} {
-            set_property CONFIG.M[format %02u $i]_HAS_REGSLICE {1} $inter
-        }
-        for {set i 0} {$i < [get_property CONFIG.NUM_SI $inter]} {incr i} {
-            set_property CONFIG.S[format %02u $i]_HAS_REGSLICE {1} $inter
-        }
-    }
-}
+# FIXME: Variable does not exist
+#if {[dict get ${AIT::vars::aitConfig} "interconRegSlice_hwruntime"]
+#    || [dict get ${AIT::vars::aitConfig} "interconRegSlice_all"]} {
+#
+#    set inStream_interconnects [get_bd_cells Hardware_Runtime/hwr_inStream/inS_common_Inter_lvl0_*]
+#    set outStream_interconnects [get_bd_cells Hardware_Runtime/hwr_outStream/outS_common_Inter_lvl0_*]
+#
+#    if {[dict get ${AIT::vars::aitConfig} "advanced_hwruntime"]} {
+#        lappend inStream_interconnects [get_bd_cells Hardware_Runtime/hwr_inStream/inS_ext_Inter_lvl0_*]
+#        lappend outStream_interconnects [get_bd_cells Hardware_Runtime/hwr_outStream/outS_ext_Inter_lvl0_*]
+#    }
+#
+#    foreach inter $inStream_interconnects {
+#        for {set i 0} {$i < [get_property CONFIG.NUM_MI $inter]} {incr i} {
+#            set_property CONFIG.M[format %02u $i]_HAS_REGSLICE {1} $inter
+#        }
+#        for {set i 0} {$i < [get_property CONFIG.NUM_SI $inter]} {incr i} {
+#            set_property CONFIG.S[format %02u $i]_HAS_REGSLICE {1} $inter
+#        }
+#    }
+#    foreach inter $outStream_interconnects {
+#        for {set i 0} {$i < [get_property CONFIG.NUM_MI $inter]} {incr i} {
+#            set_property CONFIG.M[format %02u $i]_HAS_REGSLICE {1} $inter
+#        }
+#        for {set i 0} {$i < [get_property CONFIG.NUM_SI $inter]} {incr i} {
+#            set_property CONFIG.S[format %02u $i]_HAS_REGSLICE {1} $inter
+#        }
+#    }
+#}
 

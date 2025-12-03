@@ -1,5 +1,5 @@
 /*------------------------------------------------------------------------*/
-/*    (C) Copyright 2017-2024 Barcelona Supercomputing Center             */
+/*    (C) Copyright 2017-2025 Barcelona Supercomputing Center             */
 /*                            Centro Nacional de Supercomputacion         */
 /*                                                                        */
 /*    This file is part of OmpSs@FPGA toolchain.                          */
@@ -18,7 +18,7 @@
 /*    License along with this code. If not, see <www.gnu.org/licenses/>.  */
 /*------------------------------------------------------------------------*/
 
-module bsc_axiu_axis_subset_converter #(
+module bsc_axiu_axis_accID #(
     parameter ID_WIDTH = 1,
     parameter [ID_WIDTH-1:0] ID = 0
 ) (
