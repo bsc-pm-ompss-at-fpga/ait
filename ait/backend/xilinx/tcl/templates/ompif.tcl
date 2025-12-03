@@ -196,7 +196,7 @@ proc create_message_receiver_hier {} {
     set memcpyIntfPin [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 memcpy]
     set msgInIntfPin [create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 msg_in]
 
-    set messageReceiverIP [create_bd_cell -type ip -vlnv bsc:ompif:message_receiver_wrapper ompif_message_receiver]
+    set messageReceiverIP [create_bd_cell -type ip -vlnv bsc:ompif:message_receiver ompif_message_receiver]
     set_property -dict [list \
     CONFIG.MAX_DEVICES {96} \
     CONFIG.AXI_ADDR_WIDTH ${addrWidth} \
