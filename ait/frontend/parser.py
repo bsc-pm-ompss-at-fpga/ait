@@ -216,13 +216,13 @@ class ArgParser:
         # Generation flow arguments
         flow_args = self.parser.add_argument_group('Generation flow')
         flow_args.add_argument('-d', '--dir',
-                               help='path where the project directory tree will be created \
+                               help='path where the project directory tree will be created\
                                     \n(def: .)',
                                type=PathType(),
                                default='.')
 
         flow_args.add_argument('--disable_IP_caching',
-                               help='disable IP caching \
+                               help='disable IP caching\
                                     \nSignificantly increases generation time',
                                action='store_true',
                                default=False)
@@ -238,19 +238,19 @@ class ArgParser:
                                default=False)
 
         flow_args.add_argument('--from_step',
-                               help='initial generation step \
+                               help='initial generation step\
                                     \nGeneration steps by vendor:\n' + '\n'.join(backend + ': ' + ', '.join(step for step in backends[backend]['steps']) + "\n(def: '{}')".format(backends[backend]['initial_step']) for backend in backends),
                                choices=[step for step in backends[backend]['steps'] for backend in backends],
                                metavar='FROM_STEP',
                                default='HLS')
 
         flow_args.add_argument('--IP_cache_location',
-                               help='path where the IP cache will be located \
+                               help='path where the IP cache will be located\
                                     \n(def: /var/tmp/ait/<vendor>/IP_cache/)',
                                type=PathType())
 
         flow_args.add_argument('--to_step',
-                               help='final generation step \
+                               help='final generation step\
                                     \nGeneration steps by vendor:\n' + '\n'.join(backend + ': ' + ', '.join(step for step in backends[backend]['steps']) + "\n(def: '{}')".format(backends[backend]['final_step']) for backend in backends),
                                choices=[step for step in backends[backend]['steps'] for backend in backends],
                                metavar='TO_STEP',
@@ -259,7 +259,7 @@ class ArgParser:
         # Bitstream configuration arguments
         bitstream_args = self.parser.add_argument_group('Bitstream configuration')
         bitstream_args.add_argument('-c', '--clock',
-                                    help='FPGA clock frequency in MHz \
+                                    help='FPGA clock frequency in MHz\
                                          \n(def: 100)',
                                     type=int,
                                     default='100')
@@ -283,9 +283,9 @@ class ArgParser:
         # Data path arguments
         datapath_args = self.parser.add_argument_group('Data path')
         datapath_args.add_argument('--memory_interleaving_stride',
-                                   help='size in bytes of the stride of the memory interleaving \
-                                        \nMust be power of 2 \
-                                        \nIf set to 0 bytes, interleaving will not be enabled \
+                                   help='size in bytes of the stride of the memory interleaving\
+                                        \nMust be power of 2\
+                                        \nIf set to 0 bytes, interleaving will not be enabled\
                                         \n(def: 0)',
                                    metavar='MEM_INTERLEAVING_STRIDE',
                                    type=HumanReadableType(vmin='4K'),
@@ -295,26 +295,26 @@ class ArgParser:
         hwruntime_args = self.parser.add_argument_group('Hardware Runtime')
         cmdin_len = hwruntime_args.add_mutually_exclusive_group()
         cmdin_len.add_argument('--cmdin_queue_len',
-                               help='maximum length (64-bit words) of the queue for the hwruntime command in \
+                               help='maximum length (64-bit words) of the queue for the hwruntime command in\
                                     \nThis argument is mutually exclusive with --cmdin_subqueue_len',
                                type=IntRangeType(imin=4))
         cmdin_len.add_argument('--cmdin_subqueue_len',
-                               help='length (64-bit words) of each accelerator subqueue for the hwruntime command in \
-                                    \nThis argument is mutually exclusive with --cmdin_queue_len \
-                                    \nMust be power of 2 \
+                               help='length (64-bit words) of each accelerator subqueue for the hwruntime command in\
+                                    \nThis argument is mutually exclusive with --cmdin_queue_len\
+                                    \nMust be power of 2\
                                     \n(def: max(64, 1024/num_instances))',
                                type=IntPowerType(imin=4))
 
         cmdout_len = hwruntime_args.add_mutually_exclusive_group()
         cmdout_len.add_argument('--cmdout_queue_len',
-                                help='maximum length (64-bit words) of the queue for the hwruntime command out \
+                                help='maximum length (64-bit words) of the queue for the hwruntime command out\
                                      \nThis argument is mutually exclusive with --cmdout_subqueue_len',
                                 type=IntRangeType(imin=2))
 
         cmdout_len.add_argument('--cmdout_subqueue_len',
-                                help='length (64-bit words) of each accelerator subqueue for the hwruntime command out \
-                                     \nThis argument is mutually exclusive with --cmdout_queue_len \
-                                     \nMust be power of 2 \
+                                help='length (64-bit words) of each accelerator subqueue for the hwruntime command out\
+                                     \nThis argument is mutually exclusive with --cmdout_queue_len\
+                                     \nMust be power of 2\
                                      \n(def: max(64, 1024/num_instances))',
                                 type=IntPowerType(imin=2))
 
@@ -324,42 +324,42 @@ class ArgParser:
                                     default=False)
 
         hwruntime_args.add_argument('--spawnin_queue_len',
-                                    help='length (64-bit words) of the hwruntime spawn in queue \
-                                         \nMust be power of 2 \
+                                    help='length (64-bit words) of the hwruntime spawn in queue\
+                                         \nMust be power of 2\
                                          \n(def: 1024)',
                                     type=IntPowerType(imin=4),
                                     default=1024)
 
         hwruntime_args.add_argument('--spawnout_queue_len',
-                                    help='length (64-bit words) of the hwruntime spawn out queue \
-                                         \nMust be power of 2 \
+                                    help='length (64-bit words) of the hwruntime spawn out queue\
+                                         \nMust be power of 2\
                                          \n(def: 1024)',
                                     type=IntPowerType(imin=4),
                                     default=1024)
 
         hwruntime_args.add_argument('--hwruntime_interconnect',
-                                    help='type of hardware runtime interconnection with accelerators \
-                                         \ncentralized \
-                                         \ndistributed \
+                                    help='type of hardware runtime interconnection with accelerators\
+                                         \ncentralized\
+                                         \ndistributed\
                                          \n(def: centralized)',
                                     choices=['centralized', 'distributed'],
                                     metavar='HWR_INTERCONNECT',
                                     default='centralized')  # TODO: Explain what does each option do
 
         hwruntime_args.add_argument('--max_args_per_task',
-                                    help='maximum number of arguments for any task in the bitstream \
+                                    help='maximum number of arguments for any task in the bitstream\
                                          \n(def: 15)',
                                     type=IntRangeType(imin=1),
                                     default=15)
 
         hwruntime_args.add_argument('--max_deps_per_task',
-                                    help='maximum number of dependencies for any task in the bitstream \
+                                    help='maximum number of dependencies for any task in the bitstream\
                                          \n(def: 8)',
                                     type=IntRangeType(imin=2),
                                     default=8)
 
         hwruntime_args.add_argument('--max_copies_per_task',
-                                    help='maximum number of copies for any task in the bitstream \
+                                    help='maximum number of copies for any task in the bitstream\
                                          \n(def: 15)',
                                     type=IntRangeType(imin=1),
                                     default=15)
@@ -372,7 +372,7 @@ class ArgParser:
         # Picos arguments
         picos_args = self.parser.add_argument_group('Picos')
         picos_args.add_argument('--picos_num_dcts',
-                                help='number of DCTs to instantiate \
+                                help='number of DCTs to instantiate\
                                      \n(def: 1)',
                                 type=int,
                                 choices=[1, 2, 4],
@@ -380,43 +380,43 @@ class ArgParser:
                                 default=1)
 
         picos_args.add_argument('--picos_tm_size',
-                                help='size of the TM memory \
+                                help='size of the TM memory\
                                      \n(def: 128)',
                                 type=IntRangeType(imin=2),
                                 default=128)
 
         picos_args.add_argument('--picos_dm_size',
-                                help='size of the DM memory \
+                                help='size of the DM memory\
                                      \n(def: 512)',
                                 type=IntRangeType(imin=2),
                                 default=512)
 
         picos_args.add_argument('--picos_vm_size',
-                                help='size of the VM memory \
+                                help='size of the VM memory\
                                      \n(def: 512)',
                                 type=IntRangeType(imin=2),
                                 default=512)
 
         picos_args.add_argument('--picos_dm_ds',
-                                help='data structure of the DM memory \
-                                     \nBINTREE: Binary search tree (not autobalanced) \
-                                     \nLINKEDLIST: Linked list \
+                                help='data structure of the DM memory\
+                                     \nBINTREE: Binary search tree (not autobalanced)\
+                                     \nLINKEDLIST: Linked list\
                                      \n(def: BINTREE)',
                                 choices=['BINTREE', 'LINKEDLIST'],
                                 metavar='DATA_STRUCT',
                                 default='BINTREE')
 
         picos_args.add_argument('--picos_dm_hash',
-                                help='hashing function applied to dependence addresses \
-                                     \nP_PEARSON: Parallel Pearson function \
-                                     \nXOR \
+                                help='hashing function applied to dependence addresses\
+                                     \nP_PEARSON: Parallel Pearson function\
+                                     \nXOR\
                                      \n(def: P_PEARSON)',
                                 choices=['P_PEARSON', 'XOR'],
                                 metavar='HASH_FUN',
                                 default='P_PEARSON')  # TODO: Explain what XOR does
 
         picos_args.add_argument('--picos_hash_t_size',
-                                help='DCT hash table size \
+                                help='DCT hash table size\
                                      \n(def: 64)',
                                 type=IntRangeType(imin=2),
                                 default=64)
@@ -456,13 +456,13 @@ class ArgParser:
                                default=False)
 
         misc_args.add_argument('-j', '--jobs',
-                               help='specify the number of jobs to run simultaneously \
+                               help='specify the number of jobs to run simultaneously\
                                     \nBy default it will use as many jobs as cores with at least 5GB of dedicated free memory, or the value returned by `nproc`, whichever is less.',
                                type=IntRangeType(imin=1),
                                default=None)
 
         misc_args.add_argument('--mem_per_job',
-                               help='specify the memory per core used to estimate the number of jobs to launch \
+                               help='specify the memory per core used to estimate the number of jobs to launch\
                                     \n(def: 5G)',
                                type=HumanReadableType(vmin='1G'),
                                default='5G')

@@ -109,9 +109,9 @@ class ArgParser():
 
         # Vendor-specific arguments
         self.parser.add_argument('--regslice_pipeline_stages',
-                                 help='number of register slice pipeline stages per SLR \
-                                      \n\'x:y:z\': add between 1 and 5 stages in master:middle:slave SLRs \
-                                      \nauto: let Vivado choose the number of stages \
+                                 help='number of register slice pipeline stages per SLR\
+                                      \n\'x:y:z\': add between 1 and 5 stages in master:middle:slave SLRs\
+                                      \nauto: let Vivado choose the number of stages\
                                       \n(def: auto)',
                                  type=PipelineStagesType(),
                                  default='auto')
@@ -122,7 +122,7 @@ class ArgParser():
                                  default=False)
 
         self.parser.add_argument('--interconnect_opt',
-                                 help='AXI interconnect optimization strategy: Maximize \'performance\' or minimize \'area\' \
+                                 help='AXI interconnect optimization strategy: Maximize \'performance\' or minimize \'area\'\
                                       \n(def: performance)',
                                  choices=['performance', 'area'],
                                  metavar='OPT_STRATEGY',
@@ -149,9 +149,9 @@ class ArgParser():
                                  default=False)
 
         self.parser.add_argument('--target_language',
-                                 help='choose target language to synthesize files to: vhdl or verilog \
+                                 help='choose target language to synthesize files to: vhdl or verilog\
                                       \n(def: verilog)',
-                                 choices=['vhdl', 'verilog'],
+                                 choices=['verilog', 'vhdl'],
                                  metavar='TARGET_LANG',
                                  default='verilog')
 
