@@ -783,7 +783,7 @@ set dynamicFieldSizes [list \
     [expr {${xtasksConfigAccSize}*[dict get ${AIT::vars::aitConfig} "num_accs"]}] \
     [string length ${AIT::vars::aitCall}] \
     [string length [get_property VLNV [get_bd_cells ${AIT::vars::HWR}/Picos_OmpSs_Manager]]] \
-    [string length [dict get ${AIT::vars::aitConfig} "bitinfo_note"]] \
+    [string length [string trim {'} [dict get ${AIT::vars::aitConfig} "bitinfo_note"]]] \
 ]
 set offset ${numStaticFields}
 foreach size ${dynamicFieldSizes} {
@@ -817,7 +817,7 @@ append bitinfoCoeStr [format %08x ${size}]\n
 append bitinfoCoeStr ${xtasksBinStr}
 append bitinfoCoeStr [AIT::utils::ascii_to_hex ${AIT::vars::aitCall}]
 append bitinfoCoeStr [AIT::utils::ascii_to_hex [get_property VLNV [get_bd_cells ${AIT::vars::HWR}/Picos_OmpSs_Manager]]]
-append bitinfoCoeStr [AIT::utils::ascii_to_hex [dict get ${AIT::vars::aitConfig} "bitinfo_note"]]
+append bitinfoCoeStr [AIT::utils::ascii_to_hex [string trim {'} [dict get ${AIT::vars::aitConfig} "bitinfo_note"]]]
 
 # Create bitinfo.coe file
 set bitinfoCoeFile [open ${projectRootDir}/bitinfo.coe "w"]

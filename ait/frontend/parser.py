@@ -271,7 +271,8 @@ class ArgParser:
 
         bitstream_args.add_argument('--bitinfo_note',
                                     help='custom note to add to the bitinfo',
-                                    type=ascii)
+                                    type=ascii,
+                                    default='')
 
         bitstream_args.add_argument('--disable_static_constraints',
                                     help='disable static constraints \
