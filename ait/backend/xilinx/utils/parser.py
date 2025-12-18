@@ -122,11 +122,11 @@ class ArgParser():
                                  default=False)
 
         self.parser.add_argument('--interconnect_opt',
-                                 help='AXI interconnect optimization strategy: Minimize \'area\' or maximize \'performance\' \
-                                      \n(def: area)',
-                                 choices=['area', 'performance'],
+                                 help='AXI interconnect optimization strategy: Maximize \'performance\' or minimize \'area\' \
+                                      \n(def: performance)',
+                                 choices=['performance', 'area'],
                                  metavar='OPT_STRATEGY',
-                                 default=0)
+                                 default='performance')
 
         self.parser.add_argument('--interconnect_priorities',
                                  help='enable priorities in the memory interconnect',
