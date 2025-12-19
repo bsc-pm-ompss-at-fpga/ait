@@ -38,6 +38,29 @@ class JSONDottedDict(dict):
     __delattr__ = dict.__delitem__
 
 
+class Logger(object):
+    def __init__(self, args):
+        self.terminal = sys.stdout
+        self.log = open(f'{os.path.normpath(os.path.realpath(args.dir))}/{args.name}_ait/{args.name}.ait.log', 'w+')
+        self.subprocess = subprocess.PIPE if args.verbose else self.log
+        self.re_color = re.compile(r'\033\[[0,1][0-9,;]*m')
+        self.tag = '[AIT] ' if not args.verbose else ''
+
+    def write(self, message):
+        if self.terminal.isatty():
+            self.terminal.write(f'{message}')
+        else:
+            self.terminal.write(self.re_color.sub('', message))
+        self.terminal.flush()
+        if message != '\n':
+            self.log.write(self.tag)
+        self.log.write(self.re_color.sub('', message))
+        self.log.flush()
+
+    def flush(self):
+        pass
+
+
 class Color:
     GREEN = '\033[0;32m'   # Success
     CYAN = '\033[0;36m'    # Info

@@ -24,33 +24,12 @@ import importlib
 import json
 import os
 import re
-import subprocess
 import sys
 import time
 
 from ait.frontend.config import LONG_VERSION
 from ait.frontend.parser import ArgParser
-from ait.frontend.utils import JSONDottedDict, ait_path, backends, msg, secondsToHumanReadable
-
-
-class Logger(object):
-    def __init__(self, project_path):
-        self.terminal = sys.stdout
-        self.log = open(f'{project_path}/{args.name}.ait.log', 'w+')
-        self.subprocess = subprocess.PIPE if args.verbose else self.log
-        self.re_color = re.compile(r'\033\[[0,1][0-9,;]*m')
-        self.tag = '[AIT] ' if not args.verbose else ''
-
-    def write(self, message):
-        self.terminal.write(message)
-        self.terminal.flush()
-        if message != '\n':
-            self.log.write(self.tag)
-        self.log.write(self.re_color.sub('', message))
-        self.log.flush()
-
-    def flush(self):
-        pass
+from ait.frontend.utils import Logger, JSONDottedDict, ait_path, backends, msg, secondsToHumanReadable
 
 
 def check_board_support(board):
@@ -161,15 +140,15 @@ def main():
         print(json.dumps(board, indent=4))
         sys.exit(0)
 
+    sys.stdout = Logger(args)
+    msg.log(f'{LONG_VERSION}')
+    msg.log(f'{os.path.basename(sys.argv[0])} {" ".join(sys.argv[1:])}')
     msg.info(f'Using {args.backend} backend')
 
     driver = importlib.import_module(f'ait.backend.{args.backend}.driver')
     steps, board = driver.load(args)
 
     project_path = os.path.normpath(os.path.realpath(f'{args.dir}/{args.name}_ait'))
-
-    sys.stdout = Logger(project_path)
-    sys.stdout.log.write(f'{LONG_VERSION}\n{os.path.basename(sys.argv[0])} {" ".join(sys.argv[1:])}\n\n')
 
     get_accelerators(project_path)
 
