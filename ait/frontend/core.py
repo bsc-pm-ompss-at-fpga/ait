@@ -56,6 +56,7 @@ def get_accelerators(project_path):
     args.num_instances = 0
     args.num_acc_creators = 0
     args.ompif = False
+    args.imp = False
 
     for file_ in sorted(glob.glob(f'{os.getcwd()}/ait_*.json')):
         acc_config_json = json.load(open(file_))
@@ -105,9 +106,9 @@ def get_accelerators(project_path):
             if acc.ompif:
                 args.ompif = True
 
-            # If the json does not have IMP field, by default set it to False
-            if 'imp' not in acc_config:
-                acc.imp = False
+            # Check if the acc uses IMP
+            if acc.imp:
+                args.imp = True
 
     if args.num_accs == 0:
         msg.error('No accelerators found')
@@ -115,6 +116,10 @@ def get_accelerators(project_path):
         args.disable_spawn_queues = True
         args.spawnin_queue_len = 0
         args.spawnout_queue_len = 0
+
+    if args.imp and not args.ompif:
+        msg.warning('IMP cannot be enabled without enabling OMPIF support, enabling OMPIF')
+        args.ompif = True
 
     if args.ompif:
         args.num_accs += 2
