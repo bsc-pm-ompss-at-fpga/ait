@@ -117,6 +117,7 @@ namespace eval AIT {
             set bitinfoBitmap [expr {${bitinfoBitmap} | ([dict get ${AIT::vars::aitConfig} "power_monitor"] ? 1 : 0)<<9}]
             set bitinfoBitmap [expr {${bitinfoBitmap} | ([dict get ${AIT::vars::aitConfig} "thermal_monitor"] ? 1 : 0)<<10}]
             set bitinfoBitmap [expr {${bitinfoBitmap} | ([dict get ${AIT::vars::aitConfig} "ompif"] ? 1 : 0)<<11}]
+            set bitinfoBitmap [expr {${bitinfoBitmap} | ([dict get ${AIT::vars::aitConfig} "imp"] ? 1 : 0)<<12}]
             return [format 0x%08x ${bitinfoBitmap}]
         }
 
