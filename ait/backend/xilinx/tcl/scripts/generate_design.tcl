@@ -859,5 +859,5 @@ save_bd_design
 
 # Generate output files
 set aitJsonFile [open ${projectRootDir}/../[dict get ${AIT::vars::aitConfig} "name"].ait.json "w"]
-puts ${aitJsonFile} [AIT::utils::compile_json {dict accs {dict * {dict instances {dict * {dict interfaces {dict * dict}}}}}} ${AIT::vars::aitJsonDict}]
+puts ${aitJsonFile} [AIT::utils::dict_to_json ${AIT::vars::aitJsonDict}]
 close ${aitJsonFile}

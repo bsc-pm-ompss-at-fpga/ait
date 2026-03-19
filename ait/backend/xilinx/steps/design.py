@@ -19,7 +19,6 @@
 #     License along with this code. If not, see <www.gnu.org/licenses/>.   #
 # ------------------------------------------------------------------------ #
 
-import json
 import os
 import random
 import re
@@ -204,11 +203,4 @@ def run_step(project_args):
     if retval:
         msg.error('Block Design generation failed', start_time, False)
     else:
-        # Prettify ait json file
-        with open(f'{project_path}/{args.name}.ait.json', 'r+') as ait_json_file:
-            ait_json_str = json.dumps(json.load(ait_json_file), indent=4)
-            ait_json_file.seek(0)
-            ait_json_file.write(ait_json_str)
-            ait_json_file.truncate()
-
         msg.success('Block Design generated')

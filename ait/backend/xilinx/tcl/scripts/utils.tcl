@@ -57,62 +57,6 @@ namespace eval AIT {
             }
         }
 
-        # data is plain old tcl values
-        # spec is defined as follows:
-        # {string} - data is simply a string, "quote" it if it's not a number
-        # {list} - data is a tcl list of strings, convert to JSON arrays
-        # {list list} - data is a tcl list of lists
-        # {list dict} - data is a tcl list of dicts
-        # {dict} - data is a tcl dict of strings
-        # {dict xx list} - data is a tcl dict where the value of key xx is a tcl list
-        # {dict * list} - data is a tcl dict of lists
-        # etc..
-        # Credits to https://stackoverflow.com/a/25815465
-        proc compile_json {spec data} {
-            while {[llength ${spec}]} {
-                set type [lindex ${spec} 0]
-                set spec [lrange ${spec} 1 end]
-                switch -- ${type} {
-                    dict {
-                        lappend spec * string
-                        set json {}
-                        foreach {key val} ${data} {
-                            foreach {keymatch valtype} ${spec} {
-                                if {[string match ${keymatch} ${key}]} {
-                                    lappend json [subst {"${key}":[
-                                        compile_json ${valtype} ${val}]}]
-                                    break
-                                }
-                            }
-                        }
-                        return "{[join ${json} ,]}"
-                    }
-                    list {
-                        if {![llength ${spec}]} {
-                            set spec string
-                        } else {
-                            set spec [lindex ${spec} 0]
-                        }
-                        set json {}
-                        foreach {val} ${data} {
-                            lappend json [compile_json ${spec} ${val}]
-                        }
-                        return "\[[join ${json} ,]\]"
-                    }
-                    string {
-                        # This will return hexadecimal numbers as numbers, which
-                        # is not valid json. Return all numbers as strings.
-                        #if {[string is double -strict ${data}]} {
-                        #    return ${data}
-                        #} else {
-                            return "\"${data}\""
-                        #}
-                    }
-                    default {error "Invalid type"}
-                }
-            }
-        }
-
         # Returns the binary representation of value
         # width determines the length of the returned string with 0-padding, must be always bigger or equal to the width of value
         proc dec_to_bin {value width} {
@@ -127,10 +71,68 @@ namespace eval AIT {
             return ${res}
         }
 
+        # Transforms a tcl dict into a json-valid string
+        # It treats every value as a list and tries to automatically detect their type
+        # A dict, for values containing an even number of elements
+        # A list, for values containing an odd number of elements
+        # A string, for values containing a single element
+        # To modify this behaviour, a map can be passed to map dictionary keys to types
+        # Ex.: dict_to_json ${dictValue} {thisValIsList list thisValIsString string}
+        proc dict_to_json {dictValue {map ""} {indent 0} {first True}} {
+            if {${first}} {
+                set jsonStr "\{\n"
+                incr indent
+            } else {
+                set jsonStr ""
+            }
+            if {[is_dict ${dictValue}]} {
+                foreach {dictKey} [dict keys ${dictValue}] {
+                    set keyVal [dict get ${dictValue} ${dictKey}]
+                    if {[dict exists ${map} ${dictKey}]} {
+                        set childType [dict get ${map} ${dictKey}]
+                    } elseif {[is_dict ${keyVal}]} {
+                        set childType "dict"
+                    } elseif {[is_list ${keyVal}]} {
+                        set childType "list"
+                    } else {
+                        set childType "string"
+                    }
+
+                    if {${childType} eq "string"} {
+                        append jsonStr [indent_string "\"${dictKey}\": [dict_to_json ${keyVal} ${map} 0 False]" ${indent}]
+                    } elseif {${childType} eq "dict"} {
+                        append jsonStr "[indent_string "\"${dictKey}\": \{\n" ${indent}][string range [dict_to_json ${keyVal} ${map} [expr {${indent} + 1}] False] 0 end-2]\n[indent_string "\},\n" ${indent}]"
+                    } elseif {${childType} eq "list"} {
+                        append jsonStr [indent_string "\"${dictKey}\": \[\n" ${indent}]
+                        foreach {listItem} ${keyVal} {
+                            if {[is_dict ${listItem}]} {
+                                append jsonStr "[indent_string "\{\n" [expr {${indent} + 1}]][string range [dict_to_json ${listItem} ${map} [expr {${indent} + 2}] False] 0 end-2]\n[indent_string "\},\n" [expr {${indent} + 1}]]"
+                            } else {
+                                append jsonStr [string range [dict_to_json ${listItem} ${map} [expr {${indent} + 1}] False] 0 end-2],\n
+                            }
+                        }
+                        set jsonStr "[string range ${jsonStr} 0 end-2]\n"
+                        append jsonStr [indent_string "\],\n" ${indent}]
+                    }
+                }
+            } else {
+                append jsonStr [indent_string "\"${dictValue}\",\n" ${indent}]
+            }
+            if {${first}} {
+                set jsonStr "[string range ${jsonStr} 0 end-2]\n\}"
+            }
+            return ${jsonStr}
+        }
+
         # Error message
         proc error_msg {msg} {
             puts "\[AIT\] ERROR: ${msg}"
             exit 1
+        }
+
+        # Returns the input string with num*stride whitespaces at the beginning
+        proc indent_string {{str ""} {num 0} {stride 4}} {
+            return [string repeat " " [expr {${num}*${stride}}]]${str}
         }
 
         # Info message
@@ -138,7 +140,25 @@ namespace eval AIT {
             puts "\[AIT\] INFO: ${msg}"
         }
 
-        # Log
+        # Returns true if the value is a dict
+        # i.e. a list with an even number of elements
+        proc is_dict {value} {
+            return [expr {[string is list ${value}] && ([llength ${value}]&1) == 0}]
+        }
+
+        # Returns true if, in the context of a dict, the value is a list
+        # i.e. a list with more than one element
+        proc is_list {value} {
+            return [expr {[string is list ${value}] && ([llength ${value}] > 1)}]
+        }
+
+        # Returns true if, in the context of a dict, the value is a string
+        # i.e. a list with a single element
+        proc is_string {value} {
+            return [expr {[string is list ${value}] && ([llength ${value}] == 1)}]
+        }
+
+        # Log message
         proc log_msg {msg} {
             puts "\[AIT\]: ${msg}"
         }
@@ -154,7 +174,7 @@ namespace eval AIT {
             return ${result}
         }
 
-        # Warning
+        # Warning message
         proc warning_msg {msg} {
             puts "\[AIT\] WARNING: ${msg}"
         }
