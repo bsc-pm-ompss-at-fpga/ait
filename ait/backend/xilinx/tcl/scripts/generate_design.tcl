@@ -309,21 +309,21 @@ dict with AIT::vars::aitJsonDict {
                             }
 
                             ### AXI-Stream interfaces
-                            #dict update instDict "streams" streamsDict {
-                            #    set streamsDict {}
+                            dict update instDict "streams" streamsDict {
+                                set streamsDict {}
 
                                 ## outPort
-                            #    dict update streamsDict "outStream" streamDict {
-                            #        # Initialize interface dictionary
-                            #        set streamDict {}
-                            #        dict update streamDict "src" src {
+                                dict update streamsDict "outStream" streamDict {
+                                    # Initialize outStream dictionary
+                                    set streamDict {}
+                                    dict update streamDict "src" src {
                                         # Check if acc has already AXI-Stream pins instead of handshake
                                         if {[get_bd_intf_pins -quiet -regexp ${accIP}/mcxx_outPort(_V)*?] ne ""} {
-                            #                set src [get_bd_intf_pins -quiet -regexp ${accIP}/mcxx_outPort(_V)*?]
+                                            set src [get_bd_intf_pins -quiet -regexp ${accIP}/mcxx_outPort(_V)*?]
                                             set outStreamInnerPin [get_bd_intf_pins -regexp ${accIP}/mcxx_outPort(_V)*?]
                                         } elseif {[get_bd_pins -quiet -regexp ${accIP}/mcxx_outPort(_V)*?] ne ""} {
                                             # Create and connect the hsToStreamAdapter
-                            #                set src [get_bd_pins -quiet -regexp ${accIP}/mcxx_outPort(_V)*?]
+                                            set src [get_bd_pins -quiet -regexp ${accIP}/mcxx_outPort(_V)*?]
                                             set outStreamInnerPin [AIT::AXIS::add_stream_adapter [get_bd_pins -regexp ${accIP}/mcxx_outPort(_V)*?] ${AIT::vars::accID} ${accName}_${instanceNum}]
                                             if {[dict exists ${instDict} "placement"]} {
                                                 append accConstrStr "add_cells_to_pblock \
@@ -331,20 +331,24 @@ dict with AIT::vars::aitJsonDict {
                                                     \[get_cells */${accName}_${instanceNum}/Adapter_outPort\]\n"
                                             }
                                         }
-                            #        }
-                            #    }
+                                    }
+                                    if {[dict exists ${AIT::vars::userConfig} "accs" ${accName} "instances" ${instanceNum} "streams" "outStream" "debug"]
+                                        && [dict get ${AIT::vars::userConfig} "accs" ${accName} "instances" ${instanceNum} "streams" "outStream" "debug"]} {
+                                        dict set streamDict "debug" true
+                                    }
+                                }
 
                                 ## inPort
-                            #    dict update streamsDict "inStream" streamDict {
-                            #        # Initialize interface dictionary
-                            #        set streamDict {}
-                            #        dict update streamDict "src" src {
+                                dict update streamsDict "inStream" streamDict {
+                                    # Initialize inStream dictionary
+                                    set streamDict {}
+                                    dict update streamDict "src" src {
                                         # Check if acc has already AXI-Stream pins instead of handshake
                                         if {[get_bd_intf_pins -quiet -regexp ${accIP}/mcxx_inPort(_V)*?] ne ""} {
-                            #                set src [get_bd_intf_pins -quiet -regexp ${accIP}/mcxx_inPort(_V)*?]
+                                            set src [get_bd_intf_pins -quiet -regexp ${accIP}/mcxx_inPort(_V)*?]
                                             set inStreamInnerPin [get_bd_intf_pins -regexp ${accIP}/mcxx_inPort(_V)*?]
                                         } elseif {[get_bd_pins -quiet -regexp ${accIP}/mcxx_inPort(_V)*?] ne ""} {
-                            #                set src [get_bd_pins -quiet -regexp ${accIP}/mcxx_inPort(_V)*?]
+                                            set src [get_bd_pins -quiet -regexp ${accIP}/mcxx_inPort(_V)*?]
                                             # Create and connect the streamToHsAdapter
                                             set inStreamInnerPin [AIT::AXIS::add_stream_adapter [get_bd_pins -regexp ${accIP}/mcxx_inPort(_V)*?] "" ${accName}_${instanceNum}]
                                             if {[dict exists ${instDict} "placement"]} {
@@ -353,28 +357,38 @@ dict with AIT::vars::aitJsonDict {
                                                     \[get_cells */${accName}_${instanceNum}/Adapter_inPort\]\n"
                                             }
                                         }
-                            #        }
-                            #    }
+                                    }
+                                    if {[dict exists ${AIT::vars::userConfig} "accs" ${accName} "instances" ${instanceNum} "streams" "inStream" "debug"]
+                                        && [dict get ${AIT::vars::userConfig} "accs" ${accName} "instances" ${instanceNum} "streams" "inStream" "debug"]} {
+                                        dict set streamDict "debug" true
+                                    }
+                                }
 
                                 ## spawnInPort
                                 # If this is a task creator accelerator, instantiate the newtask_spawner
                                 if {${taskCreator}} {
-                            #        dict update streamsDict "spawnInStream" streamDict {
-                            #            # Initialize interface dictionary
-                            #            set streamDict {}
-                            #            dict update streamDict "src" src {
+                                    dict update streamsDict "spawnInStream" streamDict {
+                                        # Initialize spawnInStream dictionary
+                                        set streamDict {}
+                                        dict update streamDict "src" src {
                                             # Check if acc has already AXI-Stream pins instead of handshake
                                             if {[get_bd_intf_pins -quiet -regexp ${accIP}/mcxx_spawnInPort(_V)*?] ne ""} {
-                            #                    set src [get_bd_intf_pins -quiet -regexp ${accIP}/mcxx_spawinInPort(_V)*?]
+                                                set src [get_bd_intf_pins -quiet -regexp ${accIP}/mcxx_spawnInPort(_V)*?]
                                                 set spawnInAccPin [get_bd_intf_pins -regexp ${accIP}/mcxx_spawnInPort(_V)*?]
                                             } elseif {[get_bd_pins -quiet -regexp ${accIP}/mcxx_spawnInPort(_V)*?] ne ""} {
-                            #                    set src [get_bd_pins -quiet -regexp ${accIP}/mcxx_spawnInPort(_V)*?]
+                                                set src [get_bd_pins -quiet -regexp ${accIP}/mcxx_spawnInPort(_V)*?]
                                                 # Create and connect the streamToHsAdapter
-                                                set spawnInAccPin [AIT::AXIS::add_stream_adapter [get_bd_pins -regexp ${accIP}/mcxx_spawnInPort(_V)*?] "" ${accName}_${instanceNum}]
+                                                set spawnInAccPin [AIT::AXIS::add_stream_adapter ${src} "" ${accName}_${instanceNum}]
                                             }
                                             lassign [AIT::AXIS::add_newtask_spawner ${spawnInAccPin} ${inStreamInnerPin} ${outStreamInnerPin} ${imp} ${accName}_${instanceNum}] outStreamInnerPin inStreamInnerPin
-                            #            }
-                            #        }
+                                        }
+                                        if {[dict exists ${AIT::vars::userConfig} "accs" ${accName} "instances" ${instanceNum} "streams" "spawnInStream" "debug"]
+                                            && [dict get ${AIT::vars::userConfig} "accs" ${accName} "instances" ${instanceNum} "streams" "spawnInStream" "debug"]} {
+
+                                            AIT::design::debug_intf ${spawnInAccPin}
+                                            dict set streamDict "debug" true
+                                        }
+                                    }
                                 }
 
                                 # Add accID to outStream AXI-Stream TID bus
@@ -391,7 +405,25 @@ dict with AIT::vars::aitJsonDict {
                                     lassign [AIT::AXIS::add_reg_slice ${inStreamInnerPin} "" "" ${instRegslicePipelineStages} inStream ${accName}_${instanceNum}] inStreamInnerPin regSliceConstrStr
                                     lassign [AIT::AXIS::add_reg_slice ${outStreamInnerPin} "" "" ${instRegslicePipelineStages} outStream ${accName}_${instanceNum}] outStreamInnerPin regSliceConstrStr
                                 }
-                            #}
+
+                                # Connect AXI-Stream pins
+                                connect_bd_intf_net [get_bd_intf_pins ${accHier}/inStream] ${inStreamInnerPin}
+                                connect_bd_intf_net ${outStreamInnerPin} [get_bd_intf_pins ${accHier}/outStream]
+                                connect_bd_intf_net -boundary_type upper [get_bd_intf_pins ${accHier}/outStream] [get_bd_intf_pins ${AIT::vars::HWR}/hwr_inStream/S${AIT::vars::accID}_AXIS]
+                                connect_bd_intf_net -boundary_type upper [get_bd_intf_pins ${AIT::vars::HWR}/hwr_outStream/M${AIT::vars::accID}_AXIS] [get_bd_intf_pins ${accHier}/inStream]
+
+                                if {[dict exists ${streamsDict} "inStream" "debug"]
+                                    && [dict get ${streamsDict} "inStream" "debug"]} {
+
+                                    AIT::design::debug_intf ${inStreamInnerPin}
+                                }
+
+                                if {[dict exists ${streamsDict} "outStream" "debug"]
+                                    && [dict get ${streamsDict} "outStream" "debug"]} {
+
+                                    AIT::design::debug_intf ${outStreamInnerPin}
+                                }
+                            }
 
                             dict update instDict "interfaces" interfacesDict {
                                 set interfacesDict {}
@@ -447,18 +479,6 @@ dict with AIT::vars::aitJsonDict {
                                     ] ${accFreq}
                                     connect_bd_net [get_bd_pins ${accFreq}/dout] [get_bd_pins ${accIP}/mcxx_freqPort*]
                                 }
-
-                                # Connect AXI-Stream pins
-                                connect_bd_intf_net [get_bd_intf_pins ${accHier}/inStream] ${inStreamInnerPin}
-                                connect_bd_intf_net ${outStreamInnerPin} [get_bd_intf_pins ${accHier}/outStream]
-                                connect_bd_intf_net -boundary_type upper [get_bd_intf_pins ${accHier}/outStream] [get_bd_intf_pins ${AIT::vars::HWR}/hwr_inStream/S${AIT::vars::accID}_AXIS]
-                                connect_bd_intf_net -boundary_type upper [get_bd_intf_pins ${AIT::vars::HWR}/hwr_outStream/M${AIT::vars::accID}_AXIS] [get_bd_intf_pins ${accHier}/inStream]
-
-                                # Mark AXI-Stream pin for debug
-                                #if {[dict get ${AIT::vars::aitConfig} "debug_intfs"] eq "stream"} {
-                                #    AIT::design::debug_intf [get_bd_intf_pins ${accHier}/inStream]
-                                #    AIT::design::debug_intf [get_bd_intf_pins ${accHier}/outStream]
-                                #}
 
                                 ## AXI interfaces
                                 # Get list of M_AXI interfaces
