@@ -155,7 +155,7 @@ def run_step(project_args):
             msg.log(f'Adding pre design user script: {args.user_pre_design}')
         user_tcl_scripts_path = f'{user_files_path}/tcl/scripts'
         if not os.path.exists(user_tcl_scripts_path):
-            os.mkdir(user_tcl_scripts_path)
+            os.makedirs(user_tcl_scripts_path)
         shutil.copy2(args.user_pre_design, f'{user_files_path}/tcl/scripts/userPreDesign.tcl')
     elif args.user_pre_design:
         msg.error(f'User PRE design TCL script not found: {args.user_pre_design}')
@@ -168,7 +168,7 @@ def run_step(project_args):
             msg.log(f'Adding post design user script: {args.user_post_design}')
         user_tcl_scripts_path = f'{user_files_path}/tcl/scripts'
         if not os.path.exists(user_tcl_scripts_path):
-            os.mkdir(user_tcl_scripts_path)
+            os.makedirs(user_tcl_scripts_path)
         shutil.copy2(args.user_post_design, f'{user_files_path}/tcl/scripts/userPostDesign.tcl')
     elif args.user_post_design:
         msg.error(f'User POST design TCL script not found: {args.user_post_design}')
