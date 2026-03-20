@@ -143,33 +143,3 @@ for {set i 0} {$i < [dict get ${AIT::vars::aitConfig} "num_instances"]} {incr i}
 if {[dict get ${AIT::vars::aitConfig} "task_creation"]} {
     set_property -dict $config_list [get_bd_cells Hardware_Runtime/hwr_outStream/outS_common_Inter_lvl0_${prev_inter_i}]
 }
-
-# FIXME: Variable does not exist
-#if {[dict get ${AIT::vars::aitConfig} "interconRegSlice_hwruntime"]
-#    || [dict get ${AIT::vars::aitConfig} "interconRegSlice_all"]} {
-#
-#    set inStream_interconnects [get_bd_cells Hardware_Runtime/hwr_inStream/inS_common_Inter_lvl0_*]
-#    set outStream_interconnects [get_bd_cells Hardware_Runtime/hwr_outStream/outS_common_Inter_lvl0_*]
-#
-#    if {[dict get ${AIT::vars::aitConfig} "task_creation"]} {
-#        lappend inStream_interconnects [get_bd_cells Hardware_Runtime/hwr_inStream/inS_ext_Inter_lvl0_*]
-#        lappend outStream_interconnects [get_bd_cells Hardware_Runtime/hwr_outStream/outS_ext_Inter_lvl0_*]
-#    }
-#
-#    foreach inter $inStream_interconnects {
-#        for {set i 0} {$i < [get_property CONFIG.NUM_MI $inter]} {incr i} {
-#            set_property CONFIG.M[format %02u $i]_HAS_REGSLICE {1} $inter
-#        }
-#        for {set i 0} {$i < [get_property CONFIG.NUM_SI $inter]} {incr i} {
-#            set_property CONFIG.S[format %02u $i]_HAS_REGSLICE {1} $inter
-#        }
-#    }
-#    foreach inter $outStream_interconnects {
-#        for {set i 0} {$i < [get_property CONFIG.NUM_MI $inter]} {incr i} {
-#            set_property CONFIG.M[format %02u $i]_HAS_REGSLICE {1} $inter
-#        }
-#        for {set i 0} {$i < [get_property CONFIG.NUM_SI $inter]} {incr i} {
-#            set_property CONFIG.S[format %02u $i]_HAS_REGSLICE {1} $inter
-#        }
-#    }
-#}
