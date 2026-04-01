@@ -20,48 +20,48 @@
 
 package require json
 
-set scriptDir [file dirname [file normalize [info script]]]
+variable scriptDir [file dirname [file normalize [info script]]]
 
 # Load AIT utils
-if {[catch {source -notrace ${scriptDir}/utils.tcl}]} {
-	puts "\[AIT\] ERROR: Failed loading auxiliary procedures"
-	exit 1
+if {[catch {source -notrace ${scriptDir}/scripts/utils.tcl}]} {
+    puts "\[AIT\] ERROR: Failed loading auxiliary procedures"
+    exit 1
 }
 
 # Load design procedures
 AIT::utils::info_msg "Loading design procedures"
-if {[catch {source -notrace ${scriptDir}/design.tcl}]} {
-	AIT::utils::error_msg "Failed loading design procedures"
+if {[catch {source -notrace ${scriptDir}/scripts/design.tcl}]} {
+    AIT::utils::error_msg "Failed loading design procedures"
 }
 
 # Load board procedures
 AIT::utils::info_msg "Loading board procedures"
-if {[catch {source -notrace ${scriptDir}/board.tcl}]} {
-	AIT::utils::error_msg "Failed loading board procedures"
+if {[catch {source -notrace ${scriptDir}/scripts/board.tcl}]} {
+    AIT::utils::error_msg "Failed loading board procedures"
 }
 
 # Load templates procedures
 AIT::utils::info_msg "Loading templates procedures"
-if {[catch {source -notrace ${scriptDir}/templates.tcl}]} {
-	AIT::utils::error_msg "Failed loading templates procedures"
+if {[catch {source -notrace ${scriptDir}/scripts/templates.tcl}]} {
+    AIT::utils::error_msg "Failed loading templates procedures"
 }
 
 # Load AXI utils procedures
 AIT::utils::info_msg "Loading AXI utils procedures"
-if {[catch {source -notrace ${scriptDir}/axi_utils.tcl}]} {
-	AIT::utils::error_msg "Failed loading AXI utils procedures"
+if {[catch {source -notrace ${scriptDir}/scripts/axi_utils.tcl}]} {
+    AIT::utils::error_msg "Failed loading AXI utils procedures"
 }
 
 # Load AXI-Stream utils procedures
 AIT::utils::info_msg "Loading AXI-Stream utils procedures"
-if {[catch {source -notrace ${scriptDir}/axis_utils.tcl}]} {
-	AIT::utils::error_msg "Failed loading AXI-Stream utils procedures"
+if {[catch {source -notrace ${scriptDir}/scripts/axis_utils.tcl}]} {
+    AIT::utils::error_msg "Failed loading AXI-Stream utils procedures"
 }
 
 # If available, overwrite board-specific procedures
-if {[file exists ${scriptDir}/../../board/procs.tcl]} {
-	AIT::utils::info_msg "Loading board-specific procedures"
-	if {[catch {source -notrace ${scriptDir}/../../board/procs.tcl}]} {
-		AIT::utils::error_msg "Failed overwriting board-specific procedures"
-	}
+if {[file exists ${scriptDir}/../board/procs.tcl]} {
+    AIT::utils::info_msg "Loading board-specific procedures"
+    if {[catch {source -notrace ${scriptDir}/../board/procs.tcl}]} {
+        AIT::utils::error_msg "Failed overwriting board-specific procedures"
+    }
 }

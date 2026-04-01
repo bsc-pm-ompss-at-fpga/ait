@@ -190,7 +190,7 @@ def run_step(project_args):
 
     p = subprocess.Popen('vivado -init -nojournal -nolog -notrace -mode batch '
                          + f'-source {project_backend_path}/tcl/project.tcl '
-                         + f'-source {project_backend_path}/tcl/scripts/ait.tcl '
+                         + f'-source {project_backend_path}/tcl/ait.tcl '
                          + f'-source {project_backend_path}/tcl/scripts/generate_design.tcl',
                          cwd=project_backend_path, stdout=sys.stdout.subprocess,
                          stderr=sys.stdout.subprocess, shell=True)

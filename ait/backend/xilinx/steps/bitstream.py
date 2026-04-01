@@ -191,7 +191,7 @@ def run_step(project_args):
     if os.path.isfile(f'{project_backend_path}/{args.name}/{args.name}.xpr'):
         p = subprocess.Popen('vivado -init -nojournal -nolog -notrace -mode batch '
                              + f'-source {project_backend_path}/tcl/project.tcl '
-                             + f'-source {project_backend_path}/tcl/scripts/ait.tcl '
+                             + f'-source {project_backend_path}/tcl/ait.tcl '
                              + f'-source {project_backend_path}/tcl/scripts/generate_bitstream.tcl '
                              + '-tclargs ' + (str(args.jobs) if args.jobs is not None else str(getNumJobs(args.mem_per_job))),
                              cwd=project_backend_path,
