@@ -295,7 +295,7 @@ proc create_hier_cell_QDMA { parentCell nameHier } {
  ] $util_ds_buf
 
   # Create instance: util_ds_buf, and set properties
-  set axi_protocol_converter [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_protocol_converter AXI3_to_AXI4 ]
+  set axi_protocol_converter [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_protocol_converter AXI4_to_AXI3 ]
 
   # Create interface connections
   connect_bd_intf_net [get_bd_intf_pins QDMA/M_AXI] [get_bd_intf_pins ${axi_protocol_converter}/S_AXI]
@@ -630,24 +630,24 @@ proc create_hier_cell_system_reset { parentCell nameHier } {
 
   create_bd_pin -dir I -type rst pcie_perstn
   create_bd_pin -dir I clk_gen_slr0_locked
-  create_bd_pin -dir I clk_gen_locked
+  create_bd_pin -dir I clock_generator_locked
   create_bd_pin -dir I -type clk clk_app
-  create_bd_pin -dir I -type clk clk_100_slr0
+  create_bd_pin -dir I -type clk freq_100_slr0_clk
   create_bd_pin -dir O -type rst clk_app_rstn
-  create_bd_pin -dir O -type rst clk_100_slr0_rstn
+  create_bd_pin -dir O -type rst freq_100_slr0_rstn
 
   create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset proc_sys_reset_clk_app
   set_property -dict [list CONFIG.C_EXT_RST_WIDTH {1}] [get_bd_cells proc_sys_reset_clk_app]
-  create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset proc_sys_reset_clk_100_slr0
-  set_property -dict [list CONFIG.C_EXT_RST_WIDTH {1}] [get_bd_cells proc_sys_reset_clk_100_slr0]
+  create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset proc_sys_reset_freq_100_slr0
+  set_property -dict [list CONFIG.C_EXT_RST_WIDTH {1}] [get_bd_cells proc_sys_reset_freq_100_slr0]
 
   connect_bd_net [get_bd_pins proc_sys_reset_clk_app/slowest_sync_clk] [get_bd_pins clk_app]
-  connect_bd_net [get_bd_pins proc_sys_reset_clk_100_slr0/slowest_sync_clk] [get_bd_pins clk_100_slr0]
+  connect_bd_net [get_bd_pins proc_sys_reset_freq_100_slr0/slowest_sync_clk] [get_bd_pins freq_100_slr0_clk]
   connect_bd_net [get_bd_pins proc_sys_reset_clk_app/peripheral_aresetn] [get_bd_pins clk_app_rstn]
-  connect_bd_net [get_bd_pins proc_sys_reset_clk_100_slr0/peripheral_aresetn] [get_bd_pins clk_100_slr0_rstn]
-  connect_bd_net [get_bd_pins proc_sys_reset_clk_app/ext_reset_in] [get_bd_pins proc_sys_reset_clk_100_slr0/ext_reset_in] [get_bd_pins pcie_perstn]
-  connect_bd_net [get_bd_pins proc_sys_reset_clk_100_slr0/dcm_locked] [get_bd_pins clk_gen_slr0_locked]
-  connect_bd_net [get_bd_pins proc_sys_reset_clk_app/dcm_locked] [get_bd_pins clk_gen_locked]
+  connect_bd_net [get_bd_pins proc_sys_reset_freq_100_slr0/peripheral_aresetn] [get_bd_pins freq_100_slr0_rstn]
+  connect_bd_net [get_bd_pins proc_sys_reset_clk_app/ext_reset_in] [get_bd_pins proc_sys_reset_freq_100_slr0/ext_reset_in] [get_bd_pins pcie_perstn]
+  connect_bd_net [get_bd_pins proc_sys_reset_freq_100_slr0/dcm_locked] [get_bd_pins clk_gen_slr0_locked]
+  connect_bd_net [get_bd_pins proc_sys_reset_clk_app/dcm_locked] [get_bd_pins clock_generator_locked]
 
   # Restore current instance
   current_bd_instance $oldCurInst
@@ -733,7 +733,7 @@ proc create_root_design { parentCell } {
   set_property -dict [ list \
    CONFIG.CLKOUT1_REQUESTED_OUT_FREQ {100} \
    CONFIG.CLKOUT1_USED {true} \
-   CONFIG.CLK_OUT1_PORT {clk_100} \
+   CONFIG.CLK_OUT1_PORT {freq_100_slr0_clk} \
    CONFIG.CLK_IN1_BOARD_INTERFACE {slr0_freerun_clk} \
    CONFIG.NUM_OUT_CLKS {1} \
    CONFIG.OPTIMIZE_CLOCKING_STRUCTURE_EN {true} \
@@ -750,14 +750,14 @@ proc create_root_design { parentCell } {
 
   # Create port connections
   connect_bd_net -net bridge_to_host_HBM_CATTRIP [get_bd_ports HBM_CATTRIP] [get_bd_pins bridge_to_host/HBM_CATTRIP]
-  connect_bd_net -net clock_generator_apb_clk [get_bd_pins bridge_to_host/APB_PCLK] [get_bd_pins clk_gen_slr0/clk_100]
+  connect_bd_net -net clock_generator_apb_clk [get_bd_pins bridge_to_host/APB_PCLK] [get_bd_pins clk_gen_slr0/freq_100_slr0_clk]
   connect_bd_net -net pcie_perstn_1 [get_bd_ports pcie_perstn] [get_bd_pins bridge_to_host/pcie_perstn] [get_bd_pins clk_gen_slr0/resetn] [get_bd_pins clock_generator/resetn]
-  connect_bd_net [get_bd_pins bridge_to_host/HBM_REF_CLK] [get_bd_pins clk_gen_slr0/clk_100]
-  connect_bd_net [get_bd_pins system_reset/clk_100_slr0_rstn] [get_bd_pins bridge_to_host/APB_PCLK_rstn]
-  connect_bd_net [get_bd_pins clk_gen_slr0/clk_100] [get_bd_pins system_reset/clk_100_slr0]
+  connect_bd_net [get_bd_pins bridge_to_host/HBM_REF_CLK] [get_bd_pins clk_gen_slr0/freq_100_slr0_clk]
+  connect_bd_net [get_bd_pins system_reset/freq_100_slr0_rstn] [get_bd_pins bridge_to_host/APB_PCLK_rstn]
+  connect_bd_net [get_bd_pins clk_gen_slr0/freq_100_slr0_clk] [get_bd_pins system_reset/freq_100_slr0_clk]
   connect_bd_net [get_bd_pins clk_gen_slr0/locked] [get_bd_pins system_reset/clk_gen_slr0_locked]
   connect_bd_net [get_bd_pins clock_generator/clk_app] [get_bd_pins system_reset/clk_app]
-  connect_bd_net [get_bd_pins clock_generator/locked] [get_bd_pins system_reset/clk_gen_locked]
+  connect_bd_net [get_bd_pins clock_generator/locked] [get_bd_pins system_reset/clock_generator_locked]
   connect_bd_net [get_bd_ports pcie_perstn] [get_bd_pins system_reset/pcie_perstn]
 
   # Restore current instance

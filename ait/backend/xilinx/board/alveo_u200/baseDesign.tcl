@@ -902,7 +902,7 @@ proc create_hier_cell_system_reset { parentCell nameHier } {
   current_bd_instance $hier_obj
 
   create_bd_pin -dir I -type rst pcie_perstn
-  create_bd_pin -dir I clk_gen_locked
+  create_bd_pin -dir I clock_generator_locked
   create_bd_pin -dir I -type clk clk_app
   create_bd_pin -dir O -type rst clk_app_rstn
 
@@ -912,7 +912,7 @@ proc create_hier_cell_system_reset { parentCell nameHier } {
   connect_bd_net [get_bd_pins proc_sys_reset_clk_app/slowest_sync_clk] [get_bd_pins clk_app]
   connect_bd_net [get_bd_pins proc_sys_reset_clk_app/peripheral_aresetn] [get_bd_pins clk_app_rstn]
   connect_bd_net [get_bd_pins proc_sys_reset_clk_app/ext_reset_in] [get_bd_pins pcie_perstn]
-  connect_bd_net [get_bd_pins proc_sys_reset_clk_app/dcm_locked] [get_bd_pins clk_gen_locked]
+  connect_bd_net [get_bd_pins proc_sys_reset_clk_app/dcm_locked] [get_bd_pins clock_generator_locked]
 
   # Restore current instance
   current_bd_instance $oldCurInst
@@ -1016,7 +1016,7 @@ proc create_root_design { parentCell } {
   # Create port connections
   connect_bd_intf_net [get_bd_intf_ports USER_SI570_CLOCK] [get_bd_intf_pins clock_generator/CLK_IN1_D]
   connect_bd_net -net clock_generator_clk_out1 [get_bd_pins bridge_to_host/clk_app] [get_bd_pins clock_generator/clk_app] [get_bd_pins system_reset/clk_app]
-  connect_bd_net -net clock_generator_locked [get_bd_pins clock_generator/locked] [get_bd_pins system_reset/clk_gen_locked]
+  connect_bd_net -net clock_generator_locked [get_bd_pins clock_generator/locked] [get_bd_pins system_reset/clock_generator_locked]
   connect_bd_net -net pcie_perstn_1 [get_bd_ports pcie_perstn] [get_bd_pins bridge_to_host/pcie_perstn] [get_bd_pins clock_generator/resetn] [get_bd_pins system_reset/pcie_perstn]
   connect_bd_net [get_bd_pins bridge_to_host/clk_app_rstn] [get_bd_pins system_reset/clk_app_rstn]
 

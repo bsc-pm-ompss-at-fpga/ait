@@ -18,34 +18,34 @@
 #    License along with this code. If not, see <www.gnu.org/licenses/>.  #
 #------------------------------------------------------------------------#
 
-namespace eval AIT {
-    namespace eval board {
-        proc static_logic_register_slices {} {
-            # DDR 0
-            lassign [AIT::AXI::add_reg_slice S_AXI [dict get ${AIT::vars::board} "arch" "slr" "memory"] 0 "" "" bridge_to_host/memory/DDR_0] intfPin regSliceConstr
-            append constrStr ${regSliceConstr}
-            lassign [AIT::AXI::add_reg_slice S_AXI_CTRL [dict get ${AIT::vars::board} "arch" "slr" "memory"] 0 "" "" bridge_to_host/memory/DDR_0] intfPin regSliceConstr
-            append constrStr ${regSliceConstr}
+namespace eval board {
+    proc static_logic_register_slices {} {
+        # DDR 0
+        lassign [AIT::AXI::add_reg_slice S_AXI [dict get ${AIT::project::board} "arch" "slr" "memory"] 0 "" "" bridge_to_host/memory/DDR_0] intfPin regSliceConstr
+        append constrStr ${regSliceConstr}
+        lassign [AIT::AXI::add_reg_slice S_AXI_CTRL [dict get ${AIT::project::board} "arch" "slr" "memory"] 0 "" "" bridge_to_host/memory/DDR_0] intfPin regSliceConstr
+        append constrStr ${regSliceConstr}
 
-            # DDR 1
-            lassign [AIT::AXI::add_reg_slice S_AXI [dict get ${AIT::vars::board} "arch" "slr" "memory"] 1 "" "" bridge_to_host/memory/DDR_1] intfPin regSliceConstr
-            append constrStr ${regSliceConstr}
-            lassign [AIT::AXI::add_reg_slice S_AXI_CTRL [dict get ${AIT::vars::board} "arch" "slr" "memory"] 1 "" "" bridge_to_host/memory/DDR_1] intfPin regSliceConstr
-            append constrStr ${regSliceConstr}
+        # DDR 1
+        lassign [AIT::AXI::add_reg_slice S_AXI [dict get ${AIT::project::board} "arch" "slr" "memory"] 1 "" "" bridge_to_host/memory/DDR_1] intfPin regSliceConstr
+        append constrStr ${regSliceConstr}
+        lassign [AIT::AXI::add_reg_slice S_AXI_CTRL [dict get ${AIT::project::board} "arch" "slr" "memory"] 1 "" "" bridge_to_host/memory/DDR_1] intfPin regSliceConstr
+        append constrStr ${regSliceConstr}
 
-            # Hardware Runtime
-            lassign [AIT::AXI::add_reg_slice S_AXI_GP 0 [dict get ${AIT::vars::board} "arch" "slr" "hwruntime"] "" "" Hardware_Runtime] intfPin regSliceConstr
-            append constrStr ${regSliceConstr}
+        # Hardware Runtime
+        lassign [AIT::AXI::add_reg_slice S_AXI_GP 0 [dict get ${AIT::project::board} "arch" "slr" "hwruntime"] "" "" Hardware_Runtime] intfPin regSliceConstr
+        append constrStr ${regSliceConstr}
 
-            save_bd_design -quiet
-        }
+        save_bd_design -quiet
 
-        proc add_power_monitor {} {
-            AIT::templates::source_template "power_monitor"
-        }
+        return ${constrStr}
+    }
 
-        proc add_thermal_monitor {} {
-            AIT::templates::source_template "thermal_monitor"
-        }
+    proc add_power_monitor {} {
+        AIT::templates::source_template "power_monitor"
+    }
+
+    proc add_thermal_monitor {} {
+        AIT::templates::source_template "thermal_monitor"
     }
 }

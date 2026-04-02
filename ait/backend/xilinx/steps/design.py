@@ -43,47 +43,45 @@ def generate_Vivado_project_tcl():
         + '\n' \
         + 'package require json' \
         + '\n' \
-        + 'set scriptDir [file dirname [file normalize [info script]]]' \
+        + 'namespace eval project {\n' \
+        + '\tvariable scriptDir [file dirname [file normalize [info script]]]' \
         + '\n' \
-        + 'namespace eval AIT {\n' \
-        + '\tnamespace eval vars {\n' \
-        + '\t\t# Project variables\n' \
-        + f'\t\tset aitCall "{re.escape(os.path.basename(sys.argv[0]))} {re.escape(" ".join(sys.argv[1:]))}"\n' \
-        + f'\t\tset aitMajorVersion {VERSION_MAJOR}\n' \
-        + f'\t\tset aitMinorVersion {VERSION_MINOR}\n' \
-        + f'\t\tset aitPatchVersion {VERSION_PATCH}\n' \
-        + f'\t\tset bitinfoVersion {BITINFO_VERSION}\n'
+        + '\t# Project variables\n' \
+        + f'\tset aitCall "{re.escape(os.path.basename(sys.argv[0]))} {re.escape(" ".join(sys.argv[1:]))}"\n' \
+        + f'\tset aitMajorVersion {VERSION_MAJOR}\n' \
+        + f'\tset aitMinorVersion {VERSION_MINOR}\n' \
+        + f'\tset aitPatchVersion {VERSION_PATCH}\n' \
+        + f'\tset bitinfoVersion {BITINFO_VERSION}\n'
 
     # Set bitstream variables
     vivado_project += '\n' \
-        + '\t\t# Bitstream variables\n' \
-        + f'\t\tset userID {user_id}\n'
+        + '\t# Bitstream variables\n' \
+        + f'\tset userID {user_id}\n'
 
     # Load board json file
     vivado_project += '\n' \
-        + f'\t\t# Load {board.name} board info as a tcl dict\n' \
-        + '\t\tset board [json::json2dict [read [open ${scriptDir}/../board/board_info.json "r"]]]\n'
+        + f'\t# Load {board.name} board info as a tcl dict\n' \
+        + '\tset board [json::json2dict [read [open ${scriptDir}/../board/board_info.json "r"]]]\n'
 
     # Store accelerators information from json
     vivado_project += '\n' \
-        + '\t\t# Store accelerators information in a dict\n' \
-        + json2tcl(accs, 'accs', 2)
+        + '\t# Store accelerators information in a dict\n' \
+        + json2tcl(accs, 'accs', 1)
 
     # Load AIT configuration
     vivado_project += '\n' \
-        + '\t\t# Load AIT configuration flags from json\n' \
-        + '\t\tset aitConfig [json::json2dict [read [open ${scriptDir}/../../ait_config.json "r"]]]\n'
+        + '\t# Load AIT configuration flags from json\n' \
+        + '\tset aitConfig [json::json2dict [read [open ${scriptDir}/../../ait_config.json "r"]]]\n'
 
     # Load user-provided configuration
     vivado_project += '\n' \
-        + '\t\t# Create userConfig dict to check for user-provided configuration\n' \
-        + '\t\tif {[file exists ${scriptDir}/../user/config.json]} {\n' \
-        + '\t\t\tset userConfig [json::json2dict [read [open ${scriptDir}/../user/config.json "r"]]]\n' \
-        + '\t\t} else {\n' \
-        + '\t\t\tset userConfig [dict create]\n' \
-        + '\t\t}\n'
+        + '\t# Create userConfig dict to check for user-provided configuration\n' \
+        + '\tif {[file exists ${scriptDir}/../user/config.json]} {\n' \
+        + '\t\tset userConfig [json::json2dict [read [open ${scriptDir}/../user/config.json "r"]]]\n' \
+        + '\t} else {\n' \
+        + '\t\tset userConfig [dict create]\n' \
+        + '\t}\n'
 
-    vivado_project += '\t}\n'
     vivado_project += '}\n'
 
     vivado_project_file = open(f'{project_backend_path}/tcl/project.tcl', 'w')
@@ -189,7 +187,6 @@ def run_step(project_args):
     subprocess.run(f'echo "{init_script_str}" > {project_backend_path}/vivado.tcl', shell=True, check=True)
 
     p = subprocess.Popen('vivado -init -nojournal -nolog -notrace -mode batch '
-                         + f'-source {project_backend_path}/tcl/project.tcl '
                          + f'-source {project_backend_path}/tcl/ait.tcl '
                          + f'-source {project_backend_path}/tcl/scripts/generate_design.tcl',
                          cwd=project_backend_path, stdout=sys.stdout.subprocess,

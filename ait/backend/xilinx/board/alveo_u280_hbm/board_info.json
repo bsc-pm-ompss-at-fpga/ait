@@ -59,7 +59,7 @@
 	},
 
 	"ompif": {
-		"clk": "clk_gen_slr0/clk_200",
-		"rstn": "system_reset/clk_200_managed_rstn"
+		"clk": "clk_gen_slr0/freq_200_slr0_clk",
+		"rst": "system_reset/freq_200_slr0_managed_rstn"
 	}
 }

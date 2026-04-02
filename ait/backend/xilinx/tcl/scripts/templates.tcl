@@ -18,114 +18,109 @@
 #    License along with this code. If not, see <www.gnu.org/licenses/>.  #
 #------------------------------------------------------------------------#
 
-namespace eval AIT {
-    namespace eval templates {
-        variable scriptDir [file dirname [file normalize [info script]]]
+namespace eval templates {
+    variable scriptDir [file dirname [file normalize [info script]]]
 
-        proc base_design {designName} {
-            AIT::templates::source_template "baseDesign" [dict get ${AIT::vars::aitConfig} "name"]
+    proc base_design {designName} {
+        source_template "baseDesign" ${designName}
+    }
+
+    proc custom_interconnect {instanceName srcBitWidth srcClkName dstBitWidth dstClkName {rwMode "read_write"}} {
+        source_template "custom_interconnect" ${instanceName} ${srcBitWidth} ${srcClkName} ${dstBitWidth} ${dstClkName} ${rwMode}
+    }
+
+    proc ethernet_subsystem {} {
+        source_template "ethernet_subsystem"
+        AIT::board::instantiate_ethernet_subsystem
+    }
+
+    proc OMPIF {} {
+        ethernet_subsystem
+
+        source_template "ompif"
+
+        set ompifClkSrcPin [get_bd_pins [dict get ${AIT::project::board} "ompif" "clk"]]
+        set ompifRstSrcPin [get_bd_pins [dict get ${AIT::project::board} "ompif" "rst"]]
+
+        connect_bd_intf_net [get_bd_intf_pins ${OMPIF::hier}/ethTx] [get_bd_intf_pins ${ethSubsys::container}/S_AXIS]
+        connect_bd_intf_net [get_bd_intf_pins ${ethSubsys::container}/msg_rx] [get_bd_intf_pins ${OMPIF::hier}/ethRx]
+
+        AIT::clocks::connect_clock [get_bd_pins ${OMPIF::hier}/app_clk]
+        AIT::clocks::connect_clock [get_bd_pins ${OMPIF::hier}/ompif_clk] ${ompifClkSrcPin}
+        AIT::resets::connect_reset [get_bd_pins ${OMPIF::hier}/app_aresetn]
+        AIT::resets::connect_reset [get_bd_pins ${OMPIF::hier}/ompif_aresetn] ${ompifRstSrcPin}
+
+        connect_bd_net [get_bd_pins ${OMPIF::hier}/cluster_rank_size] [get_bd_pins ${ethSubsys::jtagGpioIP}/gpio2_io_o]
+
+        if {[dict get ${AIT::project::board} "name"] eq "alveo_u55c"
+            || [dict get ${AIT::project::board} "name"] eq "alveo_u280_hbm"} {
+
+            set 200SLR0ClkPin [AIT::clocks::create_clock 200 "freq_200_slr0" "clk_gen_slr0"]
+            set 400SLR0ClkPin [AIT::clocks::create_clock 400 "freq_400_slr0" "clk_gen_slr0"]
+
+            custom_interconnect "axi_inter_msg_send" 512 ${200SLR0ClkPin} 256 ${400SLR0ClkPin} "read_only"
+            custom_interconnect "axi_inter_msg_recv_bufwr" 512 ${200SLR0ClkPin} 256 ${400SLR0ClkPin} "write_only"
+            custom_interconnect "axi_inter_msg_recv_memcpy" 512 ${200SLR0ClkPin} 256 ${400SLR0ClkPin}
+
+            connect_bd_intf_net [get_bd_intf_pins ${OMPIF::hier}/moMEM] [get_bd_intf_pins ${axi_inter_msg_send::hier}/S_AXI]
+            connect_bd_intf_net [get_bd_intf_pins ${OMPIF::hier}/bufwr] [get_bd_intf_pins ${axi_inter_msg_recv_bufwr::hier}/S_AXI]
+            connect_bd_intf_net [get_bd_intf_pins ${OMPIF::hier}/memcpy] [get_bd_intf_pins ${axi_inter_msg_recv_memcpy::hier}/S_AXI]
+
+            AIT::AXI::connect_to_mem_intf ${axi_inter_msg_send::masterIntfPin} "" ${400SLR0ClkPin}
+            AIT::AXI::connect_to_mem_intf ${axi_inter_msg_recv_memcpy::masterIntfPin} "" ${400SLR0ClkPin}
+            AIT::AXI::connect_to_mem_intf ${axi_inter_msg_recv_bufwr::masterIntfPin} "" ${400SLR0ClkPin}
+        } else {
+            AIT::AXI::connect_to_mem_intf [get_bd_intf_pins ${OMPIF::hier}/bufwr] "" ${ompifClkSrcPin}
+            AIT::AXI::connect_to_mem_intf [get_bd_intf_pins ${OMPIF::hier}/memcpy] "" ${ompifClkSrcPin}
+            AIT::AXI::connect_to_mem_intf [get_bd_intf_pins ${OMPIF::hier}/moMEM] "" ${ompifClkSrcPin}
         }
 
-        proc ethernet_subsystem {} {
-            set oldBdDesign [current_bd_design .]
-            set ethSubsysDesign [AIT::templates::source_template "ethernet_subsystem"]
-            set ::AIT::vars::ethSubsys ${ethSubsysDesign}
+        AIT::AXI::connect_to_mem_intf [get_bd_intf_pins ${OMPIF::hier}/cntrl_sender] "" ${ompifClkSrcPin} ${ompifRstSrcPin}
+        AIT::AXI::connect_to_mem_intf [get_bd_intf_pins ${OMPIF::hier}/cntrl_receiver] "" ${ompifClkSrcPin} ${ompifRstSrcPin}
 
-            current_bd_design ${ethSubsysDesign}
-            AIT::board::configure_ethernet_subsystem
-            validate_bd_design -quiet
-            save_bd_design -quiet
-            current_bd_design ${oldBdDesign}
-            AIT::board::instantiate_ethernet_subsystem
+        save_bd_design -quiet
+    }
 
-            save_bd_design -quiet
-            return ${ethSubsysDesign}
+    # Creates basic accelerator hierarchy and instantiates accelerator IP
+    proc ompss_acc {accName instanceNum} {
+        set accHier [create_bd_cell -type hier ${accName}_${instanceNum}]
+        create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 ${accHier}/inStream
+        create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 ${accHier}/outStream
+        create_bd_pin -type clk -dir I ${accHier}/aclk
+        create_bd_pin -type rst -dir I ${accHier}/managed_aresetn
+
+        set accIP [create_bd_cell -type ip -vlnv bsc:ompss:${accName}_wrapper ${accHier}/${accName}_ompss]
+        AIT::clocks::connect_clock [get_bd_pins ${accHier}/aclk] [get_bd_pins ${accIP}/ap_clk]
+        AIT::resets::connect_reset [get_bd_pins ${accHier}/managed_aresetn] [get_bd_pins ${accIP}/ap_rst_n]
+
+        return [list ${accHier} ${accIP}]
+    }
+
+    proc Picos_OmpSs_Manager {} {
+        source_template "Picos_OmpSs_Manager"
+
+        AIT::clocks::connect_clock [get_bd_pins ${hwruntime::hier}/clk]
+        AIT::resets::connect_reset [get_bd_pins ${hwruntime::hier}/rstn] [get_bd_pins /system_reset/clk_app_rstn]
+        AIT::resets::connect_reset [get_bd_pins ${hwruntime::hier}/managed_rstn] [get_bd_pins system_reset/clk_app_managed_rstn]
+
+        if {([dict get ${AIT::project::board} "arch" "device"] eq "zynq")
+            || ([dict get ${AIT::project::board} "arch" "device"] eq "zynqmp")} {
+
+            AIT::AXI::connect_to_mem_intf [get_bd_intf_pins ${hwruntime::hier}/S_AXI_GP] 1
+        } else {
+            AIT::AXI::connect_to_mem_intf [get_bd_intf_pins ${hwruntime::hier}/S_AXI_GP]
         }
 
-        proc OMPIF {} {
-            set ethSubsysDesign [AIT::templates::ethernet_subsystem]
-            set ompifHier [AIT::templates::source_template "ompif"]
+        save_bd_design -quiet
+    }
 
-            set ompifClkSrcPin [get_bd_pins [dict get ${AIT::vars::board} "ompif" "clk"]]
-            set ompifRstSrcPin [get_bd_pins [dict get ${AIT::vars::board} "ompif" "rst"]]
-
-            connect_bd_intf_net [get_bd_intf_pins ${ompifHier}/ethTx] [get_bd_intf_pins ${ethSubsysDesign}/S_AXIS]
-            connect_bd_intf_net [get_bd_intf_pins ${ethSubsysDesign}/msg_rx] [get_bd_intf_pins ${ompifHier}/ethRx]
-
-            AIT::clocks::connect_clock [get_bd_pins ${ompifHier}/app_clk]
-            AIT::clocks::connect_clock [get_bd_pins ${ompifHier}/ompif_clk] ${ompifClkSrcPin}
-            AIT::resets::connect_reset [get_bd_pins ${ompifHier}/app_aresetn]
-            AIT::resets::connect_reset [get_bd_pins ${ompifHier}/ompif_aresetn] ${ompifRstSrcPin}
-
-            connect_bd_net [get_bd_pins ${ompifHier}/cluster_rank_size] [get_bd_pins jtag_gpio/gpio2_io_o]
-
-            if {[dict get ${AIT::vars::board} "name"] eq "alveo_u55c"
-                || [dict get ${AIT::vars::board} "name"] eq "alveo_u280_hbm"} {
-                connect_bd_intf_net [get_bd_intf_pins ${ompifHier}/bufwr] [get_bd_intf_pins axi_inter_msg_recv_bufwr/S_AXI]
-                connect_bd_intf_net [get_bd_intf_pins ${ompifHier}/moMEM] [get_bd_intf_pins axi_inter_msg_send/S_AXI]
-                connect_bd_intf_net [get_bd_intf_pins ${ompifHier}/memcpy] [get_bd_intf_pins axi_inter_msg_recv_memcpy/S_AXI]
-            } else {
-                AIT::AXI::connect_to_mem_intf [get_bd_intf_pins ${ompifHier}/bufwr] "" ${ompifClkSrcPin}
-                AIT::AXI::connect_to_mem_intf [get_bd_intf_pins ${ompifHier}/memcpy] "" ${ompifClkSrcPin}
-                AIT::AXI::connect_to_mem_intf [get_bd_intf_pins ${ompifHier}/moMEM] "" ${ompifClkSrcPin}
-            }
-            AIT::AXI::connect_to_mem_intf [get_bd_intf_pins ${ompifHier}/cntrl_sender] "" ${ompifClkSrcPin} ${ompifRstSrcPin}
-            AIT::AXI::connect_to_mem_intf [get_bd_intf_pins ${ompifHier}/cntrl_receiver] "" ${ompifClkSrcPin} ${ompifRstSrcPin}
-
-            set ::AIT::vars::OMPIF ${ompifHier}
-
-            save_bd_design -quiet
-            return ${ompifHier}
-        }
-
-        # Creates basic accelerator hierarchy and instantiates accelerator IP
-        proc ompss_acc {accName instanceNum} {
-            set accHier [create_bd_cell -type hier ${accName}_${instanceNum}]
-            create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 ${accHier}/inStream
-            create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 ${accHier}/outStream
-            create_bd_pin -type clk -dir I ${accHier}/aclk
-            create_bd_pin -type rst -dir I ${accHier}/managed_aresetn
-
-            set accIP [create_bd_cell -type ip -vlnv bsc:ompss:${accName}_wrapper ${accHier}/${accName}_ompss]
-            AIT::clocks::connect_clock [get_bd_pins ${accHier}/aclk] [get_bd_pins ${accIP}/ap_clk]
-            AIT::resets::connect_reset [get_bd_pins ${accHier}/managed_aresetn] [get_bd_pins ${accIP}/ap_rst_n]
-
-            return [list ${accHier} ${accIP}]
-        }
-
-        proc Picos_OmpSs_Manager {} {
-            set PicosOmpSsManagerHier [AIT::templates::source_template "Picos_OmpSs_Manager"]
-            if {[dict get ${AIT::vars::aitConfig} "hwruntime_interconnect"] eq "centralized"} {
-                AIT::templates::source_template "hwr_central_interconnect"
-            } else {
-                AIT::templates::source_template "hwr_dist_interconnect"
-            }
-
-            AIT::clocks::connect_clock [get_bd_pins ${PicosOmpSsManagerHier}/clk]
-            AIT::resets::connect_reset [get_bd_pins ${PicosOmpSsManagerHier}/rstn] [get_bd_pins /system_reset/clk_app_rstn]
-            AIT::resets::connect_reset [get_bd_pins ${PicosOmpSsManagerHier}/managed_rstn] [get_bd_pins system_reset/clk_app_managed_rstn]
-
-            if {([dict get ${AIT::vars::board} "arch" "device"] eq "zynq")
-                || ([dict get ${AIT::vars::board} "arch" "device"] eq "zynqmp")} {
-
-                AIT::AXI::connect_to_mem_intf [get_bd_intf_pins ${PicosOmpSsManagerHier}/S_AXI_GP] 1
-            } else {
-                AIT::AXI::connect_to_mem_intf [get_bd_intf_pins ${PicosOmpSsManagerHier}/S_AXI_GP]
-            }
-
-            set ::AIT::vars::HWR ${PicosOmpSsManagerHier}
-
-            save_bd_design -quiet
-            return ${PicosOmpSsManagerHier}
-        }
-
-        proc source_template {templateName {args ""}} {
-            AIT::utils::info_msg "Sourcing ${templateName} template..."
-            set argv ${args}
-            set retObj [source ${AIT::templates::scriptDir}/../templates/${templateName}.tcl]
-            AIT::utils::info_msg "Successfully sourced ${templateName} template"
-            save_bd_design -quiet
-            return ${retObj}
-        }
+    proc source_template {templateName {args ""}} {
+        variable scriptDir
+        AIT::utils::info_msg "Sourcing ${templateName} template..."
+        set argv ${args}
+        set retObj [source ${scriptDir}/../templates/${templateName}.tcl]
+        AIT::utils::info_msg "Successfully sourced ${templateName} template"
+        save_bd_design -quiet
+        return ${retObj}
     }
 }

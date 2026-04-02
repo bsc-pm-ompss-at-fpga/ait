@@ -21,7 +21,7 @@
 set numJobs [lindex ${argv} 0]
 
 # Open Vivado project
-open_project [dict get ${AIT::vars::aitConfig} "name"]/[dict get ${AIT::vars::aitConfig} "name"].xpr
+open_project [dict get ${AIT::project::aitConfig} "name"]/[dict get ${AIT::project::aitConfig} "name"].xpr
 
 # Check if previous step finished correctly
 if {[string match "*ERROR*" [get_property STATUS [get_runs synth_1]]]} {
@@ -29,11 +29,11 @@ if {[string match "*ERROR*" [get_property STATUS [get_runs synth_1]]]} {
 }
 
 # Open Block Design
-open_bd_design [get_files [dict get ${AIT::vars::aitConfig} "name"]_design.bd]
+open_bd_design [get_files [dict get ${AIT::project::aitConfig} "name"]_design.bd]
 
 # Generate .bin file for Zynq and ZynqMP boards
-if {([dict get ${AIT::vars::board} "arch" "device"] eq "zynq")
-    || ([dict get ${AIT::vars::board} "arch" "device"] eq "zynqmp")} {
+if {([dict get ${AIT::project::board} "arch" "device"] eq "zynq")
+    || ([dict get ${AIT::project::board} "arch" "device"] eq "zynqmp")} {
 
     set_property -dict [list \
         STEPS.WRITE_BITSTREAM.ARGS.BIN_FILE {true} \
@@ -53,10 +53,10 @@ wait_on_runs impl_1
 
 # Check if implementation finished correctly
 if {[string match "*ERROR*" [get_property STATUS [get_runs impl_1]]]} {
-    if {[catch {exec exec grep ^ERROR [dict get ${AIT::vars::aitConfig} "name"]/[dict get ${AIT::vars::aitConfig} "name"].runs/impl_1/runme.log}]} {
+    if {[catch {exec exec grep ^ERROR [dict get ${AIT::project::aitConfig} "name"]/[dict get ${AIT::project::aitConfig} "name"].runs/impl_1/runme.log}]} {
         AIT::utils::info_msg "Failed impl_1 implementation"
     } else {
-        AIT::utils::info_msg "Failed impl_1 implementation: [exec grep ^ERROR [dict get ${AIT::vars::aitConfig} "name"]/[dict get ${AIT::vars::aitConfig} "name"].runs/impl_1/runme.log]"
+        AIT::utils::info_msg "Failed impl_1 implementation: [exec grep ^ERROR [dict get ${AIT::project::aitConfig} "name"]/[dict get ${AIT::project::aitConfig} "name"].runs/impl_1/runme.log]"
     }
     AIT::utils::error_msg "Hardware implementation failed."
 }

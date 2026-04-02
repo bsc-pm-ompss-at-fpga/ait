@@ -21,10 +21,10 @@
 set numJobs [lindex ${argv} 0]
 
 # Open Vivado project
-open_project [dict get ${AIT::vars::aitConfig} "name"]/[dict get ${AIT::vars::aitConfig} "name"].xpr
+open_project [dict get ${AIT::project::aitConfig} "name"]/[dict get ${AIT::project::aitConfig} "name"].xpr
 
 # Open Block Design
-open_bd_design [get_files [dict get ${AIT::vars::aitConfig} "name"]_design.bd]
+open_bd_design [get_files [dict get ${AIT::project::aitConfig} "name"]_design.bd]
 
 # Generate OOC synthesis runs sequentially to avoid Vivado aborting when checking the IPCACHE
 generate_target {synthesis implementation} [get_files [current_bd_design].bd]
@@ -44,10 +44,10 @@ wait_on_runs synth_1
 # Check if synthesis finished correctly
 if {[string match "*ERROR*" [get_property STATUS [get_runs *synth_1]]]} {
     foreach index [lsearch -all [get_property STATUS [get_runs *synth_1]] *ERROR*] {
-        if {[catch {exec grep ^ERROR [dict get ${AIT::vars::aitConfig} "name"]/[dict get ${AIT::vars::aitConfig} "name"].runs/[lindex [get_runs *synth_1] ${index}]/runme.log}]} {
+        if {[catch {exec grep ^ERROR [dict get ${AIT::project::aitConfig} "name"]/[dict get ${AIT::project::aitConfig} "name"].runs/[lindex [get_runs *synth_1] ${index}]/runme.log}]} {
             AIT::utils::info_msg "Failed OOC synthesis [lindex [get_runs *synth_1] ${index}]"
         } else {
-            AIT::utils::info_msg "Failed OOC synthesis [lindex [get_runs *synth_1] ${index}]: [exec grep ^ERROR [dict get ${AIT::vars::aitConfig} "name"]/[dict get ${AIT::vars::aitConfig} "name"].runs/[lindex [get_runs *synth_1] ${index}]/runme.log]"
+            AIT::utils::info_msg "Failed OOC synthesis [lindex [get_runs *synth_1] ${index}]: [exec grep ^ERROR [dict get ${AIT::project::aitConfig} "name"]/[dict get ${AIT::project::aitConfig} "name"].runs/[lindex [get_runs *synth_1] ${index}]/runme.log]"
         }
     }
     AIT::utils::error_msg "Hardware synthesis failed."

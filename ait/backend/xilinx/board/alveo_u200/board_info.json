@@ -29,7 +29,7 @@
 	},
 
 	"ompif": {
-		"clk": "clock_generator/clk_200",
-		"rst": "system_reset/clk_200_managed_rstn"
+		"clk": "clock_generator/freq_200_clk",
+		"rst": "system_reset/freq_200_clk_managed_rstn"
 	}
 }

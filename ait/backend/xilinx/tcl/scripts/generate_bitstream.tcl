@@ -21,7 +21,7 @@
 set numJobs [lindex ${argv} 0]
 
 # Open Vivado project
-open_project [dict get ${AIT::vars::aitConfig} "name"]/[dict get ${AIT::vars::aitConfig} "name"].xpr
+open_project [dict get ${AIT::project::aitConfig} "name"]/[dict get ${AIT::project::aitConfig} "name"].xpr
 
 # Check if previous step finished correctly
 if {[string match "*ERROR*" [get_property STATUS [get_runs impl_1]]]} {
@@ -29,12 +29,12 @@ if {[string match "*ERROR*" [get_property STATUS [get_runs impl_1]]]} {
 }
 
 # Open and validate Block Design
-open_bd_design [get_files [dict get ${AIT::vars::aitConfig} "name"]_design.bd]
+open_bd_design [get_files [dict get ${AIT::project::aitConfig} "name"]_design.bd]
 validate_bd_design -quiet
 
 # Generate .bin file for Zynq and ZynqMP boards
-if {([dict get ${AIT::vars::board} "arch" "device"] eq "zynq")
-    || ([dict get ${AIT::vars::board} "arch" "device"] eq "zynqmp")} {
+if {([dict get ${AIT::project::board} "arch" "device"] eq "zynq")
+    || ([dict get ${AIT::project::board} "arch" "device"] eq "zynqmp")} {
 
     set_property -dict [list \
         STEPS.WRITE_BITSTREAM.ARGS.BIN_FILE {true} \
@@ -58,10 +58,10 @@ if {[string match "*ERROR*" [get_property STATUS [get_runs impl_1]]]} {
     AIT::utils::error_msg "Bitstream generation failed."
 }
 
-file mkdir [dict get ${AIT::vars::aitConfig} "name"]/[dict get ${AIT::vars::aitConfig} "name"].sdk
+file mkdir [dict get ${AIT::project::aitConfig} "name"]/[dict get ${AIT::project::aitConfig} "name"].sdk
 
-if {([dict get ${AIT::vars::board} "arch" "device"] eq "zynq")
-    || ([dict get ${AIT::vars::board} "arch" "device"] eq "zynqmp")} {
+if {([dict get ${AIT::project::board} "arch" "device"] eq "zynq")
+    || ([dict get ${AIT::project::board} "arch" "device"] eq "zynqmp")} {
 
     # Set basic platform properties
     set_property -dict [list \
@@ -72,6 +72,6 @@ if {([dict get ${AIT::vars::board} "arch" "device"] eq "zynq")
     ] [get_bd_cells clock_generator]
 
     # Generate xsa files
-    write_hw_platform -force -fixed -unified -include_bit [dict get ${AIT::vars::aitConfig} "name"]/[dict get ${AIT::vars::aitConfig} "name"].sdk/[dict get ${AIT::vars::aitConfig} "name"]_design_wrapper.xsa
-    validate_hw_platform [dict get ${AIT::vars::aitConfig} "name"]/[dict get ${AIT::vars::aitConfig} "name"].sdk/[dict get ${AIT::vars::aitConfig} "name"]_design_wrapper.xsa
+    write_hw_platform -force -fixed -unified -include_bit [dict get ${AIT::project::aitConfig} "name"]/[dict get ${AIT::project::aitConfig} "name"].sdk/[dict get ${AIT::project::aitConfig} "name"]_design_wrapper.xsa
+    validate_hw_platform [dict get ${AIT::project::aitConfig} "name"]/[dict get ${AIT::project::aitConfig} "name"].sdk/[dict get ${AIT::project::aitConfig} "name"]_design_wrapper.xsa
 }
