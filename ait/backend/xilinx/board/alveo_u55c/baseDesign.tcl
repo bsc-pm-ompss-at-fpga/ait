@@ -299,6 +299,9 @@ proc create_hier_cell_QDMA { parentCell nameHier } {
 
   # Create interface connections
   connect_bd_intf_net [get_bd_intf_pins QDMA/M_AXI] [get_bd_intf_pins ${axi_protocol_converter}/S_AXI]
+  if {[dict get ${AIT::project::aitConfig} "memory_interleaving_stride"]} {
+      AIT::AXI::add_addrInterleaver [get_bd_intf_pins QDMA/M_AXI] "QDMA" [current_bd_instance .]
+  }
   connect_bd_intf_net [get_bd_intf_pins ${axi_protocol_converter}/M_AXI] [get_bd_intf_pins M_AXI]
   connect_bd_intf_net -intf_net QDMA_M_AXI_LITE [get_bd_intf_pins M_AXI_LITE] [get_bd_intf_pins QDMA/M_AXI_LITE]
   connect_bd_intf_net -intf_net QDMA_pcie_mgt [get_bd_intf_pins pci_express_x8] [get_bd_intf_pins QDMA/pcie_mgt]
