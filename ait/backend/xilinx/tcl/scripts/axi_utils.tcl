@@ -300,6 +300,9 @@ namespace eval AIT {
             set srcIntfPin [get_bd_intf_pins ${srcIntfPin}]
             set role [expr {([get_property MODE ${srcIntfPin}] eq "Master") ? "slave" : "master"}]
 
+            set oldBdInstance [current_bd_instance .]
+            current_bd_instance
+
             ## Get AXI interface by id or the least occupied
             if {${dst} ne ""} {
                 set dstIntfIdx [lsearch -exact ${AIT::vars::memIntfsList} [lsearch -regexp -inline -index 3 [lsearch -all -inline -index 1 ${AIT::vars::memIntfsList} ${role}] ${dst}]]
@@ -320,6 +323,8 @@ namespace eval AIT {
             # Return updated interface dictionary to the global list and sort it by occupation
             lappend AIT::vars::memIntfsList ${dstIntf}
             set ::AIT::vars::memIntfsList [lsort -command AIT::utils::comp_dict -increasing ${AIT::vars::memIntfsList}]
+
+            current_bd_instance ${oldBdInstance}
 
             # Return dictionary of the destination interface
             return ${dstIntf}
