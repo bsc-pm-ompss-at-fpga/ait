@@ -27,7 +27,7 @@ file delete ${projectRootDir}/[dict get ${AIT::vars::aitConfig} "name"].ait.json
 # List of OmpSs@FPGA address segments
 # Includes address segment name, size and base address
 # We set bitinfo address segment as size 1 so it will be the first one to be allocated
-set bdAddrSegmentsList [lsort -increasing -command AIT::utils::comp_dict [list \
+set AIT::vars::bdAddrSegmentsList [list \
     [dict create \
         name bitinfo \
         bdSegName bitInfo_BRAM_Ctrl/S_AXI/Mem0 \
@@ -75,42 +75,8 @@ set bdAddrSegmentsList [lsort -increasing -command AIT::utils::comp_dict [list \
         bdSegName Hardware_Runtime/Picos_OmpSs_Manager/axilite/reg_0 \
         size [expr {[dict get ${AIT::vars::aitConfig} "enable_pom_axilite"] ? 16*1024 : 0}] \
         addr [format 0x%016x 0x0]
-    ] \
-    [dict create \
-        name powerMonitor \
-        bdSegName cms_subsystem/s_axi_ctrl/Mem* \
-        size [expr {[dict get ${AIT::vars::aitConfig} "power_monitor"] ? 256*1024 : 0}] \
-        addr [format 0x%016x 0x0]
-    ] \
-    [dict create \
-        name thermalMonitor \
-        bdSegName system_management/S_AXI_LITE/Reg \
-        size [expr {[dict get ${AIT::vars::aitConfig} "thermal_monitor"] ? 4096 : 0}] \
-        addr [format 0x%016x 0x0]
     ]
-]]
-
-# Compute address segments base addresses
-set offset 0
-foreach bdAddrSeg ${bdAddrSegmentsList} {
-    dict with bdAddrSeg {
-        if {${size}} {
-            if {${size} <= 4096} {
-                set size 4096
-            } elseif {${size} & (${size}-1)} { # Not power of 2
-                set sizeClog2 [expr {int(ceil(log(${size})/log(2)))}]
-                set size [expr {int(pow(2, ${sizeClog2}))}]
-            }
-            if {${offset}%${size}} {
-                incr offset [expr {${size} - (${offset}%${size})}]
-            }
-            set addr [format 0x%016x [expr {[dict get ${AIT::vars::board} "memory" "ompss_base_addr"] + ${offset}}]]
-            incr offset ${size}
-        }
-    }
-    dict append bdAddrSegmentsDict [dict get ${bdAddrSeg} "name"] ${bdAddrSeg}
-}
-unset offset
+]
 
 # Create project and set board files
 create_project -force [dict get ${AIT::vars::aitConfig} "name"] [dict get ${AIT::vars::aitConfig} "name"] -part [dict get ${AIT::vars::board} "chip_part"]
@@ -673,6 +639,28 @@ delete_bd_objs [get_bd_addr_segs]
 
 AIT::utils::info_msg "Configuring address map..."
 
+# Compute address segments base addresses
+set offset 0
+foreach bdAddrSeg [lsort -increasing -command AIT::utils::comp_dict ${AIT::vars::bdAddrSegmentsList}] {
+    dict with bdAddrSeg {
+        if {${size}} {
+            if {${size} <= 4096} {
+                set size 4096
+            } elseif {${size} & (${size}-1)} { # Not power of 2
+                set sizeClog2 [expr {int(ceil(log(${size})/log(2)))}]
+                set size [expr {int(pow(2, ${sizeClog2}))}]
+            }
+            if {${offset}%${size}} {
+                incr offset [expr {${size} - (${offset}%${size})}]
+            }
+            set addr [format 0x%016x [expr {[dict get ${AIT::vars::board} "memory" "ompss_base_addr"] + ${offset}}]]
+            incr offset ${size}
+        }
+    }
+    dict append bdAddrSegmentsDict [dict get ${bdAddrSeg} "name"] ${bdAddrSeg}
+}
+unset offset
+
 AIT::board::configure_address_map
 
 # Map hwruntime queues to address space
@@ -790,10 +778,20 @@ append bitinfoCoeStr [string range [dict get ${bdAddrSegmentsDict} "hwcounter" "
 append bitinfoCoeStr [string range [dict get ${bdAddrSegmentsDict} "hwcounter" "addr"] 2 9]\n
 append bitinfoCoeStr [string range [dict get ${bdAddrSegmentsDict} "pomAxilite" "addr"] 10 17]\n
 append bitinfoCoeStr [string range [dict get ${bdAddrSegmentsDict} "pomAxilite" "addr"] 2 9]\n
-append bitinfoCoeStr [string range [dict get ${bdAddrSegmentsDict} "powerMonitor" "addr"] 10 17]\n
-append bitinfoCoeStr [string range [dict get ${bdAddrSegmentsDict} "powerMonitor" "addr"] 2 9]\n
-append bitinfoCoeStr [string range [dict get ${bdAddrSegmentsDict} "thermalMonitor" "addr"] 10 17]\n
-append bitinfoCoeStr [string range [dict get ${bdAddrSegmentsDict} "thermalMonitor" "addr"] 2 9]\n
+if {[dict get ${AIT::vars::aitConfig} "power_monitor"]} {
+    append bitinfoCoeStr [string range [dict get ${bdAddrSegmentsDict} "powerMonitor" "addr"] 10 17]\n
+    append bitinfoCoeStr [string range [dict get ${bdAddrSegmentsDict} "powerMonitor" "addr"] 2 9]\n
+} else {
+    append bitinfoCoeStr [format %08x 0]\n
+    append bitinfoCoeStr [format %08x 0]\n
+}
+if {[dict get ${AIT::vars::aitConfig} "thermal_monitor"]} {
+    append bitinfoCoeStr [string range [dict get ${bdAddrSegmentsDict} "thermalMonitor" "addr"] 10 17]\n
+    append bitinfoCoeStr [string range [dict get ${bdAddrSegmentsDict} "thermalMonitor" "addr"] 2 9]\n
+} else {
+    append bitinfoCoeStr [format %08x 0]\n
+    append bitinfoCoeStr [format %08x 0]\n
+}
 
 # Calculate the bitinfo offset of each variable-length field
 # Variable-length fields are appended next to the fixed-length fields
