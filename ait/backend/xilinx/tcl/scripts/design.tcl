@@ -20,21 +20,6 @@
 
 namespace eval AIT {
     namespace eval design {
-        # Connects srcClk to dstClk (pin or net) or to the default clock
-        proc connect_clock {srcClk {dstClk ""}} {
-            if {${dstClk} eq ""} {
-                set dstClk [get_bd_pins /clock_generator/clk_app]
-            }
-            if {!([llength [get_bd_nets -quiet -of_objects ${srcClk}]])} {
-                if {[get_property CLASS ${dstClk}] eq "bd_net"} {
-                    connect_bd_net ${srcClk} -net ${dstClk}
-                } elseif {[get_property CLASS ${dstClk}] eq "bd_pin"} {
-                    connect_bd_net ${srcClk} ${dstClk}
-                }
-            }
-            return ${dstClk}
-        }
-
         # Connects srcRst to dstRst (pin or net) or to the default reset
         proc connect_reset {srcRst {dstRst ""}} {
             if {${dstRst} eq ""} {
@@ -58,7 +43,7 @@ namespace eval AIT {
             }
 
             set intfPinType [get_property VLNV ${intfPin}]
-            set intfPinClk [get_associated_clk_pin ${intfPin}]
+            set intfPinClk [AIT::clocks::get_associated_clk_pin ${intfPin}]
             set src_clk [get_property NAME [AIT::design::get_driver_pin ${intfPinClk}]]
 
             set_property HDL_ATTRIBUTE.DEBUG {true} [get_bd_intf_nets -of_objects ${intfPin}]
@@ -88,7 +73,7 @@ namespace eval AIT {
                     CONFIG.C_NUM_MONITOR_SLOTS [expr {${slot_num} + 1}] \
                     CONFIG.C_SLOT_${slot_num}_INTF_TYPE [get_property VLNV ${intfPin}] \
                  ] ${ila_ip}
-                AIT::design::connect_clock [get_bd_pins ${ila_ip}/clk]
+                AIT::clocks::connect_clock [get_bd_pins ${ila_ip}/clk]
                 AIT::design::connect_reset [get_bd_pins ${ila_ip}/resetn] [AIT::design::get_synchronous_rst_pin [get_bd_pins ${ila_ip}/clk]]
             }
 
@@ -119,24 +104,6 @@ namespace eval AIT {
             set bitinfoBitmap [expr {${bitinfoBitmap} | ([dict get ${AIT::vars::aitConfig} "ompif"] ? 1 : 0)<<11}]
             set bitinfoBitmap [expr {${bitinfoBitmap} | ([dict get ${AIT::vars::aitConfig} "imp"] ? 1 : 0)<<12}]
             return [format 0x%08x ${bitinfoBitmap}]
-        }
-
-        # Returns a clk bd_pin object of the clock associated to the input parameter intfPinName
-        proc get_associated_clk_pin {intfPinName} {
-            set intfPin [get_bd_intf_pins ${intfPinName}]
-            set intfIP [get_bd_cells -of_objects ${intfPin}]
-            set intfName [get_property NAME ${intfPin}]
-            set intfClkPin [get_bd_pins -quiet -of_objects ${intfIP} -regexp -filter "(TYPE == clk) && (CONFIG.ASSOCIATED_BUSIF =~ .*${intfName}.*)"]
-            if {![llength ${intfClkPin}]} {
-                if {[get_property TYPE ${intfPin}] eq "hier"} {
-                    set intfPinInnerNet [get_bd_intf_nets -boundary_type lower -of_objects ${intfPin}]
-                    set innerNetIntfPin [get_bd_intf_pins -of_objects ${intfPinInnerNet} -filter "PATH != ${intfPin}"]
-                    set intfClkPin [get_associated_clk_pin ${innerNetIntfPin}]
-                } else {
-                    AIT::utils::error_msg "Unknown interface type [get_property TYPE ${intfPin}]"
-                }
-            }
-            return ${intfClkPin}
         }
 
         proc get_associated_rst_pin {clkPinName} {

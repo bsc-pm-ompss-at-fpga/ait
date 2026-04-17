@@ -52,8 +52,8 @@ namespace eval AIT {
             connect_bd_intf_net [get_bd_intf_pins ${ompifHier}/ethTx] [get_bd_intf_pins ${ethSubsysDesign}/S_AXIS]
             connect_bd_intf_net [get_bd_intf_pins ${ethSubsysDesign}/msg_rx] [get_bd_intf_pins ${ompifHier}/ethRx]
 
-            AIT::design::connect_clock [get_bd_pins ${ompifHier}/app_clk]
-            AIT::design::connect_clock [get_bd_pins ${ompifHier}/ompif_clk] ${ompifClkSrcPin}
+            AIT::clocks::connect_clock [get_bd_pins ${ompifHier}/app_clk]
+            AIT::clocks::connect_clock [get_bd_pins ${ompifHier}/ompif_clk] ${ompifClkSrcPin}
             AIT::design::connect_reset [get_bd_pins ${ompifHier}/app_aresetn]
             AIT::design::connect_reset [get_bd_pins ${ompifHier}/ompif_aresetn] ${ompifRstSrcPin}
 
@@ -87,7 +87,7 @@ namespace eval AIT {
             create_bd_pin -type rst -dir I ${accHier}/managed_aresetn
 
             set accIP [create_bd_cell -type ip -vlnv bsc:ompss:${accName}_wrapper ${accHier}/${accName}_ompss]
-            AIT::design::connect_clock [get_bd_pins ${accHier}/aclk] [get_bd_pins ${accIP}/ap_clk]
+            AIT::clocks::connect_clock [get_bd_pins ${accHier}/aclk] [get_bd_pins ${accIP}/ap_clk]
             AIT::design::connect_reset [get_bd_pins ${accHier}/managed_aresetn] [get_bd_pins ${accIP}/ap_rst_n]
 
             return [list ${accHier} ${accIP}]
@@ -101,7 +101,7 @@ namespace eval AIT {
                 AIT::templates::source_template "hwr_dist_interconnect"
             }
 
-            AIT::design::connect_clock [get_bd_pins ${PicosOmpSsManagerHier}/clk]
+            AIT::clocks::connect_clock [get_bd_pins ${PicosOmpSsManagerHier}/clk]
             AIT::design::connect_reset [get_bd_pins ${PicosOmpSsManagerHier}/rstn] [get_bd_pins /system_reset/clk_app_rstn]
             AIT::design::connect_reset [get_bd_pins ${PicosOmpSsManagerHier}/managed_rstn] [get_bd_pins system_reset/clk_app_managed_rstn]
 

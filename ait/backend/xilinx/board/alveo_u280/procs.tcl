@@ -56,7 +56,7 @@ namespace eval AIT {
             ] [get_bd_cells clock_generator]
 
             # Connect CMS clock and reset
-            AIT::design::connect_clock [get_bd_pins power_monitor_sys_rst/slowest_sync_clk] [get_bd_pins clock_generator/power_monitor_clk]
+            AIT::clocks::connect_clock [get_bd_pins power_monitor_sys_rst/slowest_sync_clk] [get_bd_pins clock_generator/power_monitor_clk]
             AIT::design::connect_reset [get_bd_pins power_monitor_sys_rst/ext_reset_in] [get_bd_pins processor_system_reset/ext_reset_in]
 
             # Add and connect external ports
@@ -86,7 +86,7 @@ namespace eval AIT {
             ] [get_bd_cells clock_generator]
 
             # Connect System Management clock and reset
-            AIT::design::connect_clock [get_bd_pins thermal_monitor_sys_rst/slowest_sync_clk] [get_bd_pins clock_generator/thermal_monitor_clk]
+            AIT::clocks::connect_clock [get_bd_pins thermal_monitor_sys_rst/slowest_sync_clk] [get_bd_pins clock_generator/thermal_monitor_clk]
             AIT::design::connect_reset [get_bd_pins thermal_monitor_sys_rst/ext_reset_in] [get_bd_pins processor_system_reset/ext_reset_in]
 
             # Connect System Management to the M_AXI interconnect

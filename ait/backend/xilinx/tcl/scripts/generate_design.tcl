@@ -281,7 +281,7 @@ dict with AIT::vars::aitJsonDict {
                             # Connect clk and rst pins
                             dict update instDict "rst" rst "clk" clk {
                                 set rst [AIT::design::connect_reset [get_bd_pins ${accHier}/managed_aresetn] [get_bd_pins system_reset/clk_app_managed_rstn]]
-                                set clk [AIT::design::connect_clock [get_bd_pins ${accHier}/aclk]]
+                                set clk [AIT::clocks::connect_clock [get_bd_pins ${accHier}/aclk]]
                             }
 
                             # Store accelerator placement information, if it exists
@@ -441,8 +441,8 @@ dict with AIT::vars::aitJsonDict {
                                     # Create and connect the instrumentation_adapter
                                     set instrAdapterIP [create_bd_cell -type ip -vlnv bsc:ompss:instrumentation_adapter ${accHier}/instrumentation_adapter]
                                     connect_bd_intf_net ${instrAccPin} [get_bd_intf_pins ${instrAdapterIP}/event_in]
-                                    AIT::design::connect_clock [AIT::design::get_associated_clk_pin ${instrAdapterIP}/event_in]
-                                    AIT::design::connect_reset [AIT::design::get_associated_rst_pin [AIT::design::get_associated_clk_pin ${instrAdapterIP}/event_in]] [get_bd_pins system_reset/clk_app_managed_rstn]
+                                    AIT::clocks::connect_clock [AIT::clocks::get_associated_clk_pin ${instrAdapterIP}/event_in]
+                                    AIT::design::connect_reset [AIT::design::get_associated_rst_pin [AIT::clocks::get_associated_clk_pin ${instrAdapterIP}/event_in]] [get_bd_pins system_reset/clk_app_managed_rstn]
                                     set instrInnerPin [get_bd_intf_pins ${instrAdapterIP}/instr_buf]
                                     dict update interfacesDict "instr_buffer" intfDict {
                                         # Initialize interface dictionary

@@ -89,7 +89,7 @@ namespace eval AIT {
             create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset thermal_monitor_sys_rst
 
             # Connect System Management clock and reset
-            AIT::design::connect_clock [get_bd_pins thermal_monitor_sys_rst/slowest_sync_clk] [get_bd_pins clk_gen_slr0/clk_100]
+            AIT::clocks::connect_clock [get_bd_pins thermal_monitor_sys_rst/slowest_sync_clk] [get_bd_pins clk_gen_slr0/clk_100]
             AIT::design::connect_reset [get_bd_pins thermal_monitor_sys_rst/ext_reset_in] [get_bd_pins system_reset/clk_100_slr0_rstn]
 
             # Connect System Management to the M_AXI interconnect

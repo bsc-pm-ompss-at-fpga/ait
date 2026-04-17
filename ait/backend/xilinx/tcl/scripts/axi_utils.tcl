@@ -110,7 +110,7 @@ namespace eval AIT {
                 CONFIG.USE_AUTOPIPELINING {0} \
             ] ${axiRegSliceIP}
 
-            set intfClkPin [AIT::design::connect_clock [get_bd_pins ${axiRegSliceIP}/aclk] [AIT::design::get_associated_clk_pin ${intfPin}]]
+            set intfClkPin [AIT::clocks::connect_clock [get_bd_pins ${axiRegSliceIP}/aclk] [AIT::clocks::get_associated_clk_pin ${intfPin}]]
             AIT::design::connect_reset [get_bd_pins ${axiRegSliceIP}/aresetn] [AIT::design::get_synchronous_rst_pin ${intfClkPin}]
 
             # Let Vivado handle the number of pipeline stages
@@ -265,7 +265,7 @@ namespace eval AIT {
             }
 
             set dstIntfPin [get_bd_intf_pins ${dstIntfIP}/${dstIntfPinName}_AXI]
-            set dstIntfPinClk [AIT::design::get_associated_clk_pin ${dstIntfPin}]
+            set dstIntfPinClk [AIT::clocks::get_associated_clk_pin ${dstIntfPin}]
             set dstInfPinRst [AIT::design::get_associated_rst_pin ${dstIntfPinClk}]
 
             # Connect interleaving pins, if present
@@ -273,18 +273,18 @@ namespace eval AIT {
             connect_bd_net -quiet [get_bd_pins -quiet ${srcIntfPin}_awaddr_intlv] [get_bd_pins -quiet ${dstIntfPin}_awaddr] -boundary_type upper
 
             set srcIntfPinPath [regsub [get_property NAME ${srcIntfPin}] [get_property PATH ${srcIntfPin}] ""]
-            set srcIntfPinClk [AIT::design::get_associated_clk_pin ${srcIntfPin}]
+            set srcIntfPinClk [AIT::clocks::get_associated_clk_pin ${srcIntfPin}]
             set srcIntfPinRst [AIT::design::get_associated_rst_pin ${srcIntfPinClk}]
 
             if {${srcIntfPinClk} ne ""} {
-                AIT::design::connect_clock ${srcIntfPinClk} ${clk}
+                AIT::clocks::connect_clock ${srcIntfPinClk} ${clk}
             }
 
             if {${srcIntfPinRst} ne ""} {
                 AIT::design::connect_reset ${srcIntfPinRst} ${rst}
             }
 
-            AIT::design::connect_clock ${dstIntfPinClk} [expr {(${clk} eq "") ? [AIT::design::get_associated_clk_pin ${srcIntfPin}] : ${clk}}]
+            AIT::clocks::connect_clock ${dstIntfPinClk} [expr {(${clk} eq "") ? [AIT::clocks::get_associated_clk_pin ${srcIntfPin}] : ${clk}}]
             AIT::design::connect_reset ${dstInfPinRst} [expr {(${rst} eq "") ? [AIT::design::get_associated_rst_pin ${srcIntfPinClk}] : ${rst}}]
             connect_bd_intf_net -boundary_type upper ${srcIntfPin} ${dstIntfPin}
 
@@ -352,7 +352,7 @@ namespace eval AIT {
                     ] ${intfIP}
                 }
 
-                AIT::design::connect_clock [get_bd_pins ${intfIP}/ACLK]
+                AIT::clocks::connect_clock [get_bd_pins ${intfIP}/ACLK]
                 AIT::design::connect_reset [get_bd_pins ${intfIP}/ARESETN]
 
                 set intfPinNum 0
@@ -381,8 +381,8 @@ namespace eval AIT {
 
                             set intfSlavePin [get_bd_intf_pins ${intfIP}/S${intfPinNum}_AXI]
                             connect_bd_intf_net ${intfPin} ${intfSlavePin}
-                            AIT::design::connect_clock [AIT::design::get_associated_clk_pin ${intfSlavePin}] [AIT::design::get_associated_clk_pin ${intfPin}]
-                            AIT::design::connect_reset [AIT::design::get_associated_rst_pin [AIT::design::get_associated_clk_pin ${intfSlavePin}]] [AIT::design::get_synchronous_rst_pin [AIT::design::get_associated_clk_pin ${intfPin}]]
+                            AIT::clocks::connect_clock [AIT::clocks::get_associated_clk_pin ${intfSlavePin}] [AIT::clocks::get_associated_clk_pin ${intfPin}]
+                            AIT::design::connect_reset [AIT::design::get_associated_rst_pin [AIT::clocks::get_associated_clk_pin ${intfSlavePin}]] [AIT::design::get_synchronous_rst_pin [AIT::clocks::get_associated_clk_pin ${intfPin}]]
                         } elseif {${intfPinMode} eq "Slave"} {
                             set_property -dict [list \
                                 CONFIG.NUM_MI [expr {${intfPinNum} + 1}] \
@@ -396,8 +396,8 @@ namespace eval AIT {
 
                             set intfMasterPin [get_bd_intf_pins ${intfIP}/M${intfPinNum}_AXI]
                             connect_bd_intf_net ${intfMasterPin} ${intfPin}
-                            AIT::design::connect_clock [AIT::design::get_associated_clk_pin ${intfMasterPin}] [AIT::design::get_associated_clk_pin ${intfPin}]
-                            AIT::design::connect_reset [AIT::design::get_associated_rst_pin [AIT::design::get_associated_clk_pin ${intfMasterPin}]] [AIT::design::get_synchronous_rst_pin [AIT::design::get_associated_clk_pin ${intfPin}]]
+                            AIT::clocks::connect_clock [AIT::clocks::get_associated_clk_pin ${intfMasterPin}] [AIT::clocks::get_associated_clk_pin ${intfPin}]
+                            AIT::design::connect_reset [AIT::design::get_associated_rst_pin [AIT::clocks::get_associated_clk_pin ${intfMasterPin}]] [AIT::design::get_synchronous_rst_pin [AIT::clocks::get_associated_clk_pin ${intfPin}]]
                         }
                     }
                     incr intfPinNum

@@ -58,6 +58,12 @@ if {[catch {source -notrace ${scriptDir}/scripts/axis_utils.tcl}]} {
     AIT::utils::error_msg "Failed loading AXI-Stream utils procedures"
 }
 
+# Load clocks procedures
+AIT::utils::info_msg "Loading clocks procedures"
+if {[catch {source -notrace ${scriptDir}/scripts/clocks.tcl}]} {
+    AIT::utils::error_msg "Failed loading clocks procedures"
+}
+
 # If available, overwrite board-specific procedures
 if {[file exists ${scriptDir}/../board/procs.tcl]} {
     AIT::utils::info_msg "Loading board-specific procedures"
