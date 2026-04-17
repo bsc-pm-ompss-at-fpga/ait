@@ -46,73 +46,7 @@ namespace eval AIT {
         }
 
         proc add_thermal_monitor {} {
-            # Add System Management and its system reset
-            create_bd_cell -type ip -vlnv xilinx.com:ip:system_management_wiz system_management
-            create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset thermal_monitor_sys_rst
-
-            # Connect System Management clock and reset
-            AIT::clocks::connect_clock [get_bd_pins thermal_monitor_sys_rst/slowest_sync_clk] [get_bd_pins clk_gen_slr0/clk_100]
-            AIT::resets::connect_reset [get_bd_pins thermal_monitor_sys_rst/ext_reset_in] [get_bd_pins system_reset/clk_100_slr0_rstn]
-
-            # Connect System Management to the M_AXI interconnect
-            AIT::AXI::connect_to_mem_intf [get_bd_intf_pins system_management/S_AXI_LITE] "" [get_bd_pins clock_generator/thermal_monitor_clk] [get_bd_pins thermal_monitor_sys_rst/peripheral_aresetn]
-        }
-
-        # Create a custom AXI interconnect from a 512-bit 200MHz clock to a 256-bit 400MHz clock
-        # because Xilinx interconnects don't give good timing results
-        proc add_custom_axi_interconnect {hier_name rw_mode} {
-            create_bd_cell -type hier $hier_name
-            create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 $hier_name/S_AXI
-            create_bd_cell -type ip -vlnv xilinx.com:ip:axi_register_slice $hier_name/axi_register_slice_0
-            create_bd_cell -type ip -vlnv xilinx.com:ip:axi_clock_converter $hier_name/axi_clock_converter_0
-            create_bd_cell -type ip -vlnv xilinx.com:ip:axi_register_slice $hier_name/axi_register_slice_1
-            create_bd_cell -type ip -vlnv bsc:axiu:axiu_dwidth_downsizer_vwrapper $hier_name/axiu_dwidth_downsize_0
-            set_property -dict [list CONFIG.AXI_ADDR_WIDTH 33 CONFIG.AXI_SLV_DATA_WIDTH 512 CONFIG.AXI_MST_DATA_WIDTH 256] [get_bd_cells $hier_name/axiu_dwidth_downsize_0]
-            create_bd_cell -type ip -vlnv xilinx.com:ip:axi_register_slice $hier_name/axi_register_slice_2
-            create_bd_cell -type ip -vlnv xilinx.com:ip:axi_protocol_converter $hier_name/axi_protocol_convert_0
-
-            if {$rw_mode eq "read"} {
-                set_property CONFIG.READ_WRITE_MODE.VALUE_SRC USER [get_bd_cells $hier_name/axi_clock_converter_0]
-                set_property CONFIG.READ_WRITE_MODE READ_ONLY [get_bd_cells $hier_name/axi_clock_converter_0]
-                set_property -dict [list CONFIG.READ 1 CONFIG.WRITE 0] [get_bd_cells $hier_name/axiu_dwidth_downsize_0]
-                set_property CONFIG.READ_WRITE_MODE.VALUE_SRC USER [get_bd_cells $hier_name/axi_register_slice_0]
-                set_property -dict [list CONFIG.READ_WRITE_MODE READ_ONLY CONFIG.REG_AR 1] [get_bd_cells $hier_name/axi_register_slice_0]
-                set_property CONFIG.READ_WRITE_MODE.VALUE_SRC USER [get_bd_cells $hier_name/axi_register_slice_1]
-                set_property -dict [list CONFIG.READ_WRITE_MODE READ_ONLY CONFIG.REG_AR 1] [get_bd_cells $hier_name/axi_register_slice_1]
-                set_property CONFIG.READ_WRITE_MODE.VALUE_SRC USER [get_bd_cells $hier_name/axi_register_slice_2]
-                set_property -dict [list CONFIG.READ_WRITE_MODE READ_ONLY CONFIG.REG_AR 1] [get_bd_cells $hier_name/axi_register_slice_2]
-                set_property CONFIG.READ_WRITE_MODE.VALUE_SRC USER [get_bd_cells $hier_name/axi_protocol_convert_0]
-                set_property CONFIG.READ_WRITE_MODE READ_ONLY [get_bd_cells $hier_name/axi_protocol_convert_0]
-            } elseif {$rw_mode eq "write"} {
-                set_property CONFIG.READ_WRITE_MODE.VALUE_SRC USER [get_bd_cells $hier_name/axi_clock_converter_0]
-                set_property CONFIG.READ_WRITE_MODE WRITE_ONLY [get_bd_cells $hier_name/axi_clock_converter_0]
-                set_property -dict [list CONFIG.READ 0 CONFIG.WRITE 1] [get_bd_cells $hier_name/axiu_dwidth_downsize_0]
-                set_property CONFIG.READ_WRITE_MODE.VALUE_SRC USER [get_bd_cells $hier_name/axi_register_slice_0]
-                set_property -dict [list CONFIG.READ_WRITE_MODE WRITE_ONLY CONFIG.REG_AW 1 CONFIG.REG_B 1] [get_bd_cells $hier_name/axi_register_slice_0]
-                set_property CONFIG.READ_WRITE_MODE.VALUE_SRC USER [get_bd_cells $hier_name/axi_register_slice_1]
-                set_property -dict [list CONFIG.READ_WRITE_MODE WRITE_ONLY CONFIG.REG_AW 1 CONFIG.REG_B 1] [get_bd_cells $hier_name/axi_register_slice_1]
-                set_property CONFIG.READ_WRITE_MODE.VALUE_SRC USER [get_bd_cells $hier_name/axi_register_slice_2]
-                set_property -dict [list CONFIG.READ_WRITE_MODE WRITE_ONLY CONFIG.REG_AW 1 CONFIG.REG_B 1] [get_bd_cells $hier_name/axi_register_slice_2]
-                set_property CONFIG.READ_WRITE_MODE.VALUE_SRC USER [get_bd_cells $hier_name/axi_protocol_convert_0]
-                set_property CONFIG.READ_WRITE_MODE WRITE_ONLY [get_bd_cells $hier_name/axi_protocol_convert_0]
-            } else {
-                set_property -dict [list CONFIG.READ 1 CONFIG.WRITE 1] [get_bd_cells $hier_name/axiu_dwidth_downsize_0]
-                set_property -dict [list CONFIG.REG_AR 1 CONFIG.REG_AW 1 CONFIG.REG_B 1] [get_bd_cells $hier_name/axi_register_slice_0]
-                set_property -dict [list CONFIG.REG_AR 1 CONFIG.REG_AW 1 CONFIG.REG_B 1] [get_bd_cells $hier_name/axi_register_slice_1]
-                set_property -dict [list CONFIG.REG_AR 1 CONFIG.REG_AW 1 CONFIG.REG_B 1] [get_bd_cells $hier_name/axi_register_slice_2]
-            }
-
-            connect_bd_intf_net [get_bd_intf_pins $hier_name/S_AXI] [get_bd_intf_pins $hier_name/axi_register_slice_0/S_AXI]
-            connect_bd_intf_net [get_bd_intf_pins $hier_name/axi_register_slice_0/M_AXI] [get_bd_intf_pins $hier_name/axi_clock_converter_0/S_AXI]
-            connect_bd_intf_net [get_bd_intf_pins $hier_name/axi_clock_converter_0/M_AXI] [get_bd_intf_pins $hier_name/axi_register_slice_1/S_AXI]
-            connect_bd_intf_net [get_bd_intf_pins $hier_name/axi_register_slice_1/M_AXI] [get_bd_intf_pins $hier_name/axiu_dwidth_downsize_0/slv]
-            connect_bd_intf_net [get_bd_intf_pins $hier_name/axiu_dwidth_downsize_0/mst] [get_bd_intf_pins $hier_name/axi_register_slice_2/S_AXI]
-            connect_bd_intf_net [get_bd_intf_pins $hier_name/axi_register_slice_2/M_AXI] [get_bd_intf_pins $hier_name/axi_protocol_convert_0/S_AXI]
-
-            connect_bd_net [get_bd_pins clk_gen_slr0/clk_200] [get_bd_pins $hier_name/axi_register_slice_0/aclk] [get_bd_pins $hier_name/axi_clock_converter_0/s_axi_aclk]
-            connect_bd_net [get_bd_pins system_reset/clk_200_rstn] [get_bd_pins $hier_name/axi_register_slice_0/aresetn] [get_bd_pins $hier_name/axi_clock_converter_0/s_axi_aresetn]
-            connect_bd_net [get_bd_pins clk_gen_slr0/clk_400] [get_bd_pins $hier_name/axi_clock_converter_0/m_axi_aclk] [get_bd_pins $hier_name/axi_register_slice_1/aclk] [get_bd_pins $hier_name/axiu_dwidth_downsize_0/clk] [get_bd_pins $hier_name/axi_register_slice_2/aclk] [get_bd_pins $hier_name/axi_protocol_convert_0/aclk]
-            connect_bd_net [get_bd_pins system_reset/clk_400_rstn] [get_bd_pins $hier_name/axi_clock_converter_0/m_axi_aresetn] [get_bd_pins $hier_name/axi_register_slice_1/aresetn] [get_bd_pins $hier_name/axiu_dwidth_downsize_0/rstn] [get_bd_pins $hier_name/axi_register_slice_2/aresetn] [get_bd_pins $hier_name/axi_protocol_convert_0/aresetn]
+            AIT::templates::source_template "thermal_monitor"
         }
 
         proc configure_ethernet_subsystem {} {

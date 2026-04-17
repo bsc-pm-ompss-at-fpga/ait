@@ -46,16 +46,7 @@ namespace eval AIT {
         }
 
         proc add_thermal_monitor {} {
-            # Add System Management and its system reset
-            create_bd_cell -type ip -vlnv xilinx.com:ip:system_management_wiz system_management
-            create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset thermal_monitor_sys_rst
-
-            # Connect System Management clock and reset
-            AIT::clocks::connect_clock [get_bd_pins thermal_monitor_sys_rst/slowest_sync_clk] [get_bd_pins clk_gen_slr0/clk_100]
-            AIT::resets::connect_reset [get_bd_pins thermal_monitor_sys_rst/ext_reset_in] [get_bd_pins system_reset/clk_100_slr0_rstn]
-
-            # Connect System Management to the M_AXI interconnect
-            AIT::AXI::connect_to_mem_intf [get_bd_intf_pins system_management/S_AXI_LITE] "" [get_bd_pins clock_generator/thermal_monitor_clk] [get_bd_pins thermal_monitor_sys_rst/peripheral_aresetn]
+            AIT::templates::source_template "thermal_monitor"
         }
 
         # Create a custom AXI interconnect from a 512-bit 200MHz clock to a 256-bit 400MHz clock
