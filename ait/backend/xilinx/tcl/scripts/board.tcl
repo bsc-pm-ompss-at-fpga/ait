@@ -112,7 +112,7 @@ namespace eval AIT {
                   CONFIG.USER_SAXI_${intfNum} {true} \
                 ] ${memIP}
                 AIT::clocks::connect_clock [get_bd_pins ${memIP}/AXI_${intfNum}_ACLK]
-                AIT::design::connect_reset [get_bd_pins ${memIP}/AXI_${intfNum}_ARESET_N]
+                AIT::resets::connect_reset [get_bd_pins ${memIP}/AXI_${intfNum}_ARESET_N]
             } elseif {[dict get ${AIT::vars::board} "arch" "device"] eq "zynq"} {
                 set intfNum [dict get ${intfDict} "num"]
                 set memIP [get_bd_cells -hierarchical -filter {VLNV =~ "xilinx.com:ip:processing_system7:*"}]

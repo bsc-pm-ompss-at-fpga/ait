@@ -280,7 +280,7 @@ dict with AIT::vars::aitJsonDict {
 
                             # Connect clk and rst pins
                             dict update instDict "rst" rst "clk" clk {
-                                set rst [AIT::design::connect_reset [get_bd_pins ${accHier}/managed_aresetn] [get_bd_pins system_reset/clk_app_managed_rstn]]
+                                set rst [AIT::resets::connect_reset [get_bd_pins ${accHier}/managed_aresetn] [get_bd_pins system_reset/clk_app_managed_rstn]]
                                 set clk [AIT::clocks::connect_clock [get_bd_pins ${accHier}/aclk]]
                             }
 
@@ -442,7 +442,7 @@ dict with AIT::vars::aitJsonDict {
                                     set instrAdapterIP [create_bd_cell -type ip -vlnv bsc:ompss:instrumentation_adapter ${accHier}/instrumentation_adapter]
                                     connect_bd_intf_net ${instrAccPin} [get_bd_intf_pins ${instrAdapterIP}/event_in]
                                     AIT::clocks::connect_clock [AIT::clocks::get_associated_clk_pin ${instrAdapterIP}/event_in]
-                                    AIT::design::connect_reset [AIT::design::get_associated_rst_pin [AIT::clocks::get_associated_clk_pin ${instrAdapterIP}/event_in]] [get_bd_pins system_reset/clk_app_managed_rstn]
+                                    AIT::resets::connect_reset [AIT::resets::get_associated_rst_pin [AIT::clocks::get_associated_clk_pin ${instrAdapterIP}/event_in]] [get_bd_pins system_reset/clk_app_managed_rstn]
                                     set instrInnerPin [get_bd_intf_pins ${instrAdapterIP}/instr_buf]
                                     dict update interfacesDict "instr_buffer" intfDict {
                                         # Initialize interface dictionary

@@ -54,8 +54,8 @@ namespace eval AIT {
 
             AIT::clocks::connect_clock [get_bd_pins ${ompifHier}/app_clk]
             AIT::clocks::connect_clock [get_bd_pins ${ompifHier}/ompif_clk] ${ompifClkSrcPin}
-            AIT::design::connect_reset [get_bd_pins ${ompifHier}/app_aresetn]
-            AIT::design::connect_reset [get_bd_pins ${ompifHier}/ompif_aresetn] ${ompifRstSrcPin}
+            AIT::resets::connect_reset [get_bd_pins ${ompifHier}/app_aresetn]
+            AIT::resets::connect_reset [get_bd_pins ${ompifHier}/ompif_aresetn] ${ompifRstSrcPin}
 
             connect_bd_net [get_bd_pins ${ompifHier}/cluster_rank_size] [get_bd_pins jtag_gpio/gpio2_io_o]
 
@@ -88,7 +88,7 @@ namespace eval AIT {
 
             set accIP [create_bd_cell -type ip -vlnv bsc:ompss:${accName}_wrapper ${accHier}/${accName}_ompss]
             AIT::clocks::connect_clock [get_bd_pins ${accHier}/aclk] [get_bd_pins ${accIP}/ap_clk]
-            AIT::design::connect_reset [get_bd_pins ${accHier}/managed_aresetn] [get_bd_pins ${accIP}/ap_rst_n]
+            AIT::resets::connect_reset [get_bd_pins ${accHier}/managed_aresetn] [get_bd_pins ${accIP}/ap_rst_n]
 
             return [list ${accHier} ${accIP}]
         }
@@ -102,8 +102,8 @@ namespace eval AIT {
             }
 
             AIT::clocks::connect_clock [get_bd_pins ${PicosOmpSsManagerHier}/clk]
-            AIT::design::connect_reset [get_bd_pins ${PicosOmpSsManagerHier}/rstn] [get_bd_pins /system_reset/clk_app_rstn]
-            AIT::design::connect_reset [get_bd_pins ${PicosOmpSsManagerHier}/managed_rstn] [get_bd_pins system_reset/clk_app_managed_rstn]
+            AIT::resets::connect_reset [get_bd_pins ${PicosOmpSsManagerHier}/rstn] [get_bd_pins /system_reset/clk_app_rstn]
+            AIT::resets::connect_reset [get_bd_pins ${PicosOmpSsManagerHier}/managed_rstn] [get_bd_pins system_reset/clk_app_managed_rstn]
 
             if {([dict get ${AIT::vars::board} "arch" "device"] eq "zynq")
                 || ([dict get ${AIT::vars::board} "arch" "device"] eq "zynqmp")} {

@@ -20,21 +20,6 @@
 
 namespace eval AIT {
     namespace eval design {
-        # Connects srcRst to dstRst (pin or net) or to the default reset
-        proc connect_reset {srcRst {dstRst ""}} {
-            if {${dstRst} eq ""} {
-                set dstRst [get_bd_pins /system_reset/clk_app_rstn]
-            }
-            if {![llength [get_bd_nets -quiet -of_objects ${srcRst}]]} {
-                if {[get_property CLASS ${dstRst}] eq "bd_net"} {
-                    connect_bd_net ${srcRst} -net ${dstRst}
-                } elseif {[get_property CLASS ${dstRst}] eq "bd_pin"} {
-                    connect_bd_net ${srcRst} ${dstRst}
-                }
-            }
-            return ${dstRst}
-        }
-
         # Instantiate System ILA and connect to intfPinName
         proc debug_intf {intfPinName} {
             set intfPin [get_bd_intf_pins -quiet ${intfPinName}]
@@ -74,7 +59,7 @@ namespace eval AIT {
                     CONFIG.C_SLOT_${slot_num}_INTF_TYPE [get_property VLNV ${intfPin}] \
                  ] ${ila_ip}
                 AIT::clocks::connect_clock [get_bd_pins ${ila_ip}/clk]
-                AIT::design::connect_reset [get_bd_pins ${ila_ip}/resetn] [AIT::design::get_synchronous_rst_pin [get_bd_pins ${ila_ip}/clk]]
+                AIT::resets::connect_reset [get_bd_pins ${ila_ip}/resetn] [AIT::resets::get_synchronous_rst_pin [get_bd_pins ${ila_ip}/clk]]
             }
 
             # Connect intfPin to its corresponding port, depending on the type
@@ -104,18 +89,6 @@ namespace eval AIT {
             set bitinfoBitmap [expr {${bitinfoBitmap} | ([dict get ${AIT::vars::aitConfig} "ompif"] ? 1 : 0)<<11}]
             set bitinfoBitmap [expr {${bitinfoBitmap} | ([dict get ${AIT::vars::aitConfig} "imp"] ? 1 : 0)<<12}]
             return [format 0x%08x ${bitinfoBitmap}]
-        }
-
-        proc get_associated_rst_pin {clkPinName} {
-            set clkPin [get_bd_pins ${clkPinName}]
-            set clkIP [get_bd_cells -of_objects ${clkPin}]
-            foreach rstPin [split [get_property CONFIG.ASSOCIATED_RESET ${clkPin}] {:}] {
-                set rstPin [get_bd_pins -quiet ${clkIP}/${rstPin}]
-                if {[llength ${rstPin}]} {
-                    return ${rstPin}
-                }
-            }
-            AIT::utils::warning_msg "No associated reset pin found for clock ${clkPinName}"
         }
 
         # Returns the total number of free memory interfaces
@@ -212,17 +185,6 @@ namespace eval AIT {
                     lappend AIT::vars::memIntfsList ${intfDict}
                 }
             }
-        }
-
-        proc get_synchronous_rst_pin {clkPinName} {
-            set clkPin [get_bd_pins ${clkPinName}]
-            foreach rstPin [AIT::design::get_associated_rst_pin ${clkPin}] {
-                set srcRstPin [AIT::design::get_driver_pin ${rstPin}]
-                if {[llength ${srcRstPin}]} {
-                    return ${srcRstPin}
-                }
-            }
-            AIT::utils::warning_msg "No synchronous reset pin found for clock pin ${clkPinName}"
         }
 
         # Instantiates and connects required common IPs

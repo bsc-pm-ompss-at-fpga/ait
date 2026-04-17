@@ -33,7 +33,7 @@ namespace eval AIT {
             # Instantiate AXIS subset converter and connect it to target interfaces's clock and reset
             set axisAccIDIP [create_bd_cell -type module -reference bsc_axiu_axis_accID accID]
             set intfClkPin [AIT::clocks::connect_clock [get_bd_pins ${axisAccIDIP}/clk] [AIT::clocks::get_associated_clk_pin ${intfPin}]]
-            AIT::design::connect_reset [get_bd_pins ${axisAccIDIP}/aresetn] [AIT::design::get_synchronous_rst_pin ${intfClkPin}]
+            AIT::resets::connect_reset [get_bd_pins ${axisAccIDIP}/aresetn] [AIT::resets::get_synchronous_rst_pin ${intfClkPin}]
 
             # Add accID as AXI-Stream TID signal
             set_property -dict [list \
@@ -88,7 +88,7 @@ namespace eval AIT {
             set newtaskSpawnerIP [create_bd_cell -type ip -vlnv bsc:ompss:newtask_spawner new_task_spawner]
             set intfClkPin [AIT::clocks::get_associated_clk_pin ${intfPin}]
             AIT::clocks::connect_clock [get_bd_pins ${newtaskSpawnerIP}/clk] ${intfClkPin}
-            AIT::design::connect_reset [get_bd_pins ${newtaskSpawnerIP}/rstn] [AIT::design::get_synchronous_rst_pin ${intfClkPin}]
+            AIT::resets::connect_reset [get_bd_pins ${newtaskSpawnerIP}/rstn] [AIT::resets::get_synchronous_rst_pin ${intfClkPin}]
 
             connect_bd_intf_net ${outStreamPin} [get_bd_intf_pins ${newtaskSpawnerIP}/stream_in]
             connect_bd_intf_net [get_bd_intf_pins ${newtaskSpawnerIP}/ack_out] ${intfPin}
@@ -137,7 +137,7 @@ namespace eval AIT {
 
             set axisRegSliceIP [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_register_slice ${regSliceName}]
             set intfClkPin [AIT::clocks::connect_clock [get_bd_pins ${axisRegSliceIP}/aclk] [AIT::clocks::get_associated_clk_pin ${intfPin}]]
-            AIT::design::connect_reset [get_bd_pins ${axisRegSliceIP}/aresetn] [AIT::design::get_synchronous_rst_pin ${intfClkPin}]
+            AIT::resets::connect_reset [get_bd_pins ${axisRegSliceIP}/aresetn] [AIT::resets::get_synchronous_rst_pin ${intfClkPin}]
 
             # Let Vivado handle the number of pipeline stages
             if {${numStagesMaster} eq "auto"} {
@@ -257,7 +257,7 @@ namespace eval AIT {
                 connect_bd_net [get_bd_pins ${streamAdapterIP}/in_hs_ap_ack] [get_bd_pins -regexp ${intfPin}_ap_ack]
                 connect_bd_net [get_bd_pins ${streamAdapterIP}/in_hs] ${intfPin}
                 set clk_pin [AIT::clocks::connect_clock [get_bd_pins ${streamAdapterIP}/aclk] [AIT::clocks::get_associated_clk_pin ${intfPin}]]
-                AIT::design::connect_reset [get_bd_pins ${streamAdapterIP}/aresetn] [AIT::design::get_synchronous_rst_pin ${clk_pin}]
+                AIT::resets::connect_reset [get_bd_pins ${streamAdapterIP}/aresetn] [AIT::resets::get_synchronous_rst_pin ${clk_pin}]
                 set intfPin [get_bd_intf_pins ${streamAdapterIP}/outStream]
             } elseif {[get_property DIR ${intfPin}] eq "I"} {
                 set streamAdapterIP [create_bd_cell -type module -reference bsc_axiu_streamToHsAdapter [get_property NAME ${intfPin}]_streamToHs]
@@ -265,7 +265,7 @@ namespace eval AIT {
                 connect_bd_net [get_bd_pins ${streamAdapterIP}/out_hs_ap_ack] [get_bd_pins -regexp ${intfPin}_ap_ack]
                 connect_bd_net [get_bd_pins ${streamAdapterIP}/out_hs] ${intfPin}
                 set clk_pin [AIT::clocks::connect_clock [get_bd_pins ${streamAdapterIP}/aclk] [AIT::clocks::get_associated_clk_pin ${intfPin}]]
-                AIT::design::connect_reset [get_bd_pins ${streamAdapterIP}/aresetn] [AIT::design::get_synchronous_rst_pin ${clk_pin}]
+                AIT::resets::connect_reset [get_bd_pins ${streamAdapterIP}/aresetn] [AIT::resets::get_synchronous_rst_pin ${clk_pin}]
                 set intfPin [get_bd_intf_pins ${streamAdapterIP}/inStream]
             }
 

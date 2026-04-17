@@ -64,6 +64,12 @@ if {[catch {source -notrace ${scriptDir}/scripts/clocks.tcl}]} {
     AIT::utils::error_msg "Failed loading clocks procedures"
 }
 
+# Load resets procedures
+AIT::utils::info_msg "Loading resets procedures"
+if {[catch {source -notrace ${scriptDir}/scripts/resets.tcl}]} {
+    AIT::utils::error_msg "Failed loading resets procedures"
+}
+
 # If available, overwrite board-specific procedures
 if {[file exists ${scriptDir}/../board/procs.tcl]} {
     AIT::utils::info_msg "Loading board-specific procedures"
