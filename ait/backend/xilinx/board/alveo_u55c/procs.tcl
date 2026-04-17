@@ -42,45 +42,7 @@ namespace eval AIT {
         }
 
         proc add_power_monitor {} {
-            # Add CMS subsystem and its system reset
-            create_bd_cell -type ip -vlnv xilinx.com:ip:cms_subsystem cms_subsystem
-
-            # If ompif is not enabled, add 50MHz clock
-            if {![dict get ${AIT::vars::aitConfig} "ompif"]} {
-                set_property -dict [list \
-                    CONFIG.CLKOUT2_REQUESTED_OUT_FREQ 50 \
-                    CONFIG.CLKOUT2_USED true \
-                    CONFIG.CLK_OUT2_PORT clk_50 \
-                    CONFIG.NUM_OUT_CLKS 2 \
-                ] [get_bd_cells clock_generator]
-                create_bd_pin -dir I -type clk system_reset/clk_50
-                connect_bd_net [get_bd_pins clock_generator/clk_50] [get_bd_pins system_reset/clk_50]
-            }
-
-            # Add 50Mhz reset
-            create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset system_reset/proc_sys_reset_clk_50
-            set_property CONFIG.C_EXT_RST_WIDTH 1 [get_bd_cells system_reset/proc_sys_reset_clk_50]
-            create_bd_pin -dir O -type reset system_reset/clk_50_rstn
-            connect_bd_net [get_bd_pins system_reset/clk_50] [get_bd_pins system_reset/proc_sys_reset_clk_50/slowest_sync_clk]
-            connect_bd_net [get_bd_pins system_reset/pcie_perstn] [get_bd_pins system_reset/proc_sys_reset_clk_50/ext_reset_in]
-            connect_bd_net [get_bd_pins system_reset/clk_50_rstn] [get_bd_pins system_reset/proc_sys_reset_clk_50/peripheral_aresetn]
-            connect_bd_net [get_bd_pins system_reset/clk_gen_locked] [get_bd_pins system_reset/proc_sys_reset_clk_50/dcm_locked]
-            connect_bd_net [get_bd_pins clock_generator/clk_50] [get_bd_pins cms_subsystem/aclk_ctrl]
-            connect_bd_net [get_bd_pins system_reset/clk_50_rstn] [get_bd_pins cms_subsystem/aresetn_ctrl]
-
-            # Add and connect external ports
-            set satellite_uart [create_bd_intf_port -mode Master -vlnv xilinx.com:interface:uart_rtl:1.0 satellite_uart]
-            set satellite_gpio [create_bd_port -dir I -from 3 -to 0 -type intr satellite_gpio]
-            set_property CONFIG.SENSITIVITY {EDGE_RISING} $satellite_gpio
-            connect_bd_intf_net $satellite_uart [get_bd_intf_pins cms_subsystem/satellite_uart]
-            connect_bd_net $satellite_gpio [get_bd_pins cms_subsystem/satellite_gpio]
-
-            # Connect CMS to the M_AXI interconnect
-            AIT::AXI::connect_to_mem_intf [get_bd_intf_pins cms_subsystem/s_axi_ctrl] "" [get_bd_pins clock_generator/clk_50] [get_bd_pins system_reset/clk_50_rstn]
-
-            connect_bd_net [get_bd_pins bridge_to_host/memory/HBM/DRAM_1_STAT_TEMP] [get_bd_pins cms_subsystem/hbm_temp_2]
-            connect_bd_net [get_bd_pins bridge_to_host/memory/HBM/DRAM_0_STAT_TEMP] [get_bd_pins cms_subsystem/hbm_temp_1]
-            connect_bd_net [get_bd_pins bridge_to_host/HBM_CATTRIP] [get_bd_pins cms_subsystem/interrupt_hbm_cattrip]
+            AIT::templates::source_template "power_monitor"
         }
 
         proc add_thermal_monitor {} {
