@@ -22,8 +22,10 @@ namespace eval clocks {
     # Connects srcClk to dstClk (pin or net) or to the default clock
     proc connect_clock {srcClk {dstClk ""}} {
         if {${dstClk} eq ""} {
-            set dstClk [get_bd_pins /clock_generator/clk_app]
+            set dstClk "/clock_generator/clk_app"
         }
+        set dstClk [get_bd_pins ${dstClk}]
+        set srcClk [get_bd_pins ${srcClk}]
         if {!([llength [get_bd_nets -quiet -of_objects ${srcClk}]])} {
             if {[get_property CLASS ${dstClk}] eq "bd_net"} {
                 connect_bd_net ${srcClk} -net ${dstClk}

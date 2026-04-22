@@ -120,6 +120,118 @@ namespace eval design {
         }
     }
 
+    proc generate_bitinfo_coe_str {} {
+        variable bdAddrSegmentsDict
+
+        # Fixed-length fields
+        set bitinfoCoeStr "memory_initialization_radix=16;\nmemory_initialization_vector=\n"
+        append bitinfoCoeStr [format %08x ${AIT::project::bitinfoVersion}]\n
+        append bitinfoCoeStr [format %08x [dict get ${AIT::project::aitConfig} "num_instances"]]\n
+        append bitinfoCoeStr [format %08x [generate_bitinfo_bitmap]]\n
+        append bitinfoCoeStr [format %08x [expr {${AIT::project::aitMajorVersion}<<22 | ${AIT::project::aitMinorVersion}<<11 | ${AIT::project::aitPatchVersion}}]]\n
+        append bitinfoCoeStr [format %08x [dict get ${AIT::project::aitConfig} "wrapper_version"]]\n
+        append bitinfoCoeStr [format %08x [AIT::board::get_base_freq]]\n
+        append bitinfoCoeStr [format %08x [dict get ${AIT::project::aitConfig} "memory_interleaving_stride"]]\n
+        append bitinfoCoeStr [string range [dict get ${bdAddrSegmentsDict} "cmdInQueueHwruntime" "addr"] 10 17]\n
+        append bitinfoCoeStr [string range [dict get ${bdAddrSegmentsDict} "cmdInQueueHwruntime" "addr"] 2 9]\n
+        append bitinfoCoeStr [format %08x [dict get ${AIT::project::aitConfig} "cmdin_subqueue_len"]]\n
+        append bitinfoCoeStr [string range [dict get ${bdAddrSegmentsDict} "cmdOutQueueHwruntime" "addr"] 10 17]\n
+        append bitinfoCoeStr [string range [dict get ${bdAddrSegmentsDict} "cmdOutQueueHwruntime" "addr"] 2 9]\n
+        append bitinfoCoeStr [format %08x [dict get ${AIT::project::aitConfig} "cmdout_subqueue_len"]]\n
+        if  {![dict get ${AIT::project::aitConfig} "disable_spawn_queues"]} {
+            append bitinfoCoeStr [string range [dict get ${bdAddrSegmentsDict} "spawnInQueueHwruntime" "addr"] 10 17]\n
+            append bitinfoCoeStr [string range [dict get ${bdAddrSegmentsDict} "spawnInQueueHwruntime" "addr"] 2 9]\n
+            append bitinfoCoeStr [format %08x [dict get ${AIT::project::aitConfig} "spawnin_queue_len"]]\n
+            append bitinfoCoeStr [string range [dict get ${bdAddrSegmentsDict} "spawnOutQueueHwruntime" "addr"] 10 17]\n
+            append bitinfoCoeStr [string range [dict get ${bdAddrSegmentsDict} "spawnOutQueueHwruntime" "addr"] 2 9]\n
+            append bitinfoCoeStr [format %08x [dict get ${AIT::project::aitConfig} "spawnout_queue_len"]]\n
+        } else {
+            append bitinfoCoeStr [format %08x 0]\n
+            append bitinfoCoeStr [format %08x 0]\n
+            append bitinfoCoeStr [format %08x 0]\n
+            append bitinfoCoeStr [format %08x 0]\n
+            append bitinfoCoeStr [format %08x 0]\n
+            append bitinfoCoeStr [format %08x 0]\n
+        }
+        append bitinfoCoeStr [string range [dict get ${bdAddrSegmentsDict} "managedReset" "addr"] 10 17]\n
+        append bitinfoCoeStr [string range [dict get ${bdAddrSegmentsDict} "managedReset" "addr"] 2 9]\n
+        if {[dict get ${AIT::project::aitConfig} "hwcounter"]
+            || [dict get ${AIT::project::aitConfig} "hwinst"]} {
+            append bitinfoCoeStr [string range [dict get ${bdAddrSegmentsDict} "hwcounter" "addr"] 10 17]\n
+            append bitinfoCoeStr [string range [dict get ${bdAddrSegmentsDict} "hwcounter" "addr"] 2 9]\n
+        } else {
+            append bitinfoCoeStr [format %08x 0]\n
+            append bitinfoCoeStr [format %08x 0]\n
+        }
+        if {[dict get ${AIT::project::aitConfig} "enable_pom_axilite"]} {
+            append bitinfoCoeStr [string range [dict get ${bdAddrSegmentsDict} "pomAxilite" "addr"] 10 17]\n
+            append bitinfoCoeStr [string range [dict get ${bdAddrSegmentsDict} "pomAxilite" "addr"] 2 9]\n
+        } else {
+            append bitinfoCoeStr [format %08x 0]\n
+            append bitinfoCoeStr [format %08x 0]\n
+        }
+        if {[dict get ${AIT::project::aitConfig} "power_monitor"]} {
+            append bitinfoCoeStr [string range [dict get ${bdAddrSegmentsDict} "powerMonitor" "addr"] 10 17]\n
+            append bitinfoCoeStr [string range [dict get ${bdAddrSegmentsDict} "powerMonitor" "addr"] 2 9]\n
+        } else {
+            append bitinfoCoeStr [format %08x 0]\n
+            append bitinfoCoeStr [format %08x 0]\n
+        }
+        if {[dict get ${AIT::project::aitConfig} "thermal_monitor"]} {
+            append bitinfoCoeStr [string range [dict get ${bdAddrSegmentsDict} "thermalMonitor" "addr"] 10 17]\n
+            append bitinfoCoeStr [string range [dict get ${bdAddrSegmentsDict} "thermalMonitor" "addr"] 2 9]\n
+        } else {
+            append bitinfoCoeStr [format %08x 0]\n
+            append bitinfoCoeStr [format %08x 0]\n
+        }
+
+        # Calculate the bitinfo offset of each variable-length field
+        # Variable-length fields are appended next to the fixed-length fields
+        set xtasksConfigAccSize 44
+        set numStaticFields 35
+        set dynamicFieldSizes [list \
+            [expr {${xtasksConfigAccSize}*[dict get ${AIT::project::aitConfig} "num_accs"]}] \
+            [string length ${AIT::project::aitCall}] \
+            [string length [get_property VLNV [get_bd_cells ${AIT::templates::hwruntime::hwruntimeIP}]]] \
+            [string length [string trim {'} [dict get ${AIT::project::aitConfig} "bitinfo_note"]]] \
+        ]
+        set offset ${numStaticFields}
+        foreach size ${dynamicFieldSizes} {
+            lappend dynamicFieldOffsets ${offset}
+            incr offset [expr {int(ceil(${size}/4.))}]
+        }
+
+        if {${offset} > 1024} {
+            AIT::utils::error_msg "Bitinfo length (${offset}) is greater than its mapped region (1024)"
+        }
+
+        foreach dynamicFieldSize ${dynamicFieldSizes} dynamicFieldOffset ${dynamicFieldOffsets} {
+            append bitinfoCoeStr [format %08X [expr {${dynamicFieldSize} | (${dynamicFieldOffset} << 16)}]]\n
+        }
+        append bitinfoCoeStr [format %08x ${AIT::project::userID}]\n
+
+        # Set the board memory for discrete devices
+        if {[dict get ${AIT::project::board} "arch" "device"] eq "alveo"} {
+            if {[dict exists ${AIT::project::board} "memory" "size"]} {
+                set size [dict get ${AIT::project::board} "memory" "size"]
+            } else {
+                set size [expr {[dict get ${AIT::project::board} "memory" "bank_size"]*[dict get ${AIT::project::board} "memory" "num_banks"]}]
+            }
+            set size [expr {${size}/2**30}]
+        } else {
+            set size 0
+        }
+        append bitinfoCoeStr [format %08x ${size}]\n
+
+        # Variable-length fields
+        append bitinfoCoeStr ${AIT::project::xtasksConfigBin}
+        append bitinfoCoeStr [AIT::utils::ascii_to_hex ${AIT::project::aitCall}]
+        append bitinfoCoeStr [AIT::utils::ascii_to_hex [get_property VLNV [get_bd_cells ${AIT::templates::hwruntime::hwruntimeIP}]]]
+        append bitinfoCoeStr [AIT::utils::ascii_to_hex [string trim {'} [dict get ${AIT::project::aitConfig} "bitinfo_note"]]]
+
+        return [list ${bitinfoCoeStr} ${offset}]
+    }
+
     # Returns the total number of free memory interfaces
     proc get_available_mem_intfs {} {
         variable memIntfsList

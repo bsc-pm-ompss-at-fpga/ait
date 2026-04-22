@@ -27,7 +27,7 @@ file delete ${projectRootDir}/[dict get ${AIT::project::aitConfig} "name"].ait.j
 # Create project and set board files
 create_project -force [dict get ${AIT::project::aitConfig} "name"] [dict get ${AIT::project::aitConfig} "name"] -part [dict get ${AIT::project::board} "chip_part"]
 
-dict set ::AIT::project::aitJsonDict "project_name" [dict get ${AIT::project::aitConfig} "name"]
+dict set AIT::project::aitJsonDict "project_name" [dict get ${AIT::project::aitConfig} "name"]
 dict set AIT::project::aitJsonDict "user_id" ${AIT::project::userID}
 
 if {[dict exists ${AIT::project::board} "board_part"]} {
@@ -58,7 +58,6 @@ if {![dict get ${AIT::project::aitConfig} "disable_IP_caching"]} {
 }
 
 # Suppress known warning and critical warning messages
-#set_msg_config -id {[BD 41-1753]} -severity {WARNING} -suppress
 set_msg_config -id {[BD 41-237]} -severity {CRITICAL WARNING} -regexp -string {".*Bus Interface property MASTER_TYPE does not match between /(Hardware_Runtime|bitinfo)/.*BRAM_PORT(A|B).* and .*"} -suppress
 set_msg_config -id {[BD 41-237]} -severity {WARNING} -regexp -string {".*Bus Interface property (AW|W|R|AR)USER_WIDTH does not match between .* and .*"} -suppress
 set_msg_config -id {[BD 41-1629]} -severity {WARNING} -regexp -string {".*Slave segment <.*C0_DDR4_MEMORY_MAP_CTRL.*> is excluded from all addressing paths."} -suppress
@@ -150,8 +149,14 @@ if {[dict get ${AIT::project::aitConfig} "memory_interleaving_stride"]} {
     dict set AIT::project::aitJsonDict "interleaving" [dict get ${AIT::project::aitConfig} "memory_interleaving_stride"]
 }
 
-set ::AIT::project::accID 0
-set ::AIT::project::numEnabledIntfs 0
+set accID 0
+set accTypeID 0
+set numEnabledIntfs 0
+set schedCount 0
+set schedAccID 0
+set schedTtype 0
+set xtasksConfigStr "type\t#ins\tname\tfreq"
+set AIT::project::xtasksConfigBin ""
 
 # Instantiate OMPIF accelerators if needed
 if {[dict get ${AIT::project::aitConfig} "ompif"]} {
@@ -169,9 +174,33 @@ dict with AIT::project::aitJsonDict {
             dict with ${accKey} {
 
                 # Get variables from the accelerators json
+                set accHash ${type}
                 set accName ${name}
                 set numInstances ${num_instances}
                 set taskCreator ${task_creation}
+
+                # Set hwruntime parameters for this accelerator type
+                set schedCount [expr {${schedCount} | ((${numInstances}-1) << ${accTypeID}*8)}]
+                set schedAccID [expr {${schedAccID} | (${accID} << ${accTypeID}*8)}]
+                set schedTtype [expr {${schedTtype} | ((${accHash} & 0xFFFFFFFF) << ${accTypeID}*32)}]
+
+                # Set xtasks config string for this accelerator type
+                append xtasksConfigStr "\n[format "%019d" ${accHash}]\t"
+                append xtasksConfigStr "[format "%03d" ${numInstances}]\t"
+                append xtasksConfigStr "[format "%-32s" [string range ${accName} 0 30]]"
+                append xtasksConfigStr "[format "%03d" ${::actFreq}]"
+
+                # Set xtasks config bin for this accelerator type
+                set binWord [expr {${numInstances} | ((${accHash} & 0xFFFF) << 16)}]
+                append AIT::project::xtasksConfigBin [format "%08X\n" ${binWord}]
+                set binWord [expr {(${accHash} >> 16) | (((${::actFreq}*1000) & 0xFF) << 24)}]
+                append AIT::project::xtasksConfigBin [format "%08X\n" ${binWord}]
+                set binWord [expr {(${::actFreq}*1000) >> 8}]
+                append AIT::project::xtasksConfigBin [format "%08X\n" ${binWord}]
+                # Max length is 31 characters, but there are 8 padding bits at the end
+                set accNameBin "${accName}[string repeat "\0" [expr {32 - [string length ${accName}]}]]"
+                # Convert ascii to hexadecimal string
+                append AIT::project::xtasksConfigBin [AIT::utils::ascii_to_hex ${accNameBin}]
 
                 # Create accelerator instances dictionary to store each instance dictionary
                 dict update ${accKey} "instances" instancesDict {
@@ -229,20 +258,9 @@ dict with AIT::project::aitJsonDict {
                                     # Initialize outStream dictionary
                                     set streamDict {}
                                     dict update streamDict "src" src {
-                                        # Check if acc has already AXI-Stream pins instead of handshake
-                                        if {[get_bd_intf_pins -quiet -regexp ${accIP}/mcxx_outPort(_V)*?] ne ""} {
-                                            set src [get_bd_intf_pins -quiet -regexp ${accIP}/mcxx_outPort(_V)*?]
-                                            set outStreamInnerPin [get_bd_intf_pins -regexp ${accIP}/mcxx_outPort(_V)*?]
-                                        } elseif {[get_bd_pins -quiet -regexp ${accIP}/mcxx_outPort(_V)*?] ne ""} {
-                                            # Create and connect the hsToStreamAdapter
-                                            set src [get_bd_pins -quiet -regexp ${accIP}/mcxx_outPort(_V)*?]
-                                            set outStreamInnerPin [AIT::AXIS::add_stream_adapter [get_bd_pins -regexp ${accIP}/mcxx_outPort(_V)*?] ${AIT::project::accID} ${accName}_${instanceNum}]
-                                            if {[dict exists ${instDict} "placement"]} {
-                                                append accConstrStr "add_cells_to_pblock \
-                                                    \[get_pblocks slr${instSLR}_pblock\] \
-                                                    \[get_cells */${accName}_${instanceNum}/Adapter_outPort\]\n"
-                                            }
-                                        }
+                                        set src [get_bd_intf_pins -quiet -regexp ${accIP}/mcxx_outPort(_V)*?]
+                                        set outStreamAccPin ${src}
+                                        set outStreamInnerPin ${src}
                                     }
                                     if {[dict exists ${AIT::project::userConfig} "accs" ${accName} "instances" ${instanceNum} "streams" "outStream" "debug"]
                                         && [dict get ${AIT::project::userConfig} "accs" ${accName} "instances" ${instanceNum} "streams" "outStream" "debug"]} {
@@ -255,20 +273,9 @@ dict with AIT::project::aitJsonDict {
                                     # Initialize inStream dictionary
                                     set streamDict {}
                                     dict update streamDict "src" src {
-                                        # Check if acc has already AXI-Stream pins instead of handshake
-                                        if {[get_bd_intf_pins -quiet -regexp ${accIP}/mcxx_inPort(_V)*?] ne ""} {
-                                            set src [get_bd_intf_pins -quiet -regexp ${accIP}/mcxx_inPort(_V)*?]
-                                            set inStreamInnerPin [get_bd_intf_pins -regexp ${accIP}/mcxx_inPort(_V)*?]
-                                        } elseif {[get_bd_pins -quiet -regexp ${accIP}/mcxx_inPort(_V)*?] ne ""} {
-                                            set src [get_bd_pins -quiet -regexp ${accIP}/mcxx_inPort(_V)*?]
-                                            # Create and connect the streamToHsAdapter
-                                            set inStreamInnerPin [AIT::AXIS::add_stream_adapter [get_bd_pins -regexp ${accIP}/mcxx_inPort(_V)*?] "" ${accName}_${instanceNum}]
-                                            if {[dict exists ${instDict} "placement"]} {
-                                                append accConstrStr "add_cells_to_pblock \
-                                                    \[get_pblocks slr${instSLR}_pblock\] \
-                                                    \[get_cells */${accName}_${instanceNum}/Adapter_inPort\]\n"
-                                            }
-                                        }
+                                        set src [get_bd_intf_pins -regexp ${accIP}/mcxx_inPort(_V)*?]
+                                        set inStreamAccPin ${src}
+                                        set inStreamInnerPin ${src}
                                     }
                                     if {[dict exists ${AIT::project::userConfig} "accs" ${accName} "instances" ${instanceNum} "streams" "inStream" "debug"]
                                         && [dict get ${AIT::project::userConfig} "accs" ${accName} "instances" ${instanceNum} "streams" "inStream" "debug"]} {
@@ -283,15 +290,8 @@ dict with AIT::project::aitJsonDict {
                                         # Initialize spawnInStream dictionary
                                         set streamDict {}
                                         dict update streamDict "src" src {
-                                            # Check if acc has already AXI-Stream pins instead of handshake
-                                            if {[get_bd_intf_pins -quiet -regexp ${accIP}/mcxx_spawnInPort(_V)*?] ne ""} {
-                                                set src [get_bd_intf_pins -quiet -regexp ${accIP}/mcxx_spawnInPort(_V)*?]
-                                                set spawnInAccPin [get_bd_intf_pins -regexp ${accIP}/mcxx_spawnInPort(_V)*?]
-                                            } elseif {[get_bd_pins -quiet -regexp ${accIP}/mcxx_spawnInPort(_V)*?] ne ""} {
-                                                set src [get_bd_pins -quiet -regexp ${accIP}/mcxx_spawnInPort(_V)*?]
-                                                # Create and connect the streamToHsAdapter
-                                                set spawnInAccPin [AIT::AXIS::add_stream_adapter ${src} "" ${accName}_${instanceNum}]
-                                            }
+                                            set src [get_bd_intf_pins -quiet -regexp ${accIP}/mcxx_spawnInPort(_V)*?]
+                                            set spawnInAccPin ${src}
                                             lassign [AIT::AXIS::add_newtask_spawner ${spawnInAccPin} ${inStreamInnerPin} ${outStreamInnerPin} ${imp} ${accName}_${instanceNum}] outStreamInnerPin inStreamInnerPin
                                         }
                                         if {[dict exists ${AIT::project::userConfig} "accs" ${accName} "instances" ${instanceNum} "streams" "spawnInStream" "debug"]
@@ -304,7 +304,7 @@ dict with AIT::project::aitJsonDict {
                                 }
 
                                 # Add accID to outStream AXI-Stream TID bus
-                                set outStreamInnerPin [AIT::AXIS::add_accID ${outStreamInnerPin} ${AIT::project::accID} ${accName}_${instanceNum}]
+                                set outStreamInnerPin [AIT::AXIS::add_accID ${outStreamInnerPin} ${accID} ${accName}_${instanceNum}]
 
                                 if {[dict exists ${instDict} "placement"]} {
                                     dict set instDict "regslice_pipeline_stages" ${instRegslicePipelineStages}
@@ -321,19 +321,19 @@ dict with AIT::project::aitJsonDict {
                                 # Connect AXI-Stream pins
                                 connect_bd_intf_net [get_bd_intf_pins ${accHier}/inStream] ${inStreamInnerPin}
                                 connect_bd_intf_net ${outStreamInnerPin} [get_bd_intf_pins ${accHier}/outStream]
-                                connect_bd_intf_net -boundary_type upper [get_bd_intf_pins ${accHier}/outStream] [get_bd_intf_pins ${AIT::templates::hwruntime::hier}/hwr_inStream/S${AIT::project::accID}_AXIS]
-                                connect_bd_intf_net -boundary_type upper [get_bd_intf_pins ${AIT::templates::hwruntime::hier}/hwr_outStream/M${AIT::project::accID}_AXIS] [get_bd_intf_pins ${accHier}/inStream]
+                                connect_bd_intf_net -boundary_type upper [get_bd_intf_pins ${accHier}/outStream] [get_bd_intf_pins ${AIT::templates::hwruntime::hier}/hwr_inStream/S${accID}_AXIS]
+                                connect_bd_intf_net -boundary_type upper [get_bd_intf_pins ${AIT::templates::hwruntime::hier}/hwr_outStream/M${accID}_AXIS] [get_bd_intf_pins ${accHier}/inStream]
 
                                 if {[dict exists ${streamsDict} "inStream" "debug"]
                                     && [dict get ${streamsDict} "inStream" "debug"]} {
 
-                                    AIT::design::debug_intf ${inStreamInnerPin}
+                                    AIT::design::debug_intf ${inStreamAccPin}
                                 }
 
                                 if {[dict exists ${streamsDict} "outStream" "debug"]
                                     && [dict get ${streamsDict} "outStream" "debug"]} {
 
-                                    AIT::design::debug_intf ${outStreamInnerPin}
+                                    AIT::design::debug_intf ${outStreamAccPin}
                                 }
                             }
 
@@ -378,18 +378,7 @@ dict with AIT::project::aitJsonDict {
                                     # Connect instr_buffer pin
                                     set instrHierPin [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 ${accHier}/instr_buffer]
                                     connect_bd_intf_net ${instrInnerPin} ${instrHierPin}
-                                    incr AIT::project::numEnabledIntfs
-                                }
-
-                                # If available, forward the frequency pin
-                                if {[get_bd_pins -quiet ${accIP}/mcxx_freqPort*] ne ""} {
-                                    # Create and connect constant with freq
-                                    set accFreq [create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant ${accHier}/accFreq]
-                                    set_property -dict [list \
-                                        CONFIG.CONST_VAL ${::actFreq} \
-                                        CONFIG.CONST_WIDTH {10} \
-                                    ] ${accFreq}
-                                    connect_bd_net [get_bd_pins ${accFreq}/dout] [get_bd_pins ${accIP}/mcxx_freqPort*]
+                                    incr numEnabledIntfs
                                 }
 
                                 ## AXI interfaces
@@ -461,10 +450,10 @@ dict with AIT::project::aitJsonDict {
                             }
 
                             # Increase global accelerator id
-                            incr AIT::project::accID
+                            incr accID
 
                             regenerate_bd_layout -hierarchy ${accHier}
-                            save_bd_design
+                            save_bd_design -quiet
 
                             AIT::utils::info_msg "Successfully generated instance ${instanceNum} of ${accKey}"
                         }
@@ -472,6 +461,37 @@ dict with AIT::project::aitJsonDict {
                 }
             }
         }
+        incr accTypeID
+    }
+}
+
+if {[dict get ${AIT::project::aitConfig} "ompif"]} {
+    foreach {accHash accNumInstances accName} {4294967299 1 ompif_message_sender 4294967300 1 ompif_message_receiver} {
+        AIT::AXIS::add_accID soCmd ${accID} ${AIT::templates::OMPIF::hier}/[regsub -all {^ompif_} ${accName} ""]
+        connect_bd_intf_net [get_bd_intf_pins ${AIT::templates::hwruntime::hier}/hwr_outStream/M${accID}_AXIS] [get_bd_intf_pins ${AIT::templates::OMPIF::hier}/inStream_[regsub -all {^ompif_message_} ${accName} ""]]
+        connect_bd_intf_net [get_bd_intf_pins ${AIT::templates::OMPIF::hier}/outStream_[regsub -all {^ompif_message_} ${accName} ""]] [get_bd_intf_pins ${AIT::templates::hwruntime::hier}/hwr_inStream/S${accID}_AXIS]
+
+        append xtasksConfigStr "\n[format "%019d" ${accHash}]\t"
+        append xtasksConfigStr "[format "%03d" ${accNumInstances}]\t"
+        append xtasksConfigStr "[format "%-32s" ${accName}]"
+        append xtasksConfigStr "[format "%03d" ${::actFreq}]"
+
+        set schedCount [expr {${schedCount} | ((${accNumInstances}-1) << ${accTypeID}*8)}]
+        set schedAccID [expr {${schedAccID} | (${accID} << ${accTypeID}*8)}]
+        set schedTtype [expr {${schedTtype} | ((${accHash} & 0xFFFFFFFF) << ${accTypeID}*32)}]
+        incr accID ${accNumInstances}
+        incr accTypeID
+
+        set binWord [expr {${accNumInstances} | ((${accHash} & 0xFFFF) << 16)}]
+        append AIT::project::xtasksConfigBin [format "%08X\n" ${binWord}]
+        set binWord [expr {(${accHash} >> 16) | (((${::actFreq}*1000) & 0xFF) << 24)}]
+        append AIT::project::xtasksConfigBin [format "%08X\n" ${binWord}]
+        set binWord [expr {(${::actFreq}*1000) >> 8}]
+        append AIT::project::xtasksConfigBin [format "%08X\n" ${binWord}]
+        # Max length is 31 characters, but there are 8 padding bits at the end
+        set accNameBin "${accName}[string repeat "\0" [expr {32 - [string length ${accName}]}]]"
+        # Convert ascii to hexadecimal string
+        append AIT::project::xtasksConfigBin [AIT::utils::ascii_to_hex ${accNameBin}]
     }
 }
 
@@ -536,6 +556,7 @@ dict for {accKey accDict} [dict get ${AIT::project::aitJsonDict} "accs"] {
         }
     }
 }
+
 save_bd_design -quiet
 
 AIT::utils::info_msg "Data interfaces connected"
@@ -573,70 +594,6 @@ save_bd_design -quiet
 AIT::design::generate_bd_addr_segments_dict
 AIT::board::configure_address_map
 
-# Generate xtasks.config binary string and POM scheduler parameters
-# We have to include OMPIF accelerators here
-set schedCount 0
-set schedAccID 0
-set schedTtype 0
-set accID 0
-set i 0
-append xtasksConfigStr "type\t#ins\tname\tfreq"
-dict for {accKey accDict} [dict get ${AIT::project::aitJsonDict} "accs"] {
-    dict with accDict {
-        set accHash ${type}
-        set accNumInstances ${num_instances}
-        set accName [string range ${name} 0 30]
-
-        set binWord [expr {${accNumInstances} | ((${accHash} & 0xFFFF) << 16)}]
-        append xtasksBinStr [format "%08X\n" ${binWord}]
-        set binWord [expr {(${accHash} >> 16) | (((${::actFreq}*1000) & 0xFF) << 24)}]
-        append xtasksBinStr [format "%08X\n" ${binWord}]
-        set binWord [expr {(${::actFreq}*1000) >> 8}]
-        append xtasksBinStr [format "%08X\n" ${binWord}]
-        # Max length is 31 characters, but there are 8 padding bits at the end
-        set accNameBin "${accName}[string repeat "\0" [expr {32 - [string length ${accName}]}]]"
-        # Convert ascii to hexadecimal string
-        append xtasksBinStr [AIT::utils::ascii_to_hex ${accNameBin}]
-        append xtasksConfigStr "\n[format "%019d" ${accHash}]\t"
-        append xtasksConfigStr "[format "%03d" ${accNumInstances}]\t"
-        append xtasksConfigStr "[format "%-32s" ${accName}]"
-        append xtasksConfigStr "[format "%03d" ${::actFreq}]"
-
-        set schedCount [expr {${schedCount} | ((${accNumInstances}-1) << ${i}*8)}]
-        set schedAccID [expr {${schedAccID} | (${accID} << ${i}*8)}]
-        set schedTtype [expr {${schedTtype} | ((${accHash} & 0xFFFFFFFF) << ${i}*32)}]
-        incr accID ${accNumInstances}
-        incr i
-    }
-}
-if {[dict get ${AIT::project::aitConfig} "ompif"]} {
-    foreach {accHash accNumInstances accName} {4294967299 1 ompif_message_sender 4294967300 1 ompif_message_receiver} {
-        AIT::AXIS::add_accID soCmd ${accID} ${AIT::templates::OMPIF::hier}/[regsub -all {^ompif_} ${accName} ""]
-        connect_bd_intf_net [get_bd_intf_pins ${AIT::templates::hwruntime::hier}/hwr_outStream/M${accID}_AXIS] [get_bd_intf_pins ${AIT::templates::OMPIF::hier}/inStream_[regsub -all {^ompif_message_} ${accName} ""]]
-        connect_bd_intf_net [get_bd_intf_pins ${AIT::templates::OMPIF::hier}/outStream_[regsub -all {^ompif_message_} ${accName} ""]] [get_bd_intf_pins ${AIT::templates::hwruntime::hier}/hwr_inStream/S${accID}_AXIS]
-        set binWord [expr {${accNumInstances} | ((${accHash} & 0xFFFF) << 16)}]
-        append xtasksBinStr [format "%08X\n" ${binWord}]
-        set binWord [expr {(${accHash} >> 16) | (((${::actFreq}*1000) & 0xFF) << 24)}]
-        append xtasksBinStr [format "%08X\n" ${binWord}]
-        set binWord [expr {(${::actFreq}*1000) >> 8}]
-        append xtasksBinStr [format "%08X\n" ${binWord}]
-        # Max length is 31 characters, but there are 8 padding bits at the end
-        set accNameBin "${accName}[string repeat "\0" [expr {32 - [string length ${accName}]}]]"
-        # Convert ascii to hexadecimal string
-        append xtasksBinStr [AIT::utils::ascii_to_hex ${accNameBin}]
-        append xtasksConfigStr "\n[format "%019d" ${accHash}]\t"
-        append xtasksConfigStr "[format "%03d" ${accNumInstances}]\t"
-        append xtasksConfigStr "[format "%-32s" ${accName}]"
-        append xtasksConfigStr "[format "%03d" ${::actFreq}]"
-
-        set schedCount [expr {${schedCount} | ((${accNumInstances}-1) << ${i}*8)}]
-        set schedAccID [expr {${schedAccID} | (${accID} << ${i}*8)}]
-        set schedTtype [expr {${schedTtype} | ((${accHash} & 0xFFFFFFFF) << ${i}*32)}]
-        incr accID ${accNumInstances}
-        incr i
-    }
-}
-
 set xtasksConfigFile [open ${projectRootDir}/../[dict get ${AIT::project::aitConfig} "name"].xtasks.config "w"]
 puts ${xtasksConfigFile} ${xtasksConfigStr}
 close ${xtasksConfigFile}
@@ -646,114 +603,10 @@ if {[dict get ${AIT::project::aitConfig} "task_creation"]} {
         CONFIG.SCHED_COUNT 0x[AIT::utils::long_int_to_hex 128 ${schedCount}] \
         CONFIG.SCHED_ACCID 0x[AIT::utils::long_int_to_hex 128 ${schedAccID}] \
         CONFIG.SCHED_TTYPE 0x[AIT::utils::long_int_to_hex 512 ${schedTtype}] \
-    ] [get_bd_cells -hierarchical Picos_OmpSs_Manager]
+    ] ${AIT::templates::hwruntime::hwruntimeIP}
 }
 
-# Fixed-length fields
-set bitinfoCoeStr "memory_initialization_radix=16;\nmemory_initialization_vector=\n"
-append bitinfoCoeStr [format %08x ${AIT::project::bitinfoVersion}]\n
-append bitinfoCoeStr [format %08x [dict get ${AIT::project::aitConfig} "num_instances"]]\n
-append bitinfoCoeStr [format %08x [AIT::design::generate_bitinfo_bitmap]]\n
-append bitinfoCoeStr [format %08x [expr {${AIT::project::aitMajorVersion}<<22 | ${AIT::project::aitMinorVersion}<<11 | ${AIT::project::aitPatchVersion}}]]\n
-append bitinfoCoeStr [format %08x [dict get ${AIT::project::aitConfig} "wrapper_version"]]\n
-append bitinfoCoeStr [format %08x [AIT::board::get_base_freq]]\n
-append bitinfoCoeStr [format %08x [dict get ${AIT::project::aitConfig} "memory_interleaving_stride"]]\n
-append bitinfoCoeStr [string range [dict get ${AIT::design::bdAddrSegmentsDict} "cmdInQueueHwruntime" "addr"] 10 17]\n
-append bitinfoCoeStr [string range [dict get ${AIT::design::bdAddrSegmentsDict} "cmdInQueueHwruntime" "addr"] 2 9]\n
-append bitinfoCoeStr [format %08x [dict get ${AIT::project::aitConfig} "cmdin_subqueue_len"]]\n
-append bitinfoCoeStr [string range [dict get ${AIT::design::bdAddrSegmentsDict} "cmdOutQueueHwruntime" "addr"] 10 17]\n
-append bitinfoCoeStr [string range [dict get ${AIT::design::bdAddrSegmentsDict} "cmdOutQueueHwruntime" "addr"] 2 9]\n
-append bitinfoCoeStr [format %08x [dict get ${AIT::project::aitConfig} "cmdout_subqueue_len"]]\n
-if {![dict get ${AIT::project::aitConfig} "disable_spawn_queues"]} {
-    append bitinfoCoeStr [string range [dict get ${AIT::design::bdAddrSegmentsDict} "spawnInQueueHwruntime" "addr"] 10 17]\n
-    append bitinfoCoeStr [string range [dict get ${AIT::design::bdAddrSegmentsDict} "spawnInQueueHwruntime" "addr"] 2 9]\n
-    append bitinfoCoeStr [format %08x [dict get ${AIT::project::aitConfig} "spawnin_queue_len"]]\n
-    append bitinfoCoeStr [string range [dict get ${AIT::design::bdAddrSegmentsDict} "spawnOutQueueHwruntime" "addr"] 10 17]\n
-    append bitinfoCoeStr [string range [dict get ${AIT::design::bdAddrSegmentsDict} "spawnOutQueueHwruntime" "addr"] 2 9]\n
-    append bitinfoCoeStr [format %08x [dict get ${AIT::project::aitConfig} "spawnout_queue_len"]]\n
-} else {
-    append bitinfoCoeStr [format %08x 0]\n
-    append bitinfoCoeStr [format %08x 0]\n
-    append bitinfoCoeStr [format %08x 0]\n
-    append bitinfoCoeStr [format %08x 0]\n
-    append bitinfoCoeStr [format %08x 0]\n
-    append bitinfoCoeStr [format %08x 0]\n
-}
-append bitinfoCoeStr [string range [dict get ${AIT::design::bdAddrSegmentsDict} "managedReset" "addr"] 10 17]\n
-append bitinfoCoeStr [string range [dict get ${AIT::design::bdAddrSegmentsDict} "managedReset" "addr"] 2 9]\n
-if {[dict get ${AIT::project::aitConfig} "hwcounter"]
-    || [dict get ${AIT::project::aitConfig} "hwinst"]} {
-    append bitinfoCoeStr [string range [dict get ${AIT::design::bdAddrSegmentsDict} "hwcounter" "addr"] 10 17]\n
-    append bitinfoCoeStr [string range [dict get ${AIT::design::bdAddrSegmentsDict} "hwcounter" "addr"] 2 9]\n
-} else {
-    append bitinfoCoeStr [format %08x 0]\n
-    append bitinfoCoeStr [format %08x 0]\n
-}
-if {![dict get ${AIT::project::aitConfig} "enable_pom_axilite"]} {
-    append bitinfoCoeStr [string range [dict get ${AIT::design::bdAddrSegmentsDict} "pomAxilite" "addr"] 10 17]\n
-    append bitinfoCoeStr [string range [dict get ${AIT::design::bdAddrSegmentsDict} "pomAxilite" "addr"] 2 9]\n
-} else {
-    append bitinfoCoeStr [format %08x 0]\n
-    append bitinfoCoeStr [format %08x 0]\n
-}
-if {[dict get ${AIT::project::aitConfig} "power_monitor"]} {
-    append bitinfoCoeStr [string range [dict get ${AIT::design::bdAddrSegmentsDict} "powerMonitor" "addr"] 10 17]\n
-    append bitinfoCoeStr [string range [dict get ${AIT::design::bdAddrSegmentsDict} "powerMonitor" "addr"] 2 9]\n
-} else {
-    append bitinfoCoeStr [format %08x 0]\n
-    append bitinfoCoeStr [format %08x 0]\n
-}
-if {[dict get ${AIT::project::aitConfig} "thermal_monitor"]} {
-    append bitinfoCoeStr [string range [dict get ${AIT::design::bdAddrSegmentsDict} "thermalMonitor" "addr"] 10 17]\n
-    append bitinfoCoeStr [string range [dict get ${AIT::design::bdAddrSegmentsDict} "thermalMonitor" "addr"] 2 9]\n
-} else {
-    append bitinfoCoeStr [format %08x 0]\n
-    append bitinfoCoeStr [format %08x 0]\n
-}
-
-# Calculate the bitinfo offset of each variable-length field
-# Variable-length fields are appended next to the fixed-length fields
-set xtasksConfigAccSize 44
-set numStaticFields 35
-set dynamicFieldSizes [list \
-    [expr {${xtasksConfigAccSize}*[dict get ${AIT::project::aitConfig} "num_accs"]}] \
-    [string length ${AIT::project::aitCall}] \
-    [string length [get_property VLNV [get_bd_cells ${AIT::templates::hwruntime::hwruntimeIP}]]] \
-    [string length [string trim {'} [dict get ${AIT::project::aitConfig} "bitinfo_note"]]] \
-]
-set offset ${numStaticFields}
-foreach size ${dynamicFieldSizes} {
-    lappend dynamicFieldOffsets ${offset}
-    incr offset [expr {int(ceil(${size}/4.))}]
-}
-set bitinfoLen ${offset}
-if {${bitinfoLen} > 1024} {
-    AIT::utils::error_msg "Bitinfo length (${bitinfoLen}) is greater than its mapped region (1024)"
-}
-
-foreach dynamicFieldSize ${dynamicFieldSizes} dynamicFieldOffset ${dynamicFieldOffsets} {
-    append bitinfoCoeStr [format %08X [expr {${dynamicFieldSize} | (${dynamicFieldOffset} << 16)}]]\n
-}
-append bitinfoCoeStr [format %08x ${AIT::project::userID}]\n
-
-# Set the board memory for discrete devices
-if {[dict get ${AIT::project::board} "arch" "device"] eq "alveo"} {
-    if {[dict exists ${AIT::project::board} "memory" "size"]} {
-        set size [dict get ${AIT::project::board} "memory" "size"]
-    } else {
-        set size [expr {[dict get ${AIT::project::board} "memory" "bank_size"]*[dict get ${AIT::project::board} "memory" "num_banks"]}]
-    }
-    set size [expr {${size}/2**30}]
-} else {
-    set size 0
-}
-append bitinfoCoeStr [format %08x ${size}]\n
-
-# Variable-length fields
-append bitinfoCoeStr ${xtasksBinStr}
-append bitinfoCoeStr [AIT::utils::ascii_to_hex ${AIT::project::aitCall}]
-append bitinfoCoeStr [AIT::utils::ascii_to_hex [get_property VLNV [get_bd_cells ${AIT::templates::hwruntime::hwruntimeIP}]]]
-append bitinfoCoeStr [AIT::utils::ascii_to_hex [string trim {'} [dict get ${AIT::project::aitConfig} "bitinfo_note"]]]
+lassign [AIT::design::generate_bitinfo_coe_str] bitinfoCoeStr bitinfoLen
 
 # Create bitinfo.coe file
 set bitinfoCoeFile [open ${projectRootDir}/bitinfo.coe "w"]
@@ -782,7 +635,7 @@ if {[file exists ${projectRootDir}/user/tcl/scripts/userPostDesign.tcl]} {
 regenerate_bd_layout
 regenerate_bd_layout -routing
 if {[catch {validate_bd_design -force}]} {
-    save_bd_design
+    save_bd_design -quiet
     AIT::utils::error_msg "Block Design could not be validated"
 }
 
@@ -791,7 +644,7 @@ AIT::board::generate_wrapper
 update_compile_order -fileset sources_1
 
 # Save Block Design
-save_bd_design
+save_bd_design -quiet
 
 # Generate output files
 set aitJsonFile [open ${projectRootDir}/../[dict get ${AIT::project::aitConfig} "name"].ait.json "w"]

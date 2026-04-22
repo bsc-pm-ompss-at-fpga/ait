@@ -116,7 +116,7 @@ namespace eval templates {
         source_template "Picos_OmpSs_Manager"
 
         AIT::clocks::connect_clock [get_bd_pins ${hwruntime::hier}/clk]
-        AIT::resets::connect_reset [get_bd_pins ${hwruntime::hier}/rstn] [get_bd_pins /system_reset/clk_app_rstn]
+        AIT::resets::connect_reset [get_bd_pins ${hwruntime::hier}/rstn]
         AIT::resets::connect_reset [get_bd_pins ${hwruntime::hier}/managed_rstn] [get_bd_pins system_reset/clk_app_managed_rstn]
 
         if {([dict get ${AIT::project::board} "arch" "device"] eq "zynq")

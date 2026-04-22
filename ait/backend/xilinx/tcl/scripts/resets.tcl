@@ -22,8 +22,10 @@ namespace eval resets {
     # Connects srcRst to dstRst (pin or net) or to the default reset
     proc connect_reset {srcRst {dstRst ""}} {
         if {${dstRst} eq ""} {
-            set dstRst [get_bd_pins /system_reset/clk_app_rstn]
+            set dstRst "/system_reset/clk_app_rstn"
         }
+        set dstRst [get_bd_pins ${dstRst}]
+        set srcRst [get_bd_pins ${srcRst}]
         if {![llength [get_bd_nets -quiet -of_objects ${srcRst}]]} {
             if {[get_property CLASS ${dstRst}] eq "bd_net"} {
                 connect_bd_net ${srcRst} -net ${dstRst}

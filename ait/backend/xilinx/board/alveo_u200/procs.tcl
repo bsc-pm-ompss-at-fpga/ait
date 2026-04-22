@@ -96,6 +96,7 @@ namespace eval board {
 
         set 100ClkRstPin [AIT::resets::create_reset ${100ClkPin}]
         set 200ClkRstPin [AIT::resets::create_reset ${200ClkPin}]
+        set 200ClkManagedRstPin [AIT::resets::create_reset ${200ClkPin} True]
 
         connect_bd_net ${100ClkPin} [get_bd_pins ${AIT::templates::ethSubsys::container}/clk_100]
         connect_bd_net ${100ClkRstPin} [get_bd_pins ${AIT::templates::ethSubsys::container}/clk_100_rstn]

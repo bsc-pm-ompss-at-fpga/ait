@@ -38,7 +38,7 @@ namespace eval ethSubsys {
         connect_bd_net [get_bd_pins eth_cntrl_rst] [get_bd_pins proc_sys_reset_0/ext_reset_in]
         connect_bd_net [get_bd_pins proc_sys_reset_0/peripheral_aresetn] [get_bd_pins eth_subsys_rstn]
 
-        save_bd_design
+        save_bd_design -quiet
         current_bd_instance ${oldBdInstance}
 
         return ${hierObj}
@@ -291,7 +291,7 @@ namespace eval ethSubsys {
         AIT::board::configure_ethernet_subsystem
 
         validate_bd_design
-        save_bd_design
+        save_bd_design -quiet
 
         current_bd_design ${oldBdDesign}
     }

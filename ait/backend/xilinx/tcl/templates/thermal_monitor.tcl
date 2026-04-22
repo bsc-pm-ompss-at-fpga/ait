@@ -14,5 +14,5 @@ namespace eval thermalMonitor {
     # Add address segments to the project variable
     AIT::design::add_bd_addr_segment "thermalMonitor" ${sysMgmtIP}/S_AXI_LITE 4096
 
-    save_bd_design
+    save_bd_design -quiet
 }

@@ -394,5 +394,5 @@ namespace eval hwruntime {
         AIT::templates::source_template "hwr_dist_interconnect"
     }
 
-    save_bd_design
+    save_bd_design -quiet
 }
