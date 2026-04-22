@@ -304,24 +304,24 @@ namespace eval AXI {
 
         ## Get AXI interface by id or the least occupied
         if {${dst} ne ""} {
-            set dstIntfIdx [lsearch -exact ${AIT::project::memIntfsList} [lsearch -regexp -inline -index 3 [lsearch -all -inline -index 1 ${AIT::project::memIntfsList} ${role}] ${dst}]]
+            set dstIntfIdx [lsearch -exact ${AIT::design::memIntfsList} [lsearch -regexp -inline -index 3 [lsearch -all -inline -index 1 ${AIT::design::memIntfsList} ${role}] ${dst}]]
             if {${dstIntfIdx} == -1} {
                 AIT::utils::error_msg "Cannot connect ${srcIntfPin} to ${role} interface ${dst}. It does not exist"
             }
         } else {
-            set dstIntfIdx [lsearch -index 1 ${AIT::project::memIntfsList} ${role}]
+            set dstIntfIdx [lsearch -index 1 ${AIT::design::memIntfsList} ${role}]
         }
 
         # Retrieve destination interface dictionary from the global list and remove it
-        set dstIntf [lindex ${AIT::project::memIntfsList} ${dstIntfIdx}]
-        set ::AIT::project::memIntfsList [lreplace ${AIT::project::memIntfsList} ${dstIntfIdx} ${dstIntfIdx}]
+        set dstIntf [lindex ${AIT::design::memIntfsList} ${dstIntfIdx}]
+        set AIT::design::memIntfsList [lreplace ${AIT::design::memIntfsList} ${dstIntfIdx} ${dstIntfIdx}]
 
         # Connect source interface to destination interface
         set dstIntf [connect_intf ${srcIntfPin} ${dstIntf} ${clk} ${rst}]
 
         # Return updated interface dictionary to the global list and sort it by occupation
-        lappend AIT::project::memIntfsList ${dstIntf}
-        set ::AIT::project::memIntfsList [lsort -command AIT::utils::comp_dict -increasing ${AIT::project::memIntfsList}]
+        lappend AIT::design::memIntfsList ${dstIntf}
+        set AIT::design::memIntfsList [lsort -command AIT::utils::comp_dict -increasing ${AIT::design::memIntfsList}]
 
         current_bd_instance ${oldBdInstance}
 
@@ -421,16 +421,16 @@ namespace eval AXI {
         } elseif {[dict get ${intfDict} "role"] eq "slave"} {
             set intfMode "S"
         }
-        set parentIntfIdx [lsearch -index 5 ${AIT::project::memIntfsList} [dict get ${intfDict} "IPName"]]
-        set ::AIT::project::memIntfsList [lreplace ${AIT::project::memIntfsList} ${parentIntfIdx} ${parentIntfIdx}]
+        set parentIntfIdx [lsearch -index 5 ${AIT::design::memIntfsList} [dict get ${intfDict} "IPName"]]
+        set AIT::design::memIntfsList [lreplace ${AIT::design::memIntfsList} ${parentIntfIdx} ${parentIntfIdx}]
         for {set i 0} {${i} < ${num}} {incr i} {
             dict set newIntfDict "parentDict" ${intfDict}
             dict set newIntfDict "IPName" [dict get ${intfDict} "IPName"]_${i}
             dict set newIntfDict "pinBlock" [dict get ${intfDict} "IPName"]/${intfMode}[format %02u [dict get ${intfDict} "occupation"]]_AXI
-            lappend AIT::project::memIntfsList ${newIntfDict}
+            lappend AIT::design::memIntfsList ${newIntfDict}
             dict incr intfDict "occupation"
         }
-        set ::AIT::project::memIntfsList [lsort -command AIT::utils::comp_dict -increasing ${AIT::project::memIntfsList}]
+        set AIT::design::memIntfsList [lsort -command AIT::utils::comp_dict -increasing ${AIT::design::memIntfsList}]
         #save_bd_design -quiet
     }
 }

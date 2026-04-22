@@ -22,6 +22,7 @@ namespace eval design {
 
     variable bdAddrSegmentsList
     variable bdAddrSegmentsDict
+    variable memIntfsList
 
     # Instantiate System ILA and connect to intfPinName
     proc debug_intf {intfPinName} {
@@ -121,8 +122,10 @@ namespace eval design {
 
     # Returns the total number of free memory interfaces
     proc get_available_mem_intfs {} {
+        variable memIntfsList
+
         set availableMemIntfs 0
-        foreach memIntf ${AIT::project::memIntfsList} {
+        foreach memIntf ${memIntfsList} {
             dict with memIntf {
                 if {${role} eq "slave"} {
                     incr availableMemIntfs [expr {${capacity} - ${occupation}}]
@@ -174,6 +177,8 @@ namespace eval design {
     }
 
     proc get_mem_intfs {role num IPName pinBlock {parentDict ""} {all False}} {
+        variable memIntfsList
+
         set occupation 0
         set capacity 16
 
@@ -206,18 +211,17 @@ namespace eval design {
                 incr occupation
             }
             if {${all}} {
-                lappend AIT::project::memIntfsList ${intfDict}
+                lappend memIntfsList ${intfDict}
             }
         } else {
             if {(${occupation} < ${capacity}) || ${all}} {
-                lappend AIT::project::memIntfsList ${intfDict}
+                lappend memIntfsList ${intfDict}
             }
         }
     }
 
     # Instantiates and connects required common IPs
     proc init_bd {} {
-
         # Instantiate interconnects for every memory interface block defined in board_info.json
         initialize_mem_intfs
 
@@ -331,7 +335,8 @@ namespace eval design {
 
     # Returns a list with the available memory interfaces along with their role, occupation and capacity
     proc initialize_mem_intfs {{all False}} {
-        set ::AIT::project::memIntfsList [list]
+        variable memIntfsList
+
         dict with AIT::project::board "memory" {
             dict for {intfRole intfBlockList} ${interfaces} {
                 set intfNum 0
@@ -341,6 +346,6 @@ namespace eval design {
                 }
             }
         }
-        set ::AIT::project::memIntfsList [lsort -command AIT::utils::comp_dict -increasing ${AIT::project::memIntfsList}]
+        set memIntfsList [lsort -command AIT::utils::comp_dict -increasing ${memIntfsList}]
     }
 }

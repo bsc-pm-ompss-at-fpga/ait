@@ -488,7 +488,7 @@ if {[dict get ${AIT::project::board} "arch" "device"] eq "alveo"
     && [dict get ${AIT::project::board} "memory" "type"] eq "ddr"
     && ${AIT::project::numEnabledIntfs} > ${avMemIntfs}} {
 
-    foreach memIntf ${AIT::project::memIntfsList} {
+    foreach memIntf ${AIT::design::memIntfsList} {
         if {[dict get ${memIntf} "role"] eq "slave"} {
             AIT::AXI::create_nested_interconnect ${memIntf} [dict get ${AIT::project::board} "memory" "num_banks"]
         }
