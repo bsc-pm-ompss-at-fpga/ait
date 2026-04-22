@@ -34,6 +34,22 @@ namespace eval templates {
         AIT::board::instantiate_ethernet_subsystem
     }
 
+    proc hwcounter {} {
+        variable hwcounterIP [create_bd_cell -type module -reference bsc_axiu_hwcounter HW_Counter]
+
+        if {([dict get ${AIT::project::board} "arch" "device"] eq "zynq")
+            || ([dict get ${AIT::project::board} "arch" "device"] eq "zynqmp")} {
+
+            AIT::AXI::connect_to_mem_intf [get_bd_intf_pins ${hwcounterIP}/S_AXI] 1
+        } else {
+            AIT::AXI::connect_to_mem_intf [get_bd_intf_pins ${hwcounterIP}/S_AXI]
+        }
+
+        AIT::design::add_bd_addr_segment hwcounter ${hwcounterIP}/S_AXI 4096
+
+        save_bd_design -quiet
+    }
+
     proc OMPIF {} {
         ethernet_subsystem
 

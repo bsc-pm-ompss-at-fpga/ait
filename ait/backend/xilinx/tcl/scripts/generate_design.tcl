@@ -544,19 +544,7 @@ AIT::utils::info_msg "Data interfaces connected"
 if {[dict get ${AIT::project::aitConfig} "hwcounter"]
     || [dict get ${AIT::project::aitConfig} "hwinst"]} {
 
-    create_bd_cell -type module -reference bsc_axiu_hwcounter HW_Counter
-
-    if {([dict get ${AIT::project::board} "arch" "device"] eq "zynq")
-        || ([dict get ${AIT::project::board} "arch" "device"] eq "zynqmp")} {
-
-        AIT::AXI::connect_to_mem_intf [get_bd_intf_pins HW_Counter/S_AXI] 1
-    } else {
-        AIT::AXI::connect_to_mem_intf [get_bd_intf_pins HW_Counter/S_AXI]
-    }
-
-    AIT::design::add_bd_addr_segment "hwcounter" HW_Counter/S_AXI 4096
-
-    save_bd_design -quiet
+    AIT::templates::hwcounter
 }
 
 # Add SLR constraints to static logic
