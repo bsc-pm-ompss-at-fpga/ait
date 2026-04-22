@@ -12,12 +12,7 @@ namespace eval thermalMonitor {
     AIT::AXI::connect_to_mem_intf [get_bd_intf_pins ${sysMgmtIP}/S_AXI_LITE] "" ${sysMgmtClkPin} ${sysMgmtRstPin}
 
     # Add address segments to the project variable
-    lappend AIT::project::bdAddrSegmentsList [dict create \
-        name thermalMonitor \
-        bdSegName ${sysMgmtIP}/S_AXI_LITE/Reg \
-        size {4096} \
-        addr [format 0x%016x 0x0]
-    ]
+    AIT::design::add_bd_addr_segment "thermalMonitor" ${sysMgmtIP}/S_AXI_LITE 4096
 
     save_bd_design
 }

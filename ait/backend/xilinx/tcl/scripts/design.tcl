@@ -19,6 +19,10 @@
 #------------------------------------------------------------------------#
 
 namespace eval design {
+
+    variable bdAddrSegmentsList
+    variable bdAddrSegmentsDict
+
     # Instantiate System ILA and connect to intfPinName
     proc debug_intf {intfPinName} {
         set intfPin [get_bd_intf_pins -quiet ${intfPinName}]
@@ -88,6 +92,31 @@ namespace eval design {
         set bitinfoBitmap [expr {${bitinfoBitmap} | ([dict get ${AIT::project::aitConfig} "ompif"] ? 1 : 0)<<11}]
         set bitinfoBitmap [expr {${bitinfoBitmap} | ([dict get ${AIT::project::aitConfig} "imp"] ? 1 : 0)<<12}]
         return [format 0x%08x ${bitinfoBitmap}]
+    }
+
+    proc generate_bd_addr_segments_dict {} {
+        variable bdAddrSegmentsList
+        variable bdAddrSegmentsDict
+        # Compute address segments base addresses
+        set offset 0
+        foreach bdAddrSeg [lsort -increasing -command AIT::utils::comp_dict ${bdAddrSegmentsList}] {
+            dict with bdAddrSeg {
+                if {${size}} {
+                    if {${size} <= 4096} {
+                        set size 4096
+                    } elseif {${size} & (${size}-1)} { # Not power of 2
+                        set sizeClog2 [expr {int(ceil(log(${size})/log(2)))}]
+                        set size [expr {int(pow(2, ${sizeClog2}))}]
+                    }
+                    if {${offset}%${size}} {
+                        incr offset [expr {${size} - (${offset}%${size})}]
+                    }
+                    set addr [format 0x%016x [expr {[dict get ${AIT::project::board} "memory" "ompss_base_addr"] + ${offset}}]]
+                    incr offset ${size}
+                }
+            }
+            dict append bdAddrSegmentsDict [dict get ${bdAddrSeg} "tag"] ${bdAddrSeg}
+        }
     }
 
     # Returns the total number of free memory interfaces
@@ -269,6 +298,9 @@ namespace eval design {
         }
         connect_bd_intf_net [get_bd_intf_pins bitInfo_BRAM_Ctrl/BRAM_PORTA] [get_bd_intf_pins bitinfo/BRAM_PORTA]
 
+        add_bd_addr_segment "bitinfo" bitinfo_BRAM_Ctrl/S_AXI 1
+        add_bd_addr_segment "managedReset" managed_reset/S_AXI 4096
+
         AIT::templates::Picos_OmpSs_Manager
 
         if {[dict get ${AIT::project::aitConfig} "power_monitor"]} {
@@ -283,6 +315,18 @@ namespace eval design {
         set ::actFreq [AIT::board::set_and_get_freq [dict get ${AIT::project::aitConfig} "clock"]]
 
         save_bd_design -quiet
+    }
+
+    proc add_bd_addr_segment {tag intfPinName size {addr 0}} {
+        variable bdAddrSegmentsList
+
+        set intfPin [get_bd_intf_pins ${intfPinName}]
+        lappend bdAddrSegmentsList [dict create \
+            tag ${tag} \
+            bdSegName [get_bd_addr_segs -of_objects ${intfPin}] \
+            size ${size} \
+            addr [format 0x%016x ${addr}] \
+        ]
     }
 
     # Returns a list with the available memory interfaces along with their role, occupation and capacity

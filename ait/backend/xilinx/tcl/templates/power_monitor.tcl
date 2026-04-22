@@ -25,10 +25,5 @@ namespace eval powerMonitor {
     AIT::AXI::connect_to_mem_intf [get_bd_intf_pins ${cmsIP}/s_axi_ctrl] "" ${cmsClkPin} ${cmsRstPin}
 
     # Add address segments to the project variable
-    lappend AIT::project::bdAddrSegmentsList [dict create \
-        name powerMonitor \
-        bdSegName ${cmsIP}/s_axi_ctrl/Mem* \
-        size [expr {256*1024}] \
-        addr [format 0x%016x 0x0]
-    ]
+    AIT::design::add_bd_addr_segment "powerMonitor" ${cmsIP}/s_axi_ctrl [expr {256*1024}]
 }

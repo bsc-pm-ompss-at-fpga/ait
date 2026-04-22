@@ -213,7 +213,7 @@ namespace eval hwruntime {
     ] ${cmdInQueue}
 
     # Create instance: cmdInQueue_BRAM_Ctrl, and set properties
-    set cmdInQueue_BRAM_Ctrl [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl cmdInQueue_BRAM_Ctrl]
+    variable cmdInQueue_BRAM_Ctrl [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl cmdInQueue_BRAM_Ctrl]
     set_property -dict [list \
         CONFIG.PROTOCOL {AXI4LITE} \
         CONFIG.SINGLE_PORT_BRAM {1} \
@@ -247,7 +247,7 @@ namespace eval hwruntime {
     ] ${cmdOutQueue}
 
     # Create instance: cmdOutQueue_BRAM_Ctrl, and set properties
-    set cmdOutQueue_BRAM_Ctrl [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl cmdOutQueue_BRAM_Ctrl]
+    variable cmdOutQueue_BRAM_Ctrl [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl cmdOutQueue_BRAM_Ctrl]
     set_property -dict [list \
         CONFIG.PROTOCOL {AXI4LITE} \
         CONFIG.SINGLE_PORT_BRAM {1} \
@@ -282,7 +282,7 @@ namespace eval hwruntime {
         ] ${spawnInQueue}
 
         # Create instance: spawnInQueue_BRAM_Ctrl, and set properties
-        set spawnInQueue_BRAM_Ctrl [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl spawnInQueue_BRAM_Ctrl]
+        variable spawnInQueue_BRAM_Ctrl [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl spawnInQueue_BRAM_Ctrl]
         set_property -dict [list \
             CONFIG.PROTOCOL {AXI4LITE} \
             CONFIG.SINGLE_PORT_BRAM {1} \
@@ -316,7 +316,7 @@ namespace eval hwruntime {
         ] ${spawnOutQueue}
 
         # Create instance: spawnOutQueue_BRAM_Ctrl, and set properties
-        set spawnOutQueue_BRAM_Ctrl [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl spawnOutQueue_BRAM_Ctrl]
+        variable spawnOutQueue_BRAM_Ctrl [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl spawnOutQueue_BRAM_Ctrl]
         set_property -dict [list \
             CONFIG.PROTOCOL {AXI4LITE} \
             CONFIG.SINGLE_PORT_BRAM {1} \

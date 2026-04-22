@@ -111,6 +111,17 @@ namespace eval templates {
             AIT::AXI::connect_to_mem_intf [get_bd_intf_pins ${hwruntime::hier}/S_AXI_GP]
         }
 
+        AIT::design::add_bd_addr_segment "cmdInQueueHwruntime" ${AIT::templates::hwruntime::cmdInQueue_BRAM_Ctrl}/S_AXI [expr {[dict get ${AIT::project::aitConfig} "cmdin_subqueue_len"]*[dict get ${AIT::project::aitConfig} "num_instances"]*8}]
+        AIT::design::add_bd_addr_segment "cmdOutQueueHwruntime" ${AIT::templates::hwruntime::cmdOutQueue_BRAM_Ctrl}/S_AXI [expr {[dict get ${AIT::project::aitConfig} "cmdout_subqueue_len"]*[dict get ${AIT::project::aitConfig} "num_instances"]*8}]
+        if  {![dict get ${AIT::project::aitConfig} "disable_spawn_queues"]} {
+            AIT::design::add_bd_addr_segment "spawnInQueueHwruntime" ${AIT::templates::hwruntime::spawnInQueue_BRAM_Ctrl}/S_AXI [expr {[dict get ${AIT::project::aitConfig} "spawnin_queue_len"]*8}]
+            AIT::design::add_bd_addr_segment "spawnOutQueueHwruntime" ${AIT::templates::hwruntime::spawnOutQueue_BRAM_Ctrl}/S_AXI [expr {[dict get ${AIT::project::aitConfig} "spawnout_queue_len"]*8}]
+        }
+
+        if {[dict get ${AIT::project::aitConfig} "enable_pom_axilite"]} {
+            AIT::design::add_bd_addr_segment "pomAxilite" ${AIT::templates::hwruntime::hwruntimeIP}/axilite [expr {16*1024}]
+        }
+
         save_bd_design -quiet
     }
 

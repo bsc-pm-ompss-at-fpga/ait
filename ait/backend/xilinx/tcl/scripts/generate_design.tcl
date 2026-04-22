@@ -24,60 +24,6 @@ set projectRootDir ${scriptDir}/../..
 # Cleanup files
 file delete ${projectRootDir}/[dict get ${AIT::project::aitConfig} "name"].ait.json
 
-# List of OmpSs@FPGA address segments
-# Includes address segment name, size and base address
-# We set bitinfo address segment as size 1 so it will be the first one to be allocated
-set AIT::project::bdAddrSegmentsList [list \
-    [dict create \
-        name bitinfo \
-        bdSegName bitInfo_BRAM_Ctrl/S_AXI/Mem0 \
-        size 1 \
-        addr [format 0x%016x [dict get ${AIT::project::board} "memory" "ompss_base_addr"]] \
-    ] \
-    [dict create \
-        name cmdInQueueHwruntime \
-        bdSegName Hardware_Runtime/cmdInQueue_BRAM_Ctrl/S_AXI/Mem0 \
-        size [expr {[dict get ${AIT::project::aitConfig} "cmdin_subqueue_len"]*[dict get ${AIT::project::aitConfig} "num_instances"]*8}] \
-        addr [format 0x%016x 0x0]
-    ] \
-    [dict create \
-        name cmdOutQueueHwruntime \
-        bdSegName Hardware_Runtime/cmdOutQueue_BRAM_Ctrl/S_AXI/Mem0 \
-        size [expr {[dict get ${AIT::project::aitConfig} "cmdout_subqueue_len"]*[dict get ${AIT::project::aitConfig} "num_instances"]*8}] \
-        addr [format 0x%016x 0x0]
-    ] \
-    [dict create \
-        name managedReset \
-        bdSegName managed_reset/S_AXI/Reg \
-        size 4096 \
-        addr [format 0x%016x 0x0]
-    ] \
-    [dict create \
-        name spawnInQueueHwruntime \
-        bdSegName Hardware_Runtime/spawnInQueue_BRAM_Ctrl/S_AXI/Mem0 \
-        size [expr {[dict get ${AIT::project::aitConfig} "spawnin_queue_len"]*8}] \
-        addr [format 0x%016x 0x0]
-    ] \
-    [dict create \
-        name spawnOutQueueHwruntime \
-        bdSegName Hardware_Runtime/spawnOutQueue_BRAM_Ctrl/S_AXI/Mem0 \
-        size [expr {[dict get ${AIT::project::aitConfig} "spawnout_queue_len"]*8}] \
-        addr [format 0x%016x 0x0]
-    ] \
-    [dict create \
-        name hwcounter \
-        bdSegName HW_Counter/s_axi/reg0 \
-        size [expr {([dict get ${AIT::project::aitConfig} "hwcounter"] || [dict get ${AIT::project::aitConfig} "hwinst"]) ? 4096 : 0}] \
-        addr [format 0x%016x 0x0]
-    ] \
-    [dict create \
-        name pomAxilite \
-        bdSegName Hardware_Runtime/Picos_OmpSs_Manager/axilite/reg_0 \
-        size [expr {[dict get ${AIT::project::aitConfig} "enable_pom_axilite"] ? 16*1024 : 0}] \
-        addr [format 0x%016x 0x0]
-    ]
-]
-
 # Create project and set board files
 create_project -force [dict get ${AIT::project::aitConfig} "name"] [dict get ${AIT::project::aitConfig} "name"] -part [dict get ${AIT::project::board} "chip_part"]
 
@@ -608,6 +554,8 @@ if {[dict get ${AIT::project::aitConfig} "hwcounter"]
         AIT::AXI::connect_to_mem_intf [get_bd_intf_pins HW_Counter/S_AXI]
     }
 
+    AIT::design::add_bd_addr_segment "hwcounter" HW_Counter/S_AXI 4096
+
     save_bd_design -quiet
 }
 
@@ -634,46 +582,8 @@ if {"AIT::board::after_acc_configuration" in [info procs AIT::board::after_acc_c
 validate_bd_design -force -quiet
 save_bd_design -quiet
 
-# Wipe clean address map
-delete_bd_objs [get_bd_addr_segs]
-
-AIT::utils::info_msg "Configuring address map..."
-
-# Compute address segments base addresses
-set offset 0
-foreach bdAddrSeg [lsort -increasing -command AIT::utils::comp_dict ${AIT::project::bdAddrSegmentsList}] {
-    dict with bdAddrSeg {
-        if {${size}} {
-            if {${size} <= 4096} {
-                set size 4096
-            } elseif {${size} & (${size}-1)} { # Not power of 2
-                set sizeClog2 [expr {int(ceil(log(${size})/log(2)))}]
-                set size [expr {int(pow(2, ${sizeClog2}))}]
-            }
-            if {${offset}%${size}} {
-                incr offset [expr {${size} - (${offset}%${size})}]
-            }
-            set addr [format 0x%016x [expr {[dict get ${AIT::project::board} "memory" "ompss_base_addr"] + ${offset}}]]
-            incr offset ${size}
-        }
-    }
-    dict append bdAddrSegmentsDict [dict get ${bdAddrSeg} "name"] ${bdAddrSeg}
-}
-unset offset
-
+AIT::design::generate_bd_addr_segments_dict
 AIT::board::configure_address_map
-
-# Map hwruntime queues to address space
-dict for {bdAddrSegmentKey bdAddrSegmentDict} ${bdAddrSegmentsDict} {
-    dict with bdAddrSegmentDict {
-        if {${size}} {
-            assign_bd_address [get_bd_addr_segs ${bdSegName}] -range ${size} -offset ${addr}
-        }
-    }
-}
-save_bd_design -quiet
-
-AIT::utils::info_msg "Address map configured"
 
 # Generate xtasks.config binary string and POM scheduler parameters
 # We have to include OMPIF accelerators here
@@ -760,34 +670,54 @@ append bitinfoCoeStr [format %08x [expr {${AIT::project::aitMajorVersion}<<22 | 
 append bitinfoCoeStr [format %08x [dict get ${AIT::project::aitConfig} "wrapper_version"]]\n
 append bitinfoCoeStr [format %08x [AIT::board::get_base_freq]]\n
 append bitinfoCoeStr [format %08x [dict get ${AIT::project::aitConfig} "memory_interleaving_stride"]]\n
-append bitinfoCoeStr [string range [dict get ${bdAddrSegmentsDict} "cmdInQueueHwruntime" "addr"] 10 17]\n
-append bitinfoCoeStr [string range [dict get ${bdAddrSegmentsDict} "cmdInQueueHwruntime" "addr"] 2 9]\n
+append bitinfoCoeStr [string range [dict get ${AIT::design::bdAddrSegmentsDict} "cmdInQueueHwruntime" "addr"] 10 17]\n
+append bitinfoCoeStr [string range [dict get ${AIT::design::bdAddrSegmentsDict} "cmdInQueueHwruntime" "addr"] 2 9]\n
 append bitinfoCoeStr [format %08x [dict get ${AIT::project::aitConfig} "cmdin_subqueue_len"]]\n
-append bitinfoCoeStr [string range [dict get ${bdAddrSegmentsDict} "cmdOutQueueHwruntime" "addr"] 10 17]\n
-append bitinfoCoeStr [string range [dict get ${bdAddrSegmentsDict} "cmdOutQueueHwruntime" "addr"] 2 9]\n
+append bitinfoCoeStr [string range [dict get ${AIT::design::bdAddrSegmentsDict} "cmdOutQueueHwruntime" "addr"] 10 17]\n
+append bitinfoCoeStr [string range [dict get ${AIT::design::bdAddrSegmentsDict} "cmdOutQueueHwruntime" "addr"] 2 9]\n
 append bitinfoCoeStr [format %08x [dict get ${AIT::project::aitConfig} "cmdout_subqueue_len"]]\n
-append bitinfoCoeStr [string range [dict get ${bdAddrSegmentsDict} "spawnInQueueHwruntime" "addr"] 10 17]\n
-append bitinfoCoeStr [string range [dict get ${bdAddrSegmentsDict} "spawnInQueueHwruntime" "addr"] 2 9]\n
-append bitinfoCoeStr [format %08x [dict get ${AIT::project::aitConfig} "spawnin_queue_len"]]\n
-append bitinfoCoeStr [string range [dict get ${bdAddrSegmentsDict} "spawnOutQueueHwruntime" "addr"] 10 17]\n
-append bitinfoCoeStr [string range [dict get ${bdAddrSegmentsDict} "spawnOutQueueHwruntime" "addr"] 2 9]\n
-append bitinfoCoeStr [format %08x [dict get ${AIT::project::aitConfig} "spawnout_queue_len"]]\n
-append bitinfoCoeStr [string range [dict get ${bdAddrSegmentsDict} "managedReset" "addr"] 10 17]\n
-append bitinfoCoeStr [string range [dict get ${bdAddrSegmentsDict} "managedReset" "addr"] 2 9]\n
-append bitinfoCoeStr [string range [dict get ${bdAddrSegmentsDict} "hwcounter" "addr"] 10 17]\n
-append bitinfoCoeStr [string range [dict get ${bdAddrSegmentsDict} "hwcounter" "addr"] 2 9]\n
-append bitinfoCoeStr [string range [dict get ${bdAddrSegmentsDict} "pomAxilite" "addr"] 10 17]\n
-append bitinfoCoeStr [string range [dict get ${bdAddrSegmentsDict} "pomAxilite" "addr"] 2 9]\n
+if {![dict get ${AIT::project::aitConfig} "disable_spawn_queues"]} {
+    append bitinfoCoeStr [string range [dict get ${AIT::design::bdAddrSegmentsDict} "spawnInQueueHwruntime" "addr"] 10 17]\n
+    append bitinfoCoeStr [string range [dict get ${AIT::design::bdAddrSegmentsDict} "spawnInQueueHwruntime" "addr"] 2 9]\n
+    append bitinfoCoeStr [format %08x [dict get ${AIT::project::aitConfig} "spawnin_queue_len"]]\n
+    append bitinfoCoeStr [string range [dict get ${AIT::design::bdAddrSegmentsDict} "spawnOutQueueHwruntime" "addr"] 10 17]\n
+    append bitinfoCoeStr [string range [dict get ${AIT::design::bdAddrSegmentsDict} "spawnOutQueueHwruntime" "addr"] 2 9]\n
+    append bitinfoCoeStr [format %08x [dict get ${AIT::project::aitConfig} "spawnout_queue_len"]]\n
+} else {
+    append bitinfoCoeStr [format %08x 0]\n
+    append bitinfoCoeStr [format %08x 0]\n
+    append bitinfoCoeStr [format %08x 0]\n
+    append bitinfoCoeStr [format %08x 0]\n
+    append bitinfoCoeStr [format %08x 0]\n
+    append bitinfoCoeStr [format %08x 0]\n
+}
+append bitinfoCoeStr [string range [dict get ${AIT::design::bdAddrSegmentsDict} "managedReset" "addr"] 10 17]\n
+append bitinfoCoeStr [string range [dict get ${AIT::design::bdAddrSegmentsDict} "managedReset" "addr"] 2 9]\n
+if {[dict get ${AIT::project::aitConfig} "hwcounter"]
+    || [dict get ${AIT::project::aitConfig} "hwinst"]} {
+    append bitinfoCoeStr [string range [dict get ${AIT::design::bdAddrSegmentsDict} "hwcounter" "addr"] 10 17]\n
+    append bitinfoCoeStr [string range [dict get ${AIT::design::bdAddrSegmentsDict} "hwcounter" "addr"] 2 9]\n
+} else {
+    append bitinfoCoeStr [format %08x 0]\n
+    append bitinfoCoeStr [format %08x 0]\n
+}
+if {![dict get ${AIT::project::aitConfig} "enable_pom_axilite"]} {
+    append bitinfoCoeStr [string range [dict get ${AIT::design::bdAddrSegmentsDict} "pomAxilite" "addr"] 10 17]\n
+    append bitinfoCoeStr [string range [dict get ${AIT::design::bdAddrSegmentsDict} "pomAxilite" "addr"] 2 9]\n
+} else {
+    append bitinfoCoeStr [format %08x 0]\n
+    append bitinfoCoeStr [format %08x 0]\n
+}
 if {[dict get ${AIT::project::aitConfig} "power_monitor"]} {
-    append bitinfoCoeStr [string range [dict get ${bdAddrSegmentsDict} "powerMonitor" "addr"] 10 17]\n
-    append bitinfoCoeStr [string range [dict get ${bdAddrSegmentsDict} "powerMonitor" "addr"] 2 9]\n
+    append bitinfoCoeStr [string range [dict get ${AIT::design::bdAddrSegmentsDict} "powerMonitor" "addr"] 10 17]\n
+    append bitinfoCoeStr [string range [dict get ${AIT::design::bdAddrSegmentsDict} "powerMonitor" "addr"] 2 9]\n
 } else {
     append bitinfoCoeStr [format %08x 0]\n
     append bitinfoCoeStr [format %08x 0]\n
 }
 if {[dict get ${AIT::project::aitConfig} "thermal_monitor"]} {
-    append bitinfoCoeStr [string range [dict get ${bdAddrSegmentsDict} "thermalMonitor" "addr"] 10 17]\n
-    append bitinfoCoeStr [string range [dict get ${bdAddrSegmentsDict} "thermalMonitor" "addr"] 2 9]\n
+    append bitinfoCoeStr [string range [dict get ${AIT::design::bdAddrSegmentsDict} "thermalMonitor" "addr"] 10 17]\n
+    append bitinfoCoeStr [string range [dict get ${AIT::design::bdAddrSegmentsDict} "thermalMonitor" "addr"] 2 9]\n
 } else {
     append bitinfoCoeStr [format %08x 0]\n
     append bitinfoCoeStr [format %08x 0]\n

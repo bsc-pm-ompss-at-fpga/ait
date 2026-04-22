@@ -33,6 +33,11 @@ namespace eval board {
 
     # Maps board memory to address map
     proc configure_address_map {} {
+        AIT::utils::info_msg "Configuring address map..."
+
+        # Wipe clean address map
+        delete_bd_objs [get_bd_addr_segs]
+
         set boardMemType [dict get ${AIT::project::board} "memory" "type"]
         set boardMemBaseAddr [dict get ${AIT::project::board} "memory" "base_addr"]
 
@@ -98,7 +103,18 @@ namespace eval board {
                 assign_bd_address -target_address_space ${AIT::templates::OMPIF::messageReceiverIP}/memcpy [get_bd_addr_segs axi_inter_msg_recv_memcpy/axiu_dwidth_downsize_0/slv/reg0]
                 assign_bd_address -target_address_space ${AIT::templates::OMPIF::messageSenderIP}/moMEM [get_bd_addr_segs axi_inter_msg_send/axiu_dwidth_downsize_0/slv/reg0]
             }
+
         }
+
+        # Map hwruntime queues to address space
+        dict for {bdAddrSegmentKey bdAddrSegmentDict} ${AIT::design::bdAddrSegmentsDict} {
+            dict with bdAddrSegmentDict {
+                if {${size}} {
+                    assign_bd_address [get_bd_addr_segs ${bdSegName}] -range ${size} -offset ${addr}
+                }
+            }
+        }
+        AIT::utils::info_msg "Address map configured"
     }
 
     # Enables the memory interface specified in intfDict
