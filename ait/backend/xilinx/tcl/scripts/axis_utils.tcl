@@ -107,7 +107,7 @@ namespace eval AXIS {
         ] ${newtaskSpawnerIP}
 
         if {${imp}} {
-            connect_bd_net [get_bd_pins ${newtaskSpawnerIP}/ompif_rank] [get_bd_pins ${AIT::project::OMPIF}/ompif_rank]
+            connect_bd_net [get_bd_pins ${newtaskSpawnerIP}/ompif_rank] [get_bd_pins ${AIT::templates::OMPIF::hier}/ompif_rank]
         }
 
         save_bd_design -quiet
