@@ -292,6 +292,49 @@ namespace eval AXI {
         return ${dstIntf}
     }
 
+    proc connect_to_intf_group {intfPin intfGroup} {
+        set intfPin [get_bd_intf_pins ${intfPin}]
+        set groupRole [string range [get_property MODE ${intfPin}] 0 0]
+        set dstIntfRole [expr {${groupRole} eq "M" ? "S" : "M"}]
+        set intfGroupIPName ${groupRole}_intfGroup_${intfGroup}
+
+        set oldBdInstance [current_bd_instance .]
+        current_bd_instance
+
+        set intfGroupIP [get_bd_cells -quiet ${intfGroupIPName}]
+        if {![llength ${intfGroupIP}]} {
+            set intfGroupIP [create_bd_cell -vlnv xilinx.com:ip:axi_interconnect ${intfGroupIPName}]
+            set_property -dict [list \
+                CONFIG.NUM_MI {1} \
+                CONFIG.NUM_SI {1}
+            ] ${intfGroupIP}
+
+            AIT::clocks::connect_clock ${intfGroupIP}/ACLK
+            AIT::resets::connect_reset ${intfGroupIP}/ARESETN
+        } else {
+            set dstIntfPinNum [get_property CONFIG.NUM_${dstIntfRole}I ${intfGroupIP}]
+            incr dstIntfPinNum
+            if {${dstIntfPinNum} > 15} {
+                AIT::utils::error_msg "${intfGroupIPName} capacity is over 100%"
+            }
+            set_property -dict [list \
+                CONFIG.NUM_${dstIntfRole}I ${dstIntfPinNum}
+            ] ${intfGroupIP}
+        }
+
+        set dstIntfPinNum [expr {[get_property CONFIG.NUM_${dstIntfRole}I ${intfGroupIP}] - 1}]
+        set dstIntfGroupPin [get_bd_intf_pins ${intfGroupIP}/${dstIntfRole}[format %02u ${dstIntfPinNum}]_AXI]
+        set dstIntfGroupClk [AIT::clocks::get_associated_clk_pin ${dstIntfGroupPin}]
+        AIT::clocks::connect_clock ${dstIntfGroupClk} [AIT::clocks::get_associated_clk_pin ${intfPin}]
+        AIT::resets::connect_reset [AIT::resets::get_associated_rst_pin [AIT::clocks::get_associated_clk_pin ${dstIntfGroupPin}]] [AIT::resets::get_synchronous_rst_pin [AIT::clocks::get_associated_clk_pin ${intfPin}]]
+
+        connect_bd_intf_net ${intfPin} ${dstIntfGroupPin}
+
+        save_bd_design -quiet
+
+        return ${intfGroupIPName}
+    }
+
     # Connects the provided AXI interface to memory
     # Uses the least-used available memory interface, or the one provided by the user
     # Also connects the AXI associated clock and reset pins to the default ones or the ones specified by the user

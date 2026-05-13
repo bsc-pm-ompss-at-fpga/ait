@@ -152,6 +152,7 @@ if {[dict get ${AIT::project::aitConfig} "memory_interleaving_stride"]} {
 set accID 0
 set accTypeID 0
 set numEnabledIntfs 0
+set enabledIntfsDict [dict create]
 set schedCount 0
 set schedAccID 0
 set schedTtype 0
@@ -165,6 +166,9 @@ if {[dict get ${AIT::project::aitConfig} "ompif"]} {
 
 # Import accelerators json
 dict set AIT::project::aitJsonDict "accs" ${AIT::project::accs}
+if {[dict exists ${AIT::project::userConfig} "interface_groups"]} {
+  dict set AIT::project::aitJsonDict "interface_groups" [dict get ${AIT::project::userConfig} "interface_groups"]
+}
 
 AIT::utils::info_msg "Instantiating accelerators..."
 
@@ -359,10 +363,8 @@ dict with AIT::project::aitJsonDict {
                                     dict update interfacesDict "instr_buffer" intfDict {
                                         # Initialize interface dictionary
                                         set intfDict {}
-                                        dict update intfDict "src" src "width" width "dst" dst {
+                                        dict update intfDict "src" src {
                                             set src ${instrAccPin}
-                                            set width [get_property CONFIG.DATA_WIDTH ${instrAccPin}]
-                                            set dst ""
                                         }
 
                                         if {[dict exists ${instDict} "placement"]} {
@@ -378,7 +380,21 @@ dict with AIT::project::aitJsonDict {
                                     # Connect instr_buffer pin
                                     set instrHierPin [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 ${accHier}/instr_buffer]
                                     connect_bd_intf_net ${instrInnerPin} ${instrHierPin}
-                                    incr numEnabledIntfs
+
+                                    if {[dict exists ${AIT::project::userConfig} "accs" ${accName} "instances" ${instanceNum} "interfaces" "instr_buffer" "debug"]
+                                        && [dict get ${AIT::project::userConfig} "accs" ${accName} "instances" ${instanceNum} "interfaces" "instr_buffer" "debug"]} {
+
+                                        AIT::design::debug_intf ${instrAccPin}
+                                        dict set intfDict "debug" true
+                                    }
+                                    if {[dict exists ${AIT::project::userConfig} "accs" ${accName} "instances" ${instanceNum} "interfaces" "instr_buffer" "group"]} {
+                                        set intfGroup [dict get ${AIT::project::userConfig} "accs" ${accName} "instances" ${instanceNum} "interfaces" "instr_buffer" "group"]
+                                        set intfGroupPin [AIT::AXI::connect_to_intf_group ${accName}_${instanceNum}/instr_buffer ${intfGroup}]/M00_AXI
+                                        dict set intfDict "group" ${intfGroup}
+                                        dict set enabledIntfsDict ${intfGroupPin} "keyDict" "interface_groups ${intfGroup}"
+                                    } else {
+                                        dict set enabledIntfsDict ${instrHierPin} "keyDict" "accs ${accName} instances ${instanceNum} interfaces instr_buffer"
+                                    }
                                 }
 
                                 ## AXI interfaces
@@ -402,17 +418,17 @@ dict with AIT::project::aitJsonDict {
                                         set intfHierPin ${accHier}/${intfName}
 
                                         # Set interface basic information
-                                        dict update intfDict "src" src "width" width "dst" dst {
+                                        dict update intfDict "src" src "width" width {
                                             set src ${intfAccPin}
                                             set width [get_property CONFIG.DATA_WIDTH ${intfAccPin}]
-                                            set dst ""
                                         }
 
                                         # Check if data interface is disabled
                                         if {[dict exists ${AIT::project::userConfig} "accs" ${accKey} "instances" ${instanceNum} "interfaces" ${intfName} "dst"]} {
                                             set intfUserDst [dict get ${AIT::project::userConfig} "accs" ${accKey} "instances" ${instanceNum} "interfaces" ${intfName} "dst"]
+                                            dict set intfDict "dst" ${intfUserDst}
                                             if {[string equal -nocase ${intfUserDst} "none"]} {
-                                                dict set intfDict "dst" None
+                                                AIT::utils::info_msg "Interface ${intfName} disabled"
                                                 continue
                                             }
                                         }
@@ -425,15 +441,24 @@ dict with AIT::project::aitJsonDict {
                                             lassign [AIT::AXI::add_reg_slice ${intfInnerPin} "" "" ${instRegslicePipelineStages} ${intfName} ${accName}_${instanceNum}] intfInnerPin regSliceConstrStr
                                         }
 
+                                        set intfHierPin [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 ${intfHierPin}]
+                                        connect_bd_intf_net ${intfInnerPin} ${intfHierPin}
+
                                         # Mark AXI pin for debug
                                         if {[dict exists ${AIT::project::userConfig} "accs" ${accName} "instances" ${instanceNum} "interfaces" ${intfName} "debug"]
                                             && [dict get ${AIT::project::userConfig} "accs" ${accName} "instances" ${instanceNum} "interfaces" ${intfName} "debug"]} {
+
+                                            AIT::design::debug_intf ${intfAccPin}
                                             dict set intfDict "debug" true
                                         }
-
-                                        set intfHierPin [create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 ${intfHierPin}]
-                                        connect_bd_intf_net ${intfInnerPin} ${intfHierPin}
-                                        incr AIT::project::numEnabledIntfs
+                                        if {[dict exists ${AIT::project::userConfig} "accs" ${accName} "instances" ${instanceNum} "interfaces" ${intfName} "group"]} {
+                                            set intfGroup [dict get ${AIT::project::userConfig} "accs" ${accName} "instances" ${instanceNum} "interfaces" ${intfName} "group"]
+                                            set intfGroupPin [AIT::AXI::connect_to_intf_group ${accName}_${instanceNum}/${intfName} ${intfGroup}]/M00_AXI
+                                            dict set intfDict "group" ${intfGroup}
+                                            dict set enabledIntfsDict ${intfGroupPin} "keyDict" "interface_groups ${intfGroup}"
+                                        } else {
+                                            dict set enabledIntfsDict ${intfHierPin} "keyDict" "accs ${accName} instances ${instanceNum} interfaces ${intfName}"
+                                        }
                                     }
                                 }
                             }
@@ -506,7 +531,7 @@ validate_bd_design -quiet
 set avMemIntfs [AIT::design::get_available_mem_intfs]
 if {[dict get ${AIT::project::board} "arch" "device"] eq "alveo"
     && [dict get ${AIT::project::board} "memory" "type"] eq "ddr"
-    && ${AIT::project::numEnabledIntfs} > ${avMemIntfs}} {
+    && [dict size ${enabledIntfsDict}] > ${avMemIntfs}} {
 
     foreach memIntf ${AIT::design::memIntfsList} {
         if {[dict get ${memIntf} "role"] eq "slave"} {
@@ -516,45 +541,30 @@ if {[dict get ${AIT::project::board} "arch" "device"] eq "alveo"
 }
 
 # Check if there are enough available AXI interfaces to memory
-if {${AIT::project::numEnabledIntfs} > [AIT::design::get_available_mem_intfs]} {
-    AIT::utils::error_msg "Insufficient available AXI interfaces to memory (${AIT::project::numEnabledIntfs} > [AIT::design::get_available_mem_intfs])"
+if {[dict size ${enabledIntfsDict}] > [AIT::design::get_available_mem_intfs]} {
+    AIT::utils::error_msg "Insufficient available AXI interfaces to memory ([dict size ${enabledIntfsDict}] > [AIT::design::get_available_mem_intfs])"
 }
 
 AIT::utils::info_msg "Connecting data interfaces to memory..."
 
-# Connect data pins to memory interconnection
-dict for {accKey accDict} [dict get ${AIT::project::aitJsonDict} "accs"] {
-    dict for {instanceKey instanceDict} [dict get ${accDict} "instances"] {
-        dict for {interfaceKey interfaceDict} [dict get ${instanceDict} "interfaces"] {
-            dict with AIT::project::aitJsonDict "accs" ${accKey} "instances" ${instanceKey} "interfaces" ${interfaceKey} {
-
-                # Check if interface is disabled or has a specified dst
-                if {[string equal -nocase ${dst} "none"]} {
-                    AIT::utils::info_msg "Interface ${accKey}_${instanceKey}/${interfaceKey} disabled"
-                    continue
-                } else {
-                    if {[dict get ${AIT::project::aitConfig} "memory_interleaving_stride"]} {
-                        AIT::AXI::add_addrInterleaver [get_bd_intf_pins ${accKey}_${instanceKey}/${interfaceKey}] ${interfaceKey}
-                    }
-
-                    if {[dict exists ${AIT::project::userConfig} "accs" ${accKey} "instances" ${instanceKey} "interfaces" ${interfaceKey} "dst"]} {
-                        set dst [dict get [AIT::AXI::connect_to_mem_intf [get_bd_intf_pins ${accKey}_${instanceKey}/${interfaceKey}] [dict get ${AIT::project::userConfig} "accs" ${accKey} "instances" ${instanceKey} "interfaces" ${interfaceKey} "dst"]] "num"]
-                    } else {
-                        set dst [dict get [AIT::AXI::connect_to_mem_intf [get_bd_intf_pins ${accKey}_${instanceKey}/${interfaceKey}]] "num"]
-                    }
-
-                    # Mark interface for debug
-                    if {[dict exists ${interfaceDict} "debug"]
-                        && [dict get ${interfaceDict} "debug"]} {
-                        AIT::design::debug_intf ${accKey}_${instanceKey}/${interfaceKey}
-                        AIT::utils::info_msg "Interface ${accKey}_${instanceKey}/${interfaceKey} marked for debug"
-                    }
-
-                    AIT::utils::info_msg "Interface ${accKey}_${instanceKey}/${interfaceKey} connected to memory interface ${dst}"
-                }
+dict for {intfKey intfVal} ${enabledIntfsDict} {
+    set intfDict [dict get ${AIT::project::aitJsonDict} {*}[dict get ${intfVal} "keyDict"]]
+    dict with intfDict {
+        dict update intfDict "dst" dst {
+            if {[dict get ${AIT::project::aitConfig} "memory_interleaving_stride"]} {
+                AIT::AXI::add_addrInterleaver ${intfKey} [regsub -all {(^(m_axi_)?(mcxx_)?|(_V)*$)} [get_property NAME ${intfKey}] ""]
             }
+
+            if {[dict exists ${intfDict} "dst"]} {
+                set dst [dict get [AIT::AXI::connect_to_mem_intf ${intfKey} ${dst}] "num"]
+            } else {
+                set dst [dict get [AIT::AXI::connect_to_mem_intf ${intfKey}] "num"]
+            }
+
+            AIT::utils::info_msg "Connected ${intfKey} to memory interface ${dst}"
         }
     }
+    dict set AIT::project::aitJsonDict {*}[dict get ${intfVal} "keyDict"] ${intfDict}
 }
 
 save_bd_design -quiet
