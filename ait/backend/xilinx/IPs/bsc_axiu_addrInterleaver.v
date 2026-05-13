@@ -18,20 +18,15 @@
 /*    License along with this code. If not, see <www.gnu.org/licenses/>.  */
 /*------------------------------------------------------------------------*/
 
-`undef __ENABLE__
 `define __ADDR_WIDTH__ 64
 
 
-`ifdef __ENABLE__
 module bsc_axiu_addrInterleaver #(
     parameter NUM_BANKS = 4,
     parameter STRIDE = `__ADDR_WIDTH__'h2000, //8K
     parameter BANK_SIZE = `__ADDR_WIDTH__'h400000000, //16G
     parameter BASE_ADDR = `__ADDR_WIDTH__'h0
 )
-`else
-module bsc_axiu_addrInterleaver
-`endif
 (
     input wire [(`__ADDR_WIDTH__-1):0] in_addr,
 
@@ -40,11 +35,9 @@ module bsc_axiu_addrInterleaver
 
     reg [(`__ADDR_WIDTH__-1):0] r_out_addr;
 
-`ifdef __ENABLE__
     localparam NUM_SELECTOR_BITS = $clog2(NUM_BANKS);
     localparam SRC_SELECTOR_BIT = $clog2(STRIDE);
     localparam DST_SELECTOR_BIT = $clog2(BANK_SIZE);
-`endif
 
     assign out_addr = r_out_addr;
 

@@ -127,9 +127,6 @@ def run_step(project_args):
     shutil.rmtree(f'{user_files_path}', ignore_errors=True)
     os.mkdir(user_files_path)
 
-    if args.memory_interleaving_stride > 0:
-        subprocess.run(f'sed -i "s/\`undef __ENABLE__/\`define __ENABLE__/" {project_backend_path}/IPs/bsc_axiu_addrInterleaver.v', shell=True, check=True)
-
     if args.user_config and os.path.exists(args.user_config):
         shutil.copy2(args.user_config, f'{user_files_path}/config.json')
     elif args.user_config:
