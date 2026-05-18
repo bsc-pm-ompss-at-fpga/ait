@@ -24,7 +24,7 @@ set numJobs [lindex ${argv} 0]
 open_project [dict get ${AIT::project::aitConfig} "name"]/[dict get ${AIT::project::aitConfig} "name"].xpr
 
 # Check if previous step finished correctly
-if {[string match "*ERROR*" [get_property STATUS [get_runs impl_1]]]} {
+if [string match "*ERROR*" [get_property STATUS [get_runs impl_1]]] {
     AIT::utils::error_msg "Implementation step did not finished correctly. Cannot generate bitstream."
 }
 
@@ -33,16 +33,18 @@ open_bd_design [get_files [dict get ${AIT::project::aitConfig} "name"]_design.bd
 validate_bd_design -quiet
 
 # Generate .bin file for Zynq and ZynqMP boards
-if {([dict get ${AIT::project::board} "arch" "device"] eq "zynq")
-    || ([dict get ${AIT::project::board} "arch" "device"] eq "zynqmp")} {
-
-    set_property -dict [list \
-        STEPS.WRITE_BITSTREAM.ARGS.BIN_FILE {true} \
-    ] [get_runs impl_1]
-} else {
-    set_property -dict [list \
-        STEPS.WRITE_BITSTREAM.ARGS.BIN_FILE {false} \
-    ] [get_runs impl_1]
+switch -- [dict get ${AIT::project::board} "arch" "device"] {
+    "zynq" -
+    "zynqmp" {
+        set_property -dict [list \
+            STEPS.WRITE_BITSTREAM.ARGS.BIN_FILE {true}
+        ] [get_runs impl_1]
+    }
+    default {
+        set_property -dict [list \
+            STEPS.WRITE_BITSTREAM.ARGS.BIN_FILE {false}
+        ] [get_runs impl_1]
+    }
 }
 
 AIT::utils::info_msg "Launching bitstream run with ${numJobs} jobs"
@@ -54,24 +56,25 @@ launch_runs impl_1 -to_step write_bitstream -jobs ${numJobs}
 wait_on_runs impl_1
 
 # Check if bitstream generation finished correctly
-if {[string match "*ERROR*" [get_property STATUS [get_runs impl_1]]]} {
+if [string match "*ERROR*" [get_property STATUS [get_runs impl_1]]] {
     AIT::utils::error_msg "Bitstream generation failed."
 }
 
 file mkdir [dict get ${AIT::project::aitConfig} "name"]/[dict get ${AIT::project::aitConfig} "name"].sdk
 
-if {([dict get ${AIT::project::board} "arch" "device"] eq "zynq")
-    || ([dict get ${AIT::project::board} "arch" "device"] eq "zynqmp")} {
+switch -- [dict get ${AIT::project::board} "arch" "device"] {
+    "zynq" -
+    "zynqmp" {
+        # Set basic platform properties
+        set_property -dict [list \
+            pfm_name [get_property board_part [current_project]]
+        ] [get_files [current_bd_design].bd]
+        set_property -dict [list \
+            PFM.CLOCK {clk_app {id "0" is_default "true" proc_sys_reset "system_reset" }}
+        ] [get_bd_cells clock_generator]
 
-    # Set basic platform properties
-    set_property -dict [list \
-        pfm_name [get_property board_part [current_project]] \
-    ] [get_files [current_bd_design].bd]
-    set_property -dict [list \
-        PFM.CLOCK {clk_app {id "0" is_default "true" proc_sys_reset "system_reset" }} \
-    ] [get_bd_cells clock_generator]
-
-    # Generate xsa files
-    write_hw_platform -force -fixed -unified -include_bit [dict get ${AIT::project::aitConfig} "name"]/[dict get ${AIT::project::aitConfig} "name"].sdk/[dict get ${AIT::project::aitConfig} "name"]_design_wrapper.xsa
-    validate_hw_platform [dict get ${AIT::project::aitConfig} "name"]/[dict get ${AIT::project::aitConfig} "name"].sdk/[dict get ${AIT::project::aitConfig} "name"]_design_wrapper.xsa
+        # Generate xsa files
+        write_hw_platform -force -fixed -unified -include_bit [dict get ${AIT::project::aitConfig} "name"]/[dict get ${AIT::project::aitConfig} "name"].sdk/[dict get ${AIT::project::aitConfig} "name"]_design_wrapper.xsa
+        validate_hw_platform [dict get ${AIT::project::aitConfig} "name"]/[dict get ${AIT::project::aitConfig} "name"].sdk/[dict get ${AIT::project::aitConfig} "name"]_design_wrapper.xsa
+    }
 }

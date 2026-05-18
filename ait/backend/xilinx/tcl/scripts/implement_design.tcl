@@ -24,26 +24,12 @@ set numJobs [lindex ${argv} 0]
 open_project [dict get ${AIT::project::aitConfig} "name"]/[dict get ${AIT::project::aitConfig} "name"].xpr
 
 # Check if previous step finished correctly
-if {[string match "*ERROR*" [get_property STATUS [get_runs synth_1]]]} {
+if [string match "*ERROR*" [get_property STATUS [get_runs synth_1]]] {
     AIT::utils::error_msg "Synthesis step did not finished correctly. Cannot start implementation step."
 }
 
 # Open Block Design
 open_bd_design [get_files [dict get ${AIT::project::aitConfig} "name"]_design.bd]
-
-# Generate .bin file for Zynq and ZynqMP boards
-if {([dict get ${AIT::project::board} "arch" "device"] eq "zynq")
-    || ([dict get ${AIT::project::board} "arch" "device"] eq "zynqmp")} {
-
-    set_property -dict [list \
-        STEPS.WRITE_BITSTREAM.ARGS.BIN_FILE {true} \
-    ] [get_runs impl_1]
-
-} else {
-    set_property -dict [list \
-        STEPS.WRITE_BITSTREAM.ARGS.BIN_FILE {false} \
-    ] [get_runs impl_1]
-}
 
 AIT::utils::info_msg "Launching implementation run with ${numJobs} jobs"
 
@@ -52,8 +38,8 @@ launch_runs impl_1 -jobs ${numJobs}
 wait_on_runs impl_1
 
 # Check if implementation finished correctly
-if {[string match "*ERROR*" [get_property STATUS [get_runs impl_1]]]} {
-    if {[catch {exec exec grep ^ERROR [dict get ${AIT::project::aitConfig} "name"]/[dict get ${AIT::project::aitConfig} "name"].runs/impl_1/runme.log}]} {
+if [string match "*ERROR*" [get_property STATUS [get_runs impl_1]]] {
+    if [catch {exec exec grep ^ERROR [dict get ${AIT::project::aitConfig} "name"]/[dict get ${AIT::project::aitConfig} "name"].runs/impl_1/runme.log}] {
         AIT::utils::info_msg "Failed impl_1 implementation"
     } else {
         AIT::utils::info_msg "Failed impl_1 implementation: [exec grep ^ERROR [dict get ${AIT::project::aitConfig} "name"]/[dict get ${AIT::project::aitConfig} "name"].runs/impl_1/runme.log]"

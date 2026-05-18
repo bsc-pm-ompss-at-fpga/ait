@@ -27,10 +27,13 @@ namespace eval clocks {
         set dstClk [get_bd_pins ${dstClk}]
         set srcClk [get_bd_pins ${srcClk}]
         if {!([llength [get_bd_nets -quiet -of_objects ${srcClk}]])} {
-            if {[get_property CLASS ${dstClk}] eq "bd_net"} {
-                connect_bd_net ${srcClk} -net ${dstClk}
-            } elseif {[get_property CLASS ${dstClk}] eq "bd_pin"} {
-                connect_bd_net ${srcClk} ${dstClk}
+            switch -- [get_property CLASS ${dstClk}] {
+                "bd_net" {
+                    connect_bd_net ${srcClk} -net ${dstClk}
+                }
+                "bd_pin" {
+                    connect_bd_net ${srcClk} ${dstClk}
+                }
             }
         }
         return ${dstClk}
@@ -41,7 +44,7 @@ namespace eval clocks {
         if {${clkName} eq ""} {
             set clkName "freq_${outFreq}_clk"
         } else {
-            set clkName "${clkName}_clk"
+                set clkName "${clkName}_clk"
         }
 
         # If it does not exist, create clock

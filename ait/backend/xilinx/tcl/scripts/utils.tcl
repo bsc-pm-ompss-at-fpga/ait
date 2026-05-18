@@ -38,9 +38,9 @@ namespace eval utils {
 
     # Compares two dictionaries with the given key value
     proc comp_dict {a b} {
-        if {[dict exists ${a} "size"]} {
+        if [dict exists ${a} "size"] {
             set key "size"
-        } elseif {[dict exists ${a} "occupation"]} {
+        } elseif [dict exists ${a} "occupation"] {
             set key "occupation"
         } else {
             error_msg "Unkown dictionary"
@@ -83,14 +83,14 @@ namespace eval utils {
         } else {
             set jsonStr ""
         }
-        if {[is_dict ${dictValue}]} {
+        if [is_dict ${dictValue}] {
             foreach {dictKey} [dict keys ${dictValue}] {
                 set keyVal [dict get ${dictValue} ${dictKey}]
-                if {[dict exists ${map} ${dictKey}]} {
+                if [dict exists ${map} ${dictKey}] {
                     set childType [dict get ${map} ${dictKey}]
-                } elseif {[is_dict ${keyVal}]} {
+                } elseif [is_dict ${keyVal}] {
                     set childType "dict"
-                } elseif {[is_list ${keyVal}]} {
+                } elseif [is_list ${keyVal}] {
                     set childType "list"
                 } else {
                     set childType "string"
@@ -103,7 +103,7 @@ namespace eval utils {
                 } elseif {${childType} eq "list"} {
                     append jsonStr [indent_string "\"${dictKey}\": \[\n" ${indent}]
                     foreach {listItem} ${keyVal} {
-                        if {[is_dict ${listItem}]} {
+                        if [is_dict ${listItem}] {
                             append jsonStr "[indent_string "\{\n" [expr {${indent} + 1}]][string range [dict_to_json ${listItem} ${map} [expr {${indent} + 2}] False] 0 end-2]\n[indent_string "\},\n" [expr {${indent} + 1}]]"
                         } else {
                             append jsonStr [string range [dict_to_json ${listItem} ${map} [expr {${indent} + 1}] False] 0 end-2],\n

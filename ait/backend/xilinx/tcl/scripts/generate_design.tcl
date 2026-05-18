@@ -30,14 +30,16 @@ create_project -force [dict get ${AIT::project::aitConfig} "name"] [dict get ${A
 dict set AIT::project::aitJsonDict "project_name" [dict get ${AIT::project::aitConfig} "name"]
 dict set AIT::project::aitJsonDict "user_id" ${AIT::project::userID}
 
-if {[dict exists ${AIT::project::board} "board_part"]} {
+if [dict exists ${AIT::project::board} "board_part"] {
     set boardFound False
     foreach boardName [dict get ${AIT::project::board} "board_part"] {
         set boardPart [get_board_parts -latest_file_version ${boardName}:*]
         if {${boardPart} ne ""} {
-            dict set AIT::project::aitJsonDict "board_part" ${boardPart}
-            set_property board_part ${boardPart} [current_project]
             set boardFound True
+            dict set AIT::project::aitJsonDict "board_part" ${boardPart}
+            set_property -dict [list \
+                board_part ${boardPart}
+            ] [current_project]
             break
         }
     }
@@ -46,11 +48,16 @@ if {[dict exists ${AIT::project::board} "board_part"]} {
     }
 }
 
-# Set repository path
-set_property ip_repo_paths {HLS} [current_project]
-
+# Set project properties:
+# Board part
+# Repository path
 # Do not generate simulation scripts
-set_property sim.ip.auto_export_scripts {false} [current_project]
+# Synthesis target language
+set_property -dict [list \
+    ip_repo_paths {HLS} \
+    sim.ip.auto_export_scripts {false} \
+    target_language [dict get ${AIT::project::aitConfig} "target_language"]
+] [current_project]
 
 # If enabled, set cache location
 if {![dict get ${AIT::project::aitConfig} "disable_IP_caching"]} {
@@ -80,9 +87,8 @@ set_msg_config -id {[xilinx.com:ip:axi_bram_ctrl:4.1-1]} -severity {INFO} -suppr
 # In IP Integrator, please note that memory depth value gets calculated based on the Data Width of the IP and Address range selected in the Address Editor.Incase a validation error occured on the range of this parameter, please check if the selected Data width and the Address Range are valid. For valid Data width and memory depth values, please refer to the AXI BRAM Controller Product Guide.
 set_msg_config -id {[xilinx.com:ip:axi_bram_ctrl:4.1-2]} -severity {INFO} -suppress
 
-
 # Add BSC auxiliary IPs
-if {[file isdirectory ${projectRootDir}/IPs]} {
+if [file isdirectory ${projectRootDir}/IPs] {
     set_property ip_repo_paths "[get_property ip_repo_paths [current_project]] ${projectRootDir}/IPs" [current_project]
     update_ip_catalog
     foreach IP [glob -nocomplain ${projectRootDir}/IPs/*.zip] {
@@ -98,7 +104,7 @@ if {[file isdirectory ${projectRootDir}/IPs]} {
 }
 
 # If exists, add board IP repository
-if {[file isdirectory ${projectRootDir}/board/IPs]} {
+if [file isdirectory ${projectRootDir}/board/IPs] {
     set_property ip_repo_paths "[get_property ip_repo_paths [current_project]] ${projectRootDir}/board/IPs" [current_project]
     update_ip_catalog
     foreach IP [glob -nocomplain ${projectRootDir}/board/IPs/*.zip] {
@@ -112,7 +118,7 @@ if {[file isdirectory ${projectRootDir}/board/IPs]} {
 update_ip_catalog
 
 # If exists, add constraints file
-if {[file isdirectory ${projectRootDir}/board/constraints]} {
+if [file isdirectory ${projectRootDir}/board/constraints] {
     add_files -fileset constrs_1 -norecurse ${projectRootDir}/board/constraints
     reorder_files -fileset constrs_1 -front [get_files -quiet create_pblocks.xdc]
     if {![dict get ${AIT::project::aitConfig} "power_monitor"]} {
@@ -121,7 +127,7 @@ if {[file isdirectory ${projectRootDir}/board/constraints]} {
     if {![dict get ${AIT::project::aitConfig} "ompif"]} {
         remove_files -fileset constrs_1 [get_files -quiet ompif.xdc]
     }
-    if {[dict get ${AIT::project::aitConfig} "disable_static_constraints"]} {
+    if [dict get ${AIT::project::aitConfig} "disable_static_constraints"] {
         remove_files -fileset constrs_1 [get_files -quiet board_static.xdc]
     }
 }
@@ -136,8 +142,9 @@ open_bd_design [get_files [dict get ${AIT::project::aitConfig} "name"]_design.bd
 set_property synth_checkpoint_mode {Hierarchical} [get_files [current_bd_design].bd]
 
 # If available, execute the user defined pre-design tcl script
-if {[file exists ${projectRootDir}/user/tcl/scripts/userPreDesign.tcl]} {
-    if {[catch {source -notrace ${projectRootDir}/user/tcl/scripts/userPreDesign.tcl}]} {
+if [file exists ${projectRootDir}/user/tcl/scripts/userPreDesign.tcl] {
+    AIT::utils::info_msg "Loading user pre-design script"
+    if [catch {source -notrace ${projectRootDir}/user/tcl/scripts/userPreDesign.tcl}] {
         AIT::utils::error_msg "Failed sourcing board pre base design"
     }
 }
@@ -145,13 +152,12 @@ if {[file exists ${projectRootDir}/user/tcl/scripts/userPreDesign.tcl]} {
 # Initialize board base design with required IPs
 AIT::design::init_bd
 
-if {[dict get ${AIT::project::aitConfig} "memory_interleaving_stride"]} {
+if [dict get ${AIT::project::aitConfig} "memory_interleaving_stride"] {
     dict set AIT::project::aitJsonDict "interleaving" [dict get ${AIT::project::aitConfig} "memory_interleaving_stride"]
 }
 
 set accID 0
 set accTypeID 0
-set numEnabledIntfs 0
 set enabledIntfsDict [dict create]
 set schedCount 0
 set schedAccID 0
@@ -159,14 +165,9 @@ set schedTtype 0
 set xtasksConfigStr "type\t#ins\tname\tfreq"
 set AIT::project::xtasksConfigBin ""
 
-# Instantiate OMPIF accelerators if needed
-if {[dict get ${AIT::project::aitConfig} "ompif"]} {
-    AIT::templates::OMPIF
-}
-
 # Import accelerators json
 dict set AIT::project::aitJsonDict "accs" ${AIT::project::accs}
-if {[dict exists ${AIT::project::userConfig} "interface_groups"]} {
+if [dict exists ${AIT::project::userConfig} "interface_groups"] {
   dict set AIT::project::aitJsonDict "interface_groups" [dict get ${AIT::project::userConfig} "interface_groups"]
 }
 
@@ -175,6 +176,7 @@ AIT::utils::info_msg "Instantiating accelerators..."
 dict with AIT::project::aitJsonDict {
     dict for {accKey accDict} ${accs} {
         dict with accs {
+            ##nagelfar variable accKey varName
             dict with ${accKey} {
 
                 # Get variables from the accelerators json
@@ -214,7 +216,7 @@ dict with AIT::project::aitJsonDict {
                         dict update instancesDict ${instanceNum} instDict {
                             set instDict {}
                             set instRegslicePipelineStages [dict get ${AIT::project::aitConfig} "regslice_pipeline_stages"]
-                            if {[dict exists ${AIT::project::userConfig} "accs" ${accName} "instances" ${instanceNum} "regslice_pipeline_stages"]} {
+                            if [dict exists ${AIT::project::userConfig} "accs" ${accName} "instances" ${instanceNum} "regslice_pipeline_stages"] {
                                 set instRegslicePipelineStages [dict get ${AIT::project::userConfig} "accs" ${accName} "instances" ${instanceNum} "regslice_pipeline_stages"]
                             }
 
@@ -224,13 +226,11 @@ dict with AIT::project::aitJsonDict {
                             lassign [AIT::templates::ompss_acc ${accName} ${instanceNum}] accHier accIP
 
                             # Connect clk and rst pins
-                            dict update instDict "rst" rst "clk" clk {
-                                set rst [AIT::resets::connect_reset [get_bd_pins ${accHier}/managed_aresetn] [get_bd_pins system_reset/clk_app_managed_rstn]]
-                                set clk [AIT::clocks::connect_clock [get_bd_pins ${accHier}/aclk]]
-                            }
+                            dict set instDict "rst" [AIT::resets::connect_reset [get_bd_pins ${accHier}/managed_aresetn] [get_bd_pins system_reset/clk_app_managed_rstn]]
+                            dict set instDict "clk" [AIT::clocks::connect_clock [get_bd_pins ${accHier}/aclk]]
 
                             # Store accelerator placement information, if it exists
-                            if {[dict exists ${AIT::project::userConfig} "accs" ${accName} "instances" ${instanceNum} "placement"]} {
+                            if [dict exists ${AIT::project::userConfig} "accs" ${accName} "instances" ${instanceNum} "placement"] {
                                 set instSLR [dict get ${AIT::project::userConfig} "accs" ${accName} "instances" ${instanceNum} "placement"]
                                 set memSLR [dict get ${AIT::project::board} "arch" "slr" "memory"]
                                 set hwruntimeSLR [dict get ${AIT::project::board} "arch" "slr" "memory"]
@@ -261,11 +261,9 @@ dict with AIT::project::aitJsonDict {
                                 dict update streamsDict "outStream" streamDict {
                                     # Initialize outStream dictionary
                                     set streamDict {}
-                                    dict update streamDict "src" src {
-                                        set src [get_bd_intf_pins -quiet -regexp ${accIP}/mcxx_outPort(_V)*?]
-                                        set outStreamAccPin ${src}
-                                        set outStreamInnerPin ${src}
-                                    }
+                                    set outStreamAccPin [get_bd_intf_pins -quiet -regexp ${accIP}/mcxx_outPort(_V)*?]
+                                    set outStreamInnerPin ${outStreamAccPin}
+                                    dict set streamDict "src" ${outStreamAccPin}
                                     if {[dict exists ${AIT::project::userConfig} "accs" ${accName} "instances" ${instanceNum} "streams" "outStream" "debug"]
                                         && [dict get ${AIT::project::userConfig} "accs" ${accName} "instances" ${instanceNum} "streams" "outStream" "debug"]} {
                                         dict set streamDict "debug" true
@@ -276,11 +274,9 @@ dict with AIT::project::aitJsonDict {
                                 dict update streamsDict "inStream" streamDict {
                                     # Initialize inStream dictionary
                                     set streamDict {}
-                                    dict update streamDict "src" src {
-                                        set src [get_bd_intf_pins -regexp ${accIP}/mcxx_inPort(_V)*?]
-                                        set inStreamAccPin ${src}
-                                        set inStreamInnerPin ${src}
-                                    }
+                                    set inStreamAccPin [get_bd_intf_pins -regexp ${accIP}/mcxx_inPort(_V)*?]
+                                    set inStreamInnerPin ${inStreamAccPin}
+                                    dict set streamDict "src" ${inStreamAccPin}
                                     if {[dict exists ${AIT::project::userConfig} "accs" ${accName} "instances" ${instanceNum} "streams" "inStream" "debug"]
                                         && [dict get ${AIT::project::userConfig} "accs" ${accName} "instances" ${instanceNum} "streams" "inStream" "debug"]} {
                                         dict set streamDict "debug" true
@@ -293,11 +289,9 @@ dict with AIT::project::aitJsonDict {
                                     dict update streamsDict "spawnInStream" streamDict {
                                         # Initialize spawnInStream dictionary
                                         set streamDict {}
-                                        dict update streamDict "src" src {
-                                            set src [get_bd_intf_pins -quiet -regexp ${accIP}/mcxx_spawnInPort(_V)*?]
-                                            set spawnInAccPin ${src}
-                                            lassign [AIT::AXIS::add_newtask_spawner ${spawnInAccPin} ${inStreamInnerPin} ${outStreamInnerPin} ${imp} ${accName}_${instanceNum}] outStreamInnerPin inStreamInnerPin
-                                        }
+                                        set spawnInAccPin [get_bd_intf_pins -quiet -regexp ${accIP}/mcxx_spawnInPort(_V)*?]
+                                        dict set streamDict "src" ${spawnInAccPin}
+                                        lassign [AIT::AXIS::add_newtask_spawner ${spawnInAccPin} ${inStreamInnerPin} ${outStreamInnerPin} ${imp} ${accName}_${instanceNum}] outStreamInnerPin inStreamInnerPin
                                         if {[dict exists ${AIT::project::userConfig} "accs" ${accName} "instances" ${instanceNum} "streams" "spawnInStream" "debug"]
                                             && [dict get ${AIT::project::userConfig} "accs" ${accName} "instances" ${instanceNum} "streams" "spawnInStream" "debug"]} {
 
@@ -310,13 +304,13 @@ dict with AIT::project::aitJsonDict {
                                 # Add accID to outStream AXI-Stream TID bus
                                 set outStreamInnerPin [AIT::AXIS::add_accID ${outStreamInnerPin} ${accID} ${accName}_${instanceNum}]
 
-                                if {[dict exists ${instDict} "placement"]} {
+                                if [dict exists ${instDict} "placement"] {
                                     dict set instDict "regslice_pipeline_stages" ${instRegslicePipelineStages}
                                     lassign [AIT::AXIS::add_reg_slice ${inStreamInnerPin} ${hwruntimeSLR} ${instSLR} ${instRegslicePipelineStages} inStream ${accName}_${instanceNum}] inStreamInnerPin regSliceConstrStr
                                     append accConstrStr ${regSliceConstrStr}
                                     lassign [AIT::AXIS::add_reg_slice ${outStreamInnerPin} ${instSLR} ${hwruntimeSLR} ${instRegslicePipelineStages} outStream ${accName}_${instanceNum}] outStreamInnerPin regSliceConstrStr
                                     append accConstrStr ${regSliceConstrStr}
-                                } elseif {[dict exists ${AIT::project::userConfig} "accs" ${accName} "instances" ${instanceNum} "regslice_pipeline_stages"]} {
+                                } elseif [dict exists ${AIT::project::userConfig} "accs" ${accName} "instances" ${instanceNum} "regslice_pipeline_stages"] {
                                     dict set instDict "regslice_pipeline_stages" ${instRegslicePipelineStages}
                                     lassign [AIT::AXIS::add_reg_slice ${inStreamInnerPin} "" "" ${instRegslicePipelineStages} inStream ${accName}_${instanceNum}] inStreamInnerPin regSliceConstrStr
                                     lassign [AIT::AXIS::add_reg_slice ${outStreamInnerPin} "" "" ${instRegslicePipelineStages} outStream ${accName}_${instanceNum}] outStreamInnerPin regSliceConstrStr
@@ -363,17 +357,15 @@ dict with AIT::project::aitJsonDict {
                                     dict update interfacesDict "instr_buffer" intfDict {
                                         # Initialize interface dictionary
                                         set intfDict {}
-                                        dict update intfDict "src" src {
-                                            set src ${instrAccPin}
-                                        }
+                                        dict set intfDict "src" ${instrAccPin}
 
-                                        if {[dict exists ${instDict} "placement"]} {
+                                        if [dict exists ${instDict} "placement"] {
                                             lassign [AIT::AXI::add_reg_slice ${instrInnerPin} ${instSLR} ${memSLR} ${instRegslicePipelineStages} instr ${accName}_${instanceNum}] instrInnerPin regSliceConstrStr
                                             append accConstrStr ${regSliceConstrStr}
                                             append accConstrStr "add_cells_to_pblock \
                                                 \[get_pblocks slr${instSLR}_pblock\] \
                                                 \[get_cells */${accName}_${instanceNum}/instrumentation_adapter\]\n"
-                                        } elseif {[dict exists ${AIT::project::userConfig} "accs" ${accName} "instances" ${instanceNum} "regslice_pipeline_stages"]} {
+                                        } elseif [dict exists ${AIT::project::userConfig} "accs" ${accName} "instances" ${instanceNum} "regslice_pipeline_stages"] {
                                             lassign [AIT::AXI::add_reg_slice ${instrInnerPin} "" "" ${instRegslicePipelineStages} instr ${accName}_${instanceNum}] instrInnerPin regSliceConstrStr
                                         }
                                     }
@@ -387,7 +379,8 @@ dict with AIT::project::aitJsonDict {
                                         AIT::design::debug_intf ${instrAccPin}
                                         dict set intfDict "debug" true
                                     }
-                                    if {[dict exists ${AIT::project::userConfig} "accs" ${accName} "instances" ${instanceNum} "interfaces" "instr_buffer" "group"]} {
+
+                                    if [dict exists ${AIT::project::userConfig} "accs" ${accName} "instances" ${instanceNum} "interfaces" "instr_buffer" "group"] {
                                         set intfGroup [dict get ${AIT::project::userConfig} "accs" ${accName} "instances" ${instanceNum} "interfaces" "instr_buffer" "group"]
                                         set intfGroupPin [AIT::AXI::connect_to_intf_group ${accName}_${instanceNum}/instr_buffer ${intfGroup}]/M00_AXI
                                         dict set intfDict "group" ${intfGroup}
@@ -418,26 +411,24 @@ dict with AIT::project::aitJsonDict {
                                         set intfHierPin ${accHier}/${intfName}
 
                                         # Set interface basic information
-                                        dict update intfDict "src" src "width" width {
-                                            set src ${intfAccPin}
-                                            set width [get_property CONFIG.DATA_WIDTH ${intfAccPin}]
-                                        }
+                                        dict set intfDict "src" ${intfAccPin}
+                                        dict set intfDict "width" [get_property CONFIG.DATA_WIDTH ${intfAccPin}]
 
                                         # Check if data interface is disabled
-                                        if {[dict exists ${AIT::project::userConfig} "accs" ${accKey} "instances" ${instanceNum} "interfaces" ${intfName} "dst"]} {
+                                        if [dict exists ${AIT::project::userConfig} "accs" ${accKey} "instances" ${instanceNum} "interfaces" ${intfName} "dst"] {
                                             set intfUserDst [dict get ${AIT::project::userConfig} "accs" ${accKey} "instances" ${instanceNum} "interfaces" ${intfName} "dst"]
                                             dict set intfDict "dst" ${intfUserDst}
-                                            if {[string equal -nocase ${intfUserDst} "none"]} {
+                                            if [string equal -nocase ${intfUserDst} "none"] {
                                                 AIT::utils::info_msg "Interface ${intfName} disabled"
                                                 continue
                                             }
                                         }
 
                                         # Add register slice to AXI pin
-                                        if {[dict exists ${instDict} "placement"]} {
+                                        if [dict exists ${instDict} "placement"] {
                                             lassign [AIT::AXI::add_reg_slice ${intfInnerPin} ${instSLR} ${memSLR} ${instRegslicePipelineStages} ${intfName} ${accName}_${instanceNum}] intfInnerPin regSliceConstrStr
                                             append accConstrStr ${regSliceConstrStr}
-                                        } elseif {[dict exists ${AIT::project::userConfig} "accs" ${accName} "instances" ${instanceNum} "regslice_pipeline_stages"]} {
+                                        } elseif [dict exists ${AIT::project::userConfig} "accs" ${accName} "instances" ${instanceNum} "regslice_pipeline_stages"] {
                                             lassign [AIT::AXI::add_reg_slice ${intfInnerPin} "" "" ${instRegslicePipelineStages} ${intfName} ${accName}_${instanceNum}] intfInnerPin regSliceConstrStr
                                         }
 
@@ -451,7 +442,7 @@ dict with AIT::project::aitJsonDict {
                                             AIT::design::debug_intf ${intfAccPin}
                                             dict set intfDict "debug" true
                                         }
-                                        if {[dict exists ${AIT::project::userConfig} "accs" ${accName} "instances" ${instanceNum} "interfaces" ${intfName} "group"]} {
+                                        if [dict exists ${AIT::project::userConfig} "accs" ${accName} "instances" ${instanceNum} "interfaces" ${intfName} "group"] {
                                             set intfGroup [dict get ${AIT::project::userConfig} "accs" ${accName} "instances" ${instanceNum} "interfaces" ${intfName} "group"]
                                             set intfGroupPin [AIT::AXI::connect_to_intf_group ${accName}_${instanceNum}/${intfName} ${intfGroup}]/M00_AXI
                                             dict set intfDict "group" ${intfGroup}
@@ -464,7 +455,7 @@ dict with AIT::project::aitJsonDict {
                             }
 
                             # If the accelerator is constrained, create constraints file
-                            if {[info exists accConstrStr]} {
+                            if [info exists accConstrStr] {
                                 file mkdir ${projectRootDir}/constraints
                                 set accConstrFile [open ${projectRootDir}/constraints/${accName}_${instanceNum}.xdc "w"]
                                 puts ${accConstrFile} ${accConstrStr}
@@ -490,7 +481,7 @@ dict with AIT::project::aitJsonDict {
     }
 }
 
-if {[dict get ${AIT::project::aitConfig} "ompif"]} {
+if [dict get ${AIT::project::aitConfig} "ompif"] {
     foreach {accHash accNumInstances accName} {4294967299 1 ompif_message_sender 4294967300 1 ompif_message_receiver} {
         AIT::AXIS::add_accID soCmd ${accID} ${AIT::templates::OMPIF::hier}/[regsub -all {^ompif_} ${accName} ""]
         connect_bd_intf_net [get_bd_intf_pins ${AIT::templates::hwruntime::hier}/hwr_outStream/M${accID}_AXIS] [get_bd_intf_pins ${AIT::templates::OMPIF::hier}/inStream_[regsub -all {^ompif_message_} ${accName} ""]]
@@ -551,11 +542,11 @@ dict for {intfKey intfVal} ${enabledIntfsDict} {
     set intfDict [dict get ${AIT::project::aitJsonDict} {*}[dict get ${intfVal} "keyDict"]]
     dict with intfDict {
         dict update intfDict "dst" dst {
-            if {[dict get ${AIT::project::aitConfig} "memory_interleaving_stride"]} {
+            if [dict get ${AIT::project::aitConfig} "memory_interleaving_stride"] {
                 AIT::AXI::add_addrInterleaver ${intfKey} [regsub -all {(^(m_axi_)?(mcxx_)?|(_V)*$)} [get_property NAME ${intfKey}] ""]
             }
 
-            if {[dict exists ${intfDict} "dst"]} {
+            if [dict exists ${intfDict} "dst"] {
                 set dst [dict get [AIT::AXI::connect_to_mem_intf ${intfKey} ${dst}] "num"]
             } else {
                 set dst [dict get [AIT::AXI::connect_to_mem_intf ${intfKey}] "num"]
@@ -571,18 +562,12 @@ save_bd_design -quiet
 
 AIT::utils::info_msg "Data interfaces connected"
 
-# If enabled, add and connect hwcounter IP
-if {[dict get ${AIT::project::aitConfig} "hwcounter"]
-    || [dict get ${AIT::project::aitConfig} "hwinst"]} {
-
-    AIT::templates::hwcounter
-}
-
 # Add SLR constraints to static logic
 # Should be defined in board's procs.tcl
 if {[dict exists ${AIT::project::board} "arch" "slr"] && ![dict get ${AIT::project::aitConfig} "disable_static_constraints"]} {
+
     set staticConstrStr [AIT::board::static_logic_register_slices]
-    if {[string length ${staticConstrStr}]} {
+    if [string length ${staticConstrStr}] {
         file mkdir ${projectRootDir}/constraints
         set staticConstrFile [open ${projectRootDir}/constraints/[dict get ${AIT::project::board} "name"]_ompss.xdc "w"]
         puts ${staticConstrFile} ${staticConstrStr}
@@ -608,11 +593,11 @@ set xtasksConfigFile [open ${projectRootDir}/../[dict get ${AIT::project::aitCon
 puts ${xtasksConfigFile} ${xtasksConfigStr}
 close ${xtasksConfigFile}
 
-if {[dict get ${AIT::project::aitConfig} "task_creation"]} {
+if [dict get ${AIT::project::aitConfig} "task_creation"] {
     set_property -dict [list \
         CONFIG.SCHED_COUNT 0x[AIT::utils::long_int_to_hex 128 ${schedCount}] \
         CONFIG.SCHED_ACCID 0x[AIT::utils::long_int_to_hex 128 ${schedAccID}] \
-        CONFIG.SCHED_TTYPE 0x[AIT::utils::long_int_to_hex 512 ${schedTtype}] \
+        CONFIG.SCHED_TTYPE 0x[AIT::utils::long_int_to_hex 512 ${schedTtype}]
     ] ${AIT::templates::hwruntime::hwruntimeIP}
 }
 
@@ -627,7 +612,7 @@ close ${bitinfoCoeFile}
 set_property -dict [list \
     CONFIG.Write_Depth_A ${bitinfoLen} \
     CONFIG.Load_Init_File {true} \
-    CONFIG.Coe_File ${projectRootDir}/bitinfo.coe \
+    CONFIG.Coe_File ${projectRootDir}/bitinfo.coe
 ] [get_bd_cells bitinfo]
 
 # Update outdated IPs
@@ -635,8 +620,9 @@ update_ip_catalog -rebuild -scan_changes
 upgrade_ip -quiet [get_ips -filter UPGRADE_VERSIONS != {}]
 
 # If available, execute the user defined post-design tcl script
-if {[file exists ${projectRootDir}/user/tcl/scripts/userPostDesign.tcl]} {
-    if {[catch {source -notrace ${projectRootDir}/user/tcl/scripts/userPostDesign.tcl}]} {
+if [file exists ${projectRootDir}/user/tcl/scripts/userPostDesign.tcl] {
+    AIT::utils::info_msg "Loading user post-design script"
+    if [catch {source -notrace ${projectRootDir}/user/tcl/scripts/userPostDesign.tcl}] {
         AIT::utils::error_msg "Failed sourcing board post base design"
     }
 }
@@ -644,12 +630,16 @@ if {[file exists ${projectRootDir}/user/tcl/scripts/userPostDesign.tcl]} {
 # Regenerate layout and validate BD
 regenerate_bd_layout
 regenerate_bd_layout -routing
-if {[catch {validate_bd_design -force}]} {
+AIT::utils::info_msg "Validating design..."
+if [catch {validate_bd_design -force}] {
     save_bd_design -quiet
     AIT::utils::error_msg "Block Design could not be validated"
 }
+AIT::utils::info_msg "Design validated"
 
+AIT::utils::info_msg "Generating wrapper..."
 AIT::board::generate_wrapper
+AIT::utils::info_msg "Wrapper generated"
 
 update_compile_order -fileset sources_1
 

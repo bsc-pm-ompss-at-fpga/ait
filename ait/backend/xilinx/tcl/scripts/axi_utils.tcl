@@ -54,7 +54,7 @@ namespace eval AXI {
                     CONFIG.BANK_SIZE [dict get ${AIT::project::board} "memory" "bank_size"] \
                     CONFIG.NUM_BANKS ${numMemBanks} \
                     CONFIG.STRIDE "0x[format "%x" [dict get ${AIT::project::aitConfig} "memory_interleaving_stride"]]" \
-                    CONFIG.BASE_ADDR [dict get ${AIT::project::board} "memory" "base_addr"] \
+                    CONFIG.BASE_ADDR [dict get ${AIT::project::board} "memory" "base_addr"]
                 ] ${intlvIP}
                 connect_bd_net [get_bd_pins ${intfPin}_${addrBus}] [get_bd_pins ${intlvIP}/in_addr]
                 dict set intlvPinDict ${addrBus} [get_bd_pins ${intlvIP}/out_addr]
@@ -106,7 +106,7 @@ namespace eval AXI {
             CONFIG.REG_B {15} \
             CONFIG.REG_R {15} \
             CONFIG.REG_W {15} \
-            CONFIG.USE_AUTOPIPELINING {0} \
+            CONFIG.USE_AUTOPIPELINING {0}
         ] ${axiRegSliceIP}
 
         set intfClkPin [AIT::clocks::connect_clock [get_bd_pins ${axiRegSliceIP}/aclk] [AIT::clocks::get_associated_clk_pin ${intfPin}]]
@@ -115,7 +115,7 @@ namespace eval AXI {
         # Let Vivado handle the number of pipeline stages
         if {${numStagesMaster} eq "auto"} {
             set_property -dict [list \
-                CONFIG.USE_AUTOPIPELINING {1} \
+                CONFIG.USE_AUTOPIPELINING {1}
             ] ${axiRegSliceIP}
 
             # Unconstrain register slice to allow Vivado place it anywhere
@@ -134,13 +134,13 @@ namespace eval AXI {
                 CONFIG.PIPELINES_MASTER_AW ${numStagesMaster} \
                 CONFIG.PIPELINES_MASTER_B ${numStagesMaster} \
                 CONFIG.PIPELINES_MASTER_R ${numStagesMaster} \
-                CONFIG.PIPELINES_MASTER_W ${numStagesMaster} \
+                CONFIG.PIPELINES_MASTER_W ${numStagesMaster}
             ] ${axiRegSliceIP}
 
             if {${masterSLR} != ${slaveSLR}} {
                 set numSLRCrossings [expr {abs(${masterSLR} - ${slaveSLR})}]
                 set_property -dict [list \
-                    CONFIG.NUM_SLR_CROSSINGS ${numSLRCrossings} \
+                    CONFIG.NUM_SLR_CROSSINGS ${numSLRCrossings}
                 ] ${axiRegSliceIP}
 
                 # Middle SLR
@@ -150,7 +150,7 @@ namespace eval AXI {
                         CONFIG.PIPELINES_MIDDLE_AW ${numStagesMiddle} \
                         CONFIG.PIPELINES_MIDDLE_B ${numStagesMiddle} \
                         CONFIG.PIPELINES_MIDDLE_R ${numStagesMiddle} \
-                        CONFIG.PIPELINES_MIDDLE_W ${numStagesMiddle} \
+                        CONFIG.PIPELINES_MIDDLE_W ${numStagesMiddle}
                     ] ${axiRegSliceIP}
                 }
 
@@ -161,7 +161,7 @@ namespace eval AXI {
                         CONFIG.PIPELINES_SLAVE_AW ${numStagesSlave} \
                         CONFIG.PIPELINES_SLAVE_B ${numStagesSlave} \
                         CONFIG.PIPELINES_SLAVE_R ${numStagesSlave} \
-                        CONFIG.PIPELINES_SLAVE_W ${numStagesSlave} \
+                        CONFIG.PIPELINES_SLAVE_W ${numStagesSlave}
                     ] ${axiRegSliceIP}
                 }
             }
@@ -246,20 +246,24 @@ namespace eval AXI {
         set dstIntfIP [get_bd_cells -hierarchical ${dstIntfIPName}]
         set dstIntfPinName ${dstIntfMode}[format %02u ${dstIntfOccupation}]
 
-        set_property CONFIG.NUM_${dstIntfMode}I [expr {${dstIntfOccupation} + 1}] ${dstIntfIP}
-        set_property -quiet CONFIG.STRATEGY [expr {([dict get ${AIT::project::aitConfig} "interconnect_opt"] eq "area") ? {1} : {2}}] ${dstIntfIP}
+        set_property -dict [list \
+            CONFIG.NUM_${dstIntfMode}I [expr {${dstIntfOccupation} + 1}]
+        ] ${dstIntfIP}
+        set_property -quiet -dict [list \
+            CONFIG.STRATEGY [expr {([dict get ${AIT::project::aitConfig} "interconnect_opt"] eq "area") ? {1} : {2}}]
+        ] ${dstIntfIP}
 
         if {(${dstIntfMode} eq "S") && [dict get ${AIT::project::aitConfig} "interconnect_priorities"]} {
             # Enable advanced settings, set priority (0-15) and set proper data path
             set_property -dict [list \
                 CONFIG.ENABLE_ADVANCED_OPTIONS {1} \
-                CONFIG.${dstIntfPinName}_ARB_PRIORITY [expr {15 - (${dstIntfOccupation}%16)}] \
+                CONFIG.${dstIntfPinName}_ARB_PRIORITY [expr {15 - (${dstIntfOccupation}%16)}]
             ] ${dstIntfIP}
         }
 
         if {[dict get ${AIT::project::aitConfig} "interconnect_regslices"]} {
             set_property -dict [list \
-                CONFIG.${dstIntfPinName}_HAS_REGSLICE {3} \
+                CONFIG.${dstIntfPinName}_HAS_REGSLICE {3}
             ] ${dstIntfIP}
         }
 
@@ -382,20 +386,20 @@ namespace eval AXI {
                 AIT::board::enable_mem_intf ${intfDict}
             }
 
-            if {[llength [get_bd_cells -quiet ${IPName}]]} {
+            if [llength [get_bd_cells -quiet ${IPName}]] {
                 return
             }
 
             set intfIP [create_bd_cell -vlnv xilinx.com:ip:axi_interconnect ${IPName}]
             set_property -dict [list \
                 CONFIG.NUM_MI {1} \
-                CONFIG.NUM_SI {1} \
+                CONFIG.NUM_SI {1}
             ] ${intfIP}
 
-            if {[dict get ${AIT::project::aitConfig} "interconnect_regslices"]} {
+            if [dict get ${AIT::project::aitConfig} "interconnect_regslices"] {
                 set_property -dict [list \
                     CONFIG.M00_HAS_REGSLICE {3} \
-                    CONFIG.S00_HAS_REGSLICE {3} \
+                    CONFIG.S00_HAS_REGSLICE {3}
                 ] ${intfIP}
             }
 
@@ -417,12 +421,12 @@ namespace eval AXI {
 
                     if {${intfPinMode} eq "Master"} {
                         set_property -dict [list \
-                            CONFIG.NUM_SI [expr {${intfPinNum} + 1}] \
+                            CONFIG.NUM_SI [expr {${intfPinNum} + 1}]
                         ] ${intfIP}
 
-                        if {[dict get ${AIT::project::aitConfig} "interconnect_regslices"]} {
+                        if [dict get ${AIT::project::aitConfig} "interconnect_regslices"] {
                             set_property -dict [list \
-                                CONFIG.S${intfPinNum}_HAS_REGSLICE {3} \
+                                CONFIG.S${intfPinNum}_HAS_REGSLICE {3}
                             ] ${intfIP}
                         }
 
@@ -432,12 +436,12 @@ namespace eval AXI {
                         AIT::resets::connect_reset [AIT::resets::get_associated_rst_pin [AIT::clocks::get_associated_clk_pin ${intfSlavePin}]] [AIT::resets::get_synchronous_rst_pin [AIT::clocks::get_associated_clk_pin ${intfPin}]]
                     } elseif {${intfPinMode} eq "Slave"} {
                         set_property -dict [list \
-                            CONFIG.NUM_MI [expr {${intfPinNum} + 1}] \
+                            CONFIG.NUM_MI [expr {${intfPinNum} + 1}]
                         ] ${intfIP}
 
-                        if {[dict get ${AIT::project::aitConfig} "interconnect_regslices"]} {
+                        if [dict get ${AIT::project::aitConfig} "interconnect_regslices"] {
                             set_property -dict [list \
-                                CONFIG.M${intfPinNum}_HAS_REGSLICE {3} \
+                                CONFIG.M${intfPinNum}_HAS_REGSLICE {3}
                             ] ${intfIP}
                         }
 
@@ -474,6 +478,6 @@ namespace eval AXI {
             dict incr intfDict "occupation"
         }
         set AIT::design::memIntfsList [lsort -command AIT::utils::comp_dict -increasing ${AIT::design::memIntfsList}]
-        #save_bd_design -quiet
+        save_bd_design -quiet
     }
 }

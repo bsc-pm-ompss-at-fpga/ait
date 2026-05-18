@@ -31,11 +31,12 @@ namespace eval design {
             AIT::utils::error_msg "Interface to debug not found (${intfPinName})"
         }
 
-        set intfPinType [get_property VLNV ${intfPin}]
         set intfPinClk [AIT::clocks::get_associated_clk_pin ${intfPin}]
         set src_clk [get_property NAME [get_driver_pin ${intfPinClk}]]
 
-        set_property HDL_ATTRIBUTE.DEBUG {true} [get_bd_intf_nets -of_objects ${intfPin}]
+        set_property -dict [list \
+            HDL_ATTRIBUTE.DEBUG {true}
+        ] [get_bd_intf_nets -of_objects ${intfPin}]
 
         # Look for an available System ILA
         set found_ila ""
@@ -48,32 +49,36 @@ namespace eval design {
 
         # If found available System ILA, increment used slots
         # If not, instantiate and connect a new one
-        if {[llength ${found_ila}]} {
+        if [llength ${found_ila}] {
             set slot_num [get_property CONFIG.C_NUM_MONITOR_SLOTS ${ila_ip}]
             set_property -dict [list \
                 CONFIG.C_NUM_MONITOR_SLOTS [expr {${slot_num} + 1}] \
-                CONFIG.C_SLOT_${slot_num}_INTF_TYPE [get_property VLNV ${intfPin}] \
-             ] ${ila_ip}
+                CONFIG.C_SLOT_${slot_num}_INTF_TYPE [get_property VLNV ${intfPin}]
+            ] ${ila_ip}
         } else {
             set num_ila [llength [get_bd_cells -quiet -filter {VLNV =~ xilinx.com:ip:system_ila:*} *system_ila_${src_clk}*]]
             set ila_ip [create_bd_cell -vlnv xilinx.com:ip:system_ila system_ila_${src_clk}_${num_ila}]
             set slot_num 0
             set_property -dict [list \
                 CONFIG.C_NUM_MONITOR_SLOTS [expr {${slot_num} + 1}] \
-                CONFIG.C_SLOT_${slot_num}_INTF_TYPE [get_property VLNV ${intfPin}] \
-             ] ${ila_ip}
+                CONFIG.C_SLOT_${slot_num}_INTF_TYPE [get_property VLNV ${intfPin}]
+            ] ${ila_ip}
             AIT::clocks::connect_clock [get_bd_pins ${ila_ip}/clk]
             AIT::resets::connect_reset [get_bd_pins ${ila_ip}/resetn] [AIT::resets::get_synchronous_rst_pin [get_bd_pins ${ila_ip}/clk]]
         }
 
         # Connect intfPin to its corresponding port, depending on the type
         # NOTE: We can expand this to support other types (e.g. BRAM, GPIO, etc.)
-        if {[string match "xilinx.com:interface:aximm_rtl:*" ${intfPinType}]} {
-            connect_bd_intf_net ${intfPin} [get_bd_intf_pins ${ila_ip}/SLOT_${slot_num}_AXI]
-        } elseif {[string match "xilinx.com:interface:axis_rtl:*" ${intfPinType}]} {
-            connect_bd_intf_net ${intfPin} [get_bd_intf_pins ${ila_ip}/SLOT_${slot_num}_AXIS]
-        } else {
-            AIT::utils::error_msg "Debug interface type (${intfPinType}) not supported for interface ${intfPin}"
+        switch -glob -- [get_property VLNV ${intfPin}] {
+            "xilinx.com:interface:aximm_rtl:*" {
+                connect_bd_intf_net ${intfPin} [get_bd_intf_pins ${ila_ip}/SLOT_${slot_num}_AXI]
+            }
+            "xilinx.com:interface:axis_rtl:*" {
+                connect_bd_intf_net ${intfPin} [get_bd_intf_pins ${ila_ip}/SLOT_${slot_num}_AXIS]
+            }
+            default {
+                AIT::utils::error_msg "Debug interface type not supported for interface ${intfPin}"
+            }
         }
     }
 
@@ -211,15 +216,18 @@ namespace eval design {
         append bitinfoCoeStr [format %08x ${AIT::project::userID}]\n
 
         # Set the board memory for discrete devices
-        if {[dict get ${AIT::project::board} "arch" "device"] eq "alveo"} {
-            if {[dict exists ${AIT::project::board} "memory" "size"]} {
-                set size [dict get ${AIT::project::board} "memory" "size"]
-            } else {
-                set size [expr {[dict get ${AIT::project::board} "memory" "bank_size"]*[dict get ${AIT::project::board} "memory" "num_banks"]}]
+        switch -- [dict get ${AIT::project::board} "arch" "device"] {
+            "alveo" {
+                if {[dict exists ${AIT::project::board} "memory" "size"]} {
+                    set size [dict get ${AIT::project::board} "memory" "size"]
+                } else {
+                    set size [expr {[dict get ${AIT::project::board} "memory" "bank_size"]*[dict get ${AIT::project::board} "memory" "num_banks"]}]
+                }
+                set size [expr {${size}/2**30}]
             }
-            set size [expr {${size}/2**30}]
-        } else {
-            set size 0
+            default {
+                set size 0
+            }
         }
         append bitinfoCoeStr [format %08x ${size}]\n
 
@@ -363,14 +371,14 @@ namespace eval design {
             CONFIG.Write_Width_B {32} \
             CONFIG.Read_Width_A {32} \
             CONFIG.Read_Width_B {32} \
-            CONFIG.use_bram_block {Stand_Alone} \
+            CONFIG.use_bram_block {Stand_Alone}
         ] ${bitinfo}
 
         # Create instance: bitInfo_BRAM_Ctrl, and set properties
         set bitinfoBRAMCtrl [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl bitInfo_BRAM_Ctrl]
         set_property -dict [list \
             CONFIG.PROTOCOL {AXI4LITE} \
-            CONFIG.SINGLE_PORT_BRAM {1} \
+            CONFIG.SINGLE_PORT_BRAM {1}
         ] ${bitinfoBRAMCtrl}
 
         # Create instance: managed_reset, and set properties
@@ -378,14 +386,14 @@ namespace eval design {
         set_property -dict [list \
             CONFIG.C_ALL_OUTPUTS {1} \
             CONFIG.C_DOUT_DEFAULT {0x00000001} \
-            CONFIG.C_GPIO_WIDTH {1} \
+            CONFIG.C_GPIO_WIDTH {1}
         ] ${managedReset}
 
         # Create instance: reset_AND, and set properties
         set resetAND [create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic system_reset/managed_reset_AND]
         set_property -dict [list \
             CONFIG.C_SIZE {1} \
-            CONFIG.C_OPERATION {and} \
+            CONFIG.C_OPERATION {and}
         ] ${resetAND}
 
         create_bd_pin -dir I -type rst system_reset/managed_reset
@@ -404,13 +412,16 @@ namespace eval design {
         connect_bd_net [get_bd_pins system_reset/managed_reset_AND/Op2] [get_bd_pins system_reset/proc_sys_reset_clk_app/peripheral_aresetn]
         connect_bd_net [get_bd_pins system_reset/managed_reset_AND/res] [get_bd_pins system_reset/proc_sys_reset_clk_app_managed/ext_reset_in]
 
-        if {([dict get ${AIT::project::board} "arch" "device"] eq "zynq")
-            || ([dict get ${AIT::project::board} "arch" "device"] eq "zynqmp")} {
-            AIT::AXI::connect_to_mem_intf [get_bd_intf_pins bitInfo_BRAM_Ctrl/S_AXI] 1
-            AIT::AXI::connect_to_mem_intf [get_bd_intf_pins managed_reset/S_AXI] 1
-        } else {
-            AIT::AXI::connect_to_mem_intf [get_bd_intf_pins bitInfo_BRAM_Ctrl/S_AXI]
-            AIT::AXI::connect_to_mem_intf [get_bd_intf_pins managed_reset/S_AXI]
+        switch -- [dict get ${AIT::project::board} "arch" "device"] {
+            "zynq" -
+            "zynqmp" {
+                AIT::AXI::connect_to_mem_intf [get_bd_intf_pins bitInfo_BRAM_Ctrl/S_AXI] 1
+                AIT::AXI::connect_to_mem_intf [get_bd_intf_pins managed_reset/S_AXI] 1
+            }
+            default {
+                AIT::AXI::connect_to_mem_intf [get_bd_intf_pins bitInfo_BRAM_Ctrl/S_AXI]
+                AIT::AXI::connect_to_mem_intf [get_bd_intf_pins managed_reset/S_AXI]
+            }
         }
         connect_bd_intf_net [get_bd_intf_pins bitInfo_BRAM_Ctrl/BRAM_PORTA] [get_bd_intf_pins bitinfo/BRAM_PORTA]
 
@@ -419,11 +430,23 @@ namespace eval design {
 
         AIT::templates::Picos_OmpSs_Manager
 
-        if {[dict get ${AIT::project::aitConfig} "power_monitor"]} {
+        # If enabled, instantiate OMPIF accelerators
+        if [dict get ${AIT::project::aitConfig} "ompif"] {
+            AIT::templates::OMPIF
+        }
+
+        # If enabled, add and connect hwcounter IP
+        if {[dict get ${AIT::project::aitConfig} "hwcounter"]
+            || [dict get ${AIT::project::aitConfig} "hwinst"]} {
+
+            AIT::templates::hwcounter
+        }
+
+        if [dict get ${AIT::project::aitConfig} "power_monitor"] {
             AIT::board::add_power_monitor
         }
 
-        if {[dict get ${AIT::project::aitConfig} "thermal_monitor"]} {
+        if [dict get ${AIT::project::aitConfig} "thermal_monitor"] {
             AIT::board::add_thermal_monitor
         }
 

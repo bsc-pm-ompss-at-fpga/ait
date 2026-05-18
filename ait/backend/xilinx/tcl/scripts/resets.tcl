@@ -27,10 +27,13 @@ namespace eval resets {
         set dstRst [get_bd_pins ${dstRst}]
         set srcRst [get_bd_pins ${srcRst}]
         if {![llength [get_bd_nets -quiet -of_objects ${srcRst}]]} {
-            if {[get_property CLASS ${dstRst}] eq "bd_net"} {
-                connect_bd_net ${srcRst} -net ${dstRst}
-            } elseif {[get_property CLASS ${dstRst}] eq "bd_pin"} {
-                connect_bd_net ${srcRst} ${dstRst}
+            switch -- [get_property CLASS ${dstRst}] {
+                "bd_net" {
+                    connect_bd_net ${srcRst} -net ${dstRst}
+                }
+                "bd_pin" {
+                    connect_bd_net ${srcRst} ${dstRst}
+                }
             }
         }
         return ${dstRst}
@@ -87,7 +90,7 @@ namespace eval resets {
         set clkIP [get_bd_cells -of_objects ${clkPin}]
         foreach rstPin [split [get_property CONFIG.ASSOCIATED_RESET ${clkPin}] {:}] {
             set rstPin [get_bd_pins -quiet ${clkIP}/${rstPin}]
-            if {[llength ${rstPin}]} {
+            if [llength ${rstPin}] {
                 return ${rstPin}
             }
         }
@@ -98,7 +101,7 @@ namespace eval resets {
         set clkPin [get_bd_pins ${clkPinName}]
         foreach rstPin [get_associated_rst_pin ${clkPin}] {
             set srcRstPin [AIT::design::get_driver_pin ${rstPin}]
-            if {[llength ${srcRstPin}]} {
+            if [llength ${srcRstPin}] {
                 return ${srcRstPin}
             }
         }

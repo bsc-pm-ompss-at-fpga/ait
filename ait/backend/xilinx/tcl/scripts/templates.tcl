@@ -37,12 +37,14 @@ namespace eval templates {
     proc hwcounter {} {
         variable hwcounterIP [create_bd_cell -type module -reference bsc_axiu_hwcounter HW_Counter]
 
-        if {([dict get ${AIT::project::board} "arch" "device"] eq "zynq")
-            || ([dict get ${AIT::project::board} "arch" "device"] eq "zynqmp")} {
-
-            AIT::AXI::connect_to_mem_intf [get_bd_intf_pins ${hwcounterIP}/S_AXI] 1
-        } else {
-            AIT::AXI::connect_to_mem_intf [get_bd_intf_pins ${hwcounterIP}/S_AXI]
+        switch -- [dict get ${AIT::project::board} "arch" "device"] {
+            "zynq" -
+            "zynqmp" {
+                AIT::AXI::connect_to_mem_intf [get_bd_intf_pins ${hwcounterIP}/S_AXI] 1
+            }
+            default {
+                AIT::AXI::connect_to_mem_intf [get_bd_intf_pins ${hwcounterIP}/S_AXI]
+            }
         }
 
         AIT::design::add_bd_addr_segment hwcounter ${hwcounterIP}/S_AXI 4096
@@ -68,27 +70,29 @@ namespace eval templates {
 
         connect_bd_net [get_bd_pins ${OMPIF::hier}/cluster_rank_size] [get_bd_pins ${ethSubsys::jtagGpioIP}/gpio2_io_o]
 
-        if {[dict get ${AIT::project::board} "name"] eq "alveo_u55c"
-            || [dict get ${AIT::project::board} "name"] eq "alveo_u280_hbm"} {
+        switch -- [dict get ${AIT::project::board} "name"] {
+            "alveo_u55c" -
+            "alveo_u280_hbm" {
+                set 200SLR0ClkPin [AIT::clocks::create_clock 200 "freq_200_slr0" "clk_gen_slr0"]
+                set 400SLR0ClkPin [AIT::clocks::create_clock 400 "freq_400_slr0" "clk_gen_slr0"]
 
-            set 200SLR0ClkPin [AIT::clocks::create_clock 200 "freq_200_slr0" "clk_gen_slr0"]
-            set 400SLR0ClkPin [AIT::clocks::create_clock 400 "freq_400_slr0" "clk_gen_slr0"]
+                custom_interconnect "axi_inter_msg_send" 512 ${200SLR0ClkPin} 256 ${400SLR0ClkPin} "read_only"
+                custom_interconnect "axi_inter_msg_recv_bufwr" 512 ${200SLR0ClkPin} 256 ${400SLR0ClkPin} "write_only"
+                custom_interconnect "axi_inter_msg_recv_memcpy" 512 ${200SLR0ClkPin} 256 ${400SLR0ClkPin}
 
-            custom_interconnect "axi_inter_msg_send" 512 ${200SLR0ClkPin} 256 ${400SLR0ClkPin} "read_only"
-            custom_interconnect "axi_inter_msg_recv_bufwr" 512 ${200SLR0ClkPin} 256 ${400SLR0ClkPin} "write_only"
-            custom_interconnect "axi_inter_msg_recv_memcpy" 512 ${200SLR0ClkPin} 256 ${400SLR0ClkPin}
+                connect_bd_intf_net [get_bd_intf_pins ${OMPIF::hier}/moMEM] [get_bd_intf_pins ${axi_inter_msg_send::hier}/S_AXI]
+                connect_bd_intf_net [get_bd_intf_pins ${OMPIF::hier}/bufwr] [get_bd_intf_pins ${axi_inter_msg_recv_bufwr::hier}/S_AXI]
+                connect_bd_intf_net [get_bd_intf_pins ${OMPIF::hier}/memcpy] [get_bd_intf_pins ${axi_inter_msg_recv_memcpy::hier}/S_AXI]
 
-            connect_bd_intf_net [get_bd_intf_pins ${OMPIF::hier}/moMEM] [get_bd_intf_pins ${axi_inter_msg_send::hier}/S_AXI]
-            connect_bd_intf_net [get_bd_intf_pins ${OMPIF::hier}/bufwr] [get_bd_intf_pins ${axi_inter_msg_recv_bufwr::hier}/S_AXI]
-            connect_bd_intf_net [get_bd_intf_pins ${OMPIF::hier}/memcpy] [get_bd_intf_pins ${axi_inter_msg_recv_memcpy::hier}/S_AXI]
-
-            AIT::AXI::connect_to_mem_intf ${axi_inter_msg_send::masterIntfPin} "" ${400SLR0ClkPin}
-            AIT::AXI::connect_to_mem_intf ${axi_inter_msg_recv_memcpy::masterIntfPin} "" ${400SLR0ClkPin}
-            AIT::AXI::connect_to_mem_intf ${axi_inter_msg_recv_bufwr::masterIntfPin} "" ${400SLR0ClkPin}
-        } else {
-            AIT::AXI::connect_to_mem_intf [get_bd_intf_pins ${OMPIF::hier}/bufwr] "" ${ompifClkSrcPin}
-            AIT::AXI::connect_to_mem_intf [get_bd_intf_pins ${OMPIF::hier}/memcpy] "" ${ompifClkSrcPin}
-            AIT::AXI::connect_to_mem_intf [get_bd_intf_pins ${OMPIF::hier}/moMEM] "" ${ompifClkSrcPin}
+                AIT::AXI::connect_to_mem_intf ${axi_inter_msg_send::masterIntfPin} "" ${400SLR0ClkPin}
+                AIT::AXI::connect_to_mem_intf ${axi_inter_msg_recv_memcpy::masterIntfPin} "" ${400SLR0ClkPin}
+                AIT::AXI::connect_to_mem_intf ${axi_inter_msg_recv_bufwr::masterIntfPin} "" ${400SLR0ClkPin}
+            }
+            default {
+                AIT::AXI::connect_to_mem_intf [get_bd_intf_pins ${OMPIF::hier}/bufwr] "" ${ompifClkSrcPin}
+                AIT::AXI::connect_to_mem_intf [get_bd_intf_pins ${OMPIF::hier}/memcpy] "" ${ompifClkSrcPin}
+                AIT::AXI::connect_to_mem_intf [get_bd_intf_pins ${OMPIF::hier}/moMEM] "" ${ompifClkSrcPin}
+            }
         }
 
         AIT::AXI::connect_to_mem_intf [get_bd_intf_pins ${OMPIF::hier}/cntrl_sender] "" ${ompifClkSrcPin} ${ompifRstSrcPin}
@@ -119,12 +123,14 @@ namespace eval templates {
         AIT::resets::connect_reset [get_bd_pins ${hwruntime::hier}/rstn]
         AIT::resets::connect_reset [get_bd_pins ${hwruntime::hier}/managed_rstn] [get_bd_pins system_reset/clk_app_managed_rstn]
 
-        if {([dict get ${AIT::project::board} "arch" "device"] eq "zynq")
-            || ([dict get ${AIT::project::board} "arch" "device"] eq "zynqmp")} {
-
-            AIT::AXI::connect_to_mem_intf [get_bd_intf_pins ${hwruntime::hier}/S_AXI_GP] 1
-        } else {
-            AIT::AXI::connect_to_mem_intf [get_bd_intf_pins ${hwruntime::hier}/S_AXI_GP]
+        switch -- [dict get ${AIT::project::board} "arch" "device"] {
+            "zynq" -
+            "zynqmp" {
+                AIT::AXI::connect_to_mem_intf [get_bd_intf_pins ${hwruntime::hier}/S_AXI_GP] 1
+            }
+            default {
+                AIT::AXI::connect_to_mem_intf [get_bd_intf_pins ${hwruntime::hier}/S_AXI_GP]
+            }
         }
 
         AIT::design::add_bd_addr_segment "cmdInQueueHwruntime" ${AIT::templates::hwruntime::cmdInQueue_BRAM_Ctrl}/S_AXI [expr {[dict get ${AIT::project::aitConfig} "cmdin_subqueue_len"]*[dict get ${AIT::project::aitConfig} "num_instances"]*8}]
@@ -134,7 +140,7 @@ namespace eval templates {
             AIT::design::add_bd_addr_segment "spawnOutQueueHwruntime" ${AIT::templates::hwruntime::spawnOutQueue_BRAM_Ctrl}/S_AXI [expr {[dict get ${AIT::project::aitConfig} "spawnout_queue_len"]*8}]
         }
 
-        if {[dict get ${AIT::project::aitConfig} "enable_pom_axilite"]} {
+        if [dict get ${AIT::project::aitConfig} "enable_pom_axilite"] {
             AIT::design::add_bd_addr_segment "pomAxilite" ${AIT::templates::hwruntime::hwruntimeIP}/axilite [expr {16*1024}]
         }
 

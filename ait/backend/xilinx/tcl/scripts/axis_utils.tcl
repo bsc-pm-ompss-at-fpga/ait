@@ -37,37 +37,46 @@ namespace eval AXIS {
         # Add accID as AXI-Stream TID signal
         set_property -dict [list \
             CONFIG.ID_WIDTH ${accIDWidth} \
-            CONFIG.ID ${accID} \
+            CONFIG.ID ${accID}
         ] ${axisAccIDIP}
 
         # Check if target interface pin is an IP pin or a hierarchy pin and connect it accordingly
-        if {[get_property TYPE ${intfPin}] eq "ip"} {
-            # If the pin is already connected, get the other interface pin to restore the connection afterwards and delete the net
-            set otherIntfPin [get_bd_intf_pins -quiet -of_objects [get_bd_intf_nets -quiet -of_objects ${intfPin}] -filter "PATH != ${intfPin}"]
-            delete_bd_objs -quiet [get_bd_intf_nets -quiet -of_objects ${intfPin}]
-            # If the target pin is an IP pin we must treat it as its mode
-            if {[get_property MODE ${intfPin}] eq "Master"} {
-                set newIntfPin [get_bd_intf_pins ${axisAccIDIP}/M_AXIS]
-                connect_bd_intf_net ${intfPin} [get_bd_intf_pins ${axisAccIDIP}/S_AXIS]
-                connect_bd_intf_net -quiet ${newIntfPin} ${otherIntfPin}
-            } elseif {[get_property MODE ${intfPin}] eq "Slave"} {
-                set newIntfPin [get_bd_intf_pins ${axisAccIDIP}/S_AXIS]
-                connect_bd_intf_net [get_bd_intf_pins ${axisAccIDIP}/M_AXIS] ${intfPin}
-                connect_bd_intf_net -quiet ${otherIntfPin} ${newIntfPin}
+        switch -- [get_property TYPE ${intfPin}] {
+            "ip" {
+                # If the pin is already connected, get the other interface pin to restore the connection afterwards and delete the net
+                set otherIntfPin [get_bd_intf_pins -quiet -of_objects [get_bd_intf_nets -quiet -of_objects ${intfPin}] -filter "PATH != ${intfPin}"]
+                delete_bd_objs -quiet [get_bd_intf_nets -quiet -of_objects ${intfPin}]
+                # If the target pin is an IP pin we must treat it as its mode
+                switch -- [get_property MODE ${intfPin}] {
+                    "Master" {
+                        set newIntfPin [get_bd_intf_pins ${axisAccIDIP}/M_AXIS]
+                        connect_bd_intf_net ${intfPin} [get_bd_intf_pins ${axisAccIDIP}/S_AXIS]
+                        connect_bd_intf_net -quiet ${newIntfPin} ${otherIntfPin}
+                    }
+                    "Slave" {
+                        set newIntfPin [get_bd_intf_pins ${axisAccIDIP}/S_AXIS]
+                        connect_bd_intf_net [get_bd_intf_pins ${axisAccIDIP}/M_AXIS] ${intfPin}
+                        connect_bd_intf_net -quiet ${otherIntfPin} ${newIntfPin}
+                    }
+                }
             }
-        } elseif {[get_property TYPE ${intfPin}] eq "hier"} {
-            # If the pin is already connected, get the other interface pin to restore the connection afterwards and delete the net
-            set otherIntfPin [get_bd_intf_pins -quiet -of_objects [get_bd_intf_nets -quiet -boundary_type lower -of_objects ${intfPin}] -filter "PATH != ${intfPin}"]
-            delete_bd_objs -quiet [get_bd_intf_nets -quiet -boundary_type lower -of_objects ${intfPin}]
-            # If the target pin is a hierarchy pin we must treat it as if it were the opposite of its mode
-            if {[get_property MODE ${intfPin}] eq "Master"} {
-                set newIntfPin [get_bd_intf_pins ${axisAccIDIP}/M_AXIS]
-                connect_bd_intf_net ${newIntfPin} ${intfPin}
-                connect_bd_intf_net -quiet ${otherIntfPin} [get_bd_intf_pins ${axisAccIDIP}/S_AXIS]
-            } elseif {[get_property MODE ${intfPin}] eq "Slave"} {
-                set newIntfPin [get_bd_intf_pins ${axisAccIDIP}/S_AXIS]
-                connect_bd_intf_net ${intfPin} ${newIntfPin}
-                connect_bd_intf_net -quiet [get_bd_intf_pins ${axisAccIDIP}/M_AXIS] ${otherIntfPin}
+            "hier" {
+                # If the pin is already connected, get the other interface pin to restore the connection afterwards and delete the net
+                set otherIntfPin [get_bd_intf_pins -quiet -of_objects [get_bd_intf_nets -quiet -boundary_type lower -of_objects ${intfPin}] -filter "PATH != ${intfPin}"]
+                delete_bd_objs -quiet [get_bd_intf_nets -quiet -boundary_type lower -of_objects ${intfPin}]
+                # If the target pin is a hierarchy pin we must treat it as if it were the opposite of its mode
+                switch -- [get_property MODE ${intfPin}] {
+                    "Master" {
+                        set newIntfPin [get_bd_intf_pins ${axisAccIDIP}/M_AXIS]
+                        connect_bd_intf_net ${newIntfPin} ${intfPin}
+                        connect_bd_intf_net -quiet ${otherIntfPin} [get_bd_intf_pins ${axisAccIDIP}/S_AXIS]
+                    }
+                    "Slave" {
+                        set newIntfPin [get_bd_intf_pins ${axisAccIDIP}/S_AXIS]
+                        connect_bd_intf_net ${intfPin} ${newIntfPin}
+                        connect_bd_intf_net -quiet [get_bd_intf_pins ${axisAccIDIP}/M_AXIS] ${otherIntfPin}
+                    }
+                }
             }
         }
 
@@ -103,7 +112,7 @@ namespace eval AXIS {
             CONFIG.MAX_ARGS_PER_TASK [dict get ${AIT::project::aitConfig} "max_args_per_task"] \
             CONFIG.MAX_DEPS_PER_TASK [dict get ${AIT::project::aitConfig} "max_deps_per_task"] \
             CONFIG.MAX_COPS_PER_TASK [dict get ${AIT::project::aitConfig} "max_copies_per_task"] \
-            CONFIG.MAX_OWNS_PER_TASK [dict get ${AIT::project::aitConfig} "max_deps_per_task"] \
+            CONFIG.MAX_OWNS_PER_TASK [dict get ${AIT::project::aitConfig} "max_deps_per_task"]
         ] ${newtaskSpawnerIP}
 
         if {${imp}} {
@@ -141,7 +150,7 @@ namespace eval AXIS {
         # Let Vivado handle the number of pipeline stages
         if {${numStagesMaster} eq "auto"} {
             set_property -dict [list \
-                CONFIG.REG_CONFIG {16} \
+                CONFIG.REG_CONFIG {16}
             ] ${axisRegSliceIP}
 
             # Unconstrain register slice to allow Vivado place it anywhere
@@ -158,26 +167,26 @@ namespace eval AXIS {
             set_property -dict [list \
                 CONFIG.NUM_SLR_CROSSINGS {0} \
                 CONFIG.PIPELINES_MASTER ${numStagesMaster} \
-                CONFIG.REG_CONFIG {15} \
+                CONFIG.REG_CONFIG {15}
             ] ${axisRegSliceIP}
 
             if {${masterSLR} != ${slaveSLR}} {
                 set numSLRCrossings [expr {abs(${masterSLR} - ${slaveSLR})}]
                 set_property -dict [list \
-                    CONFIG.NUM_SLR_CROSSINGS ${numSLRCrossings} \
+                    CONFIG.NUM_SLR_CROSSINGS ${numSLRCrossings}
                 ] ${axisRegSliceIP}
 
                 # Middle SLR
                 if {${numSLRCrossings} > 1} {
                     set_property -dict [list \
-                        CONFIG.PIPELINES_MIDDLE ${numStagesMiddle} \
+                        CONFIG.PIPELINES_MIDDLE ${numStagesMiddle}
                     ] ${axisRegSliceIP}
                 }
 
                 # Slave SLR
                 if {${numSLRCrossings} > 0} {
                     set_property -dict [list \
-                        CONFIG.PIPELINES_SLAVE ${numStagesSlave} \
+                        CONFIG.PIPELINES_SLAVE ${numStagesSlave}
                     ] ${axisRegSliceIP}
                 }
             }
@@ -198,33 +207,42 @@ namespace eval AXIS {
         }
 
         # Check if target interface pin is an IP pin or a hierarchy pin and connect it accordingly
-        if {[get_property TYPE ${intfPin}] eq "ip"} {
-            # If the pin is already connected, get the other interface pin to restore the connection afterwards and delete the net
-            set otherIntfPin [get_bd_intf_pins -quiet -of_objects [get_bd_intf_nets -quiet -of_objects ${intfPin}] -filter "PATH != ${intfPin}"]
-            delete_bd_objs -quiet [get_bd_intf_nets -quiet -of_objects ${intfPin}]
-            # If the target pin is an IP pin we must treat it as its mode
-            if {[get_property MODE ${intfPin}] eq "Master"} {
-                set newIntfPin [get_bd_intf_pins ${axisRegSliceIP}/M_AXIS]
-                connect_bd_intf_net ${intfPin} [get_bd_intf_pins ${axisRegSliceIP}/S_AXIS]
-                connect_bd_intf_net -quiet ${newIntfPin} ${otherIntfPin}
-            } elseif {[get_property MODE ${intfPin}] eq "Slave"} {
-                set newIntfPin [get_bd_intf_pins ${axisRegSliceIP}/S_AXIS]
-                connect_bd_intf_net [get_bd_intf_pins ${axisRegSliceIP}/M_AXIS] ${intfPin}
-                connect_bd_intf_net -quiet ${otherIntfPin} ${newIntfPin}
+        switch -- [get_property TYPE ${intfPin}] {
+            "ip" {
+                # If the pin is already connected, get the other interface pin to restore the connection afterwards and delete the net
+                set otherIntfPin [get_bd_intf_pins -quiet -of_objects [get_bd_intf_nets -quiet -of_objects ${intfPin}] -filter "PATH != ${intfPin}"]
+                delete_bd_objs -quiet [get_bd_intf_nets -quiet -of_objects ${intfPin}]
+                # If the target pin is an IP pin we must treat it as its mode
+                switch -- [get_property MODE ${intfPin}] {
+                    "Master" {
+                        set newIntfPin [get_bd_intf_pins ${axisRegSliceIP}/M_AXIS]
+                        connect_bd_intf_net ${intfPin} [get_bd_intf_pins ${axisRegSliceIP}/S_AXIS]
+                        connect_bd_intf_net -quiet ${newIntfPin} ${otherIntfPin}
+                    }
+                    "Slave" {
+                        set newIntfPin [get_bd_intf_pins ${axisRegSliceIP}/S_AXIS]
+                        connect_bd_intf_net [get_bd_intf_pins ${axisRegSliceIP}/M_AXIS] ${intfPin}
+                        connect_bd_intf_net -quiet ${otherIntfPin} ${newIntfPin}
+                    }
+                }
             }
-        } elseif {[get_property TYPE ${intfPin}] eq "hier"} {
-            # If the pin is already connected, get the other interface pin to restore the connection afterwards and delete the net
-            set otherIntfPin [get_bd_intf_pins -quiet -of_objects [get_bd_intf_nets -quiet -boundary_type lower -of_objects ${intfPin}] -filter "PATH != ${intfPin}"]
-            delete_bd_objs -quiet [get_bd_intf_nets -quiet -boundary_type lower -of_objects ${intfPin}]
-            # If the target pin is a hierarchy pin we must treat it as if it were the opposite of its mode
-            if {[get_property MODE ${intfPin}] eq "Master"} {
-                set newIntfPin [get_bd_intf_pins ${axisRegSliceIP}/M_AXIS]
-                connect_bd_intf_net ${newIntfPin} ${intfPin}
-                connect_bd_intf_net -quiet ${otherIntfPin} [get_bd_intf_pins ${axisRegSliceIP}/S_AXIS]
-            } elseif {[get_property MODE ${intfPin}] eq "Slave"} {
-                set newIntfPin [get_bd_intf_pins ${axisRegSliceIP}/S_AXIS]
-                connect_bd_intf_net ${intfPin} ${newIntfPin}
-                connect_bd_intf_net -quiet [get_bd_intf_pins ${axisRegSliceIP}/M_AXIS] ${otherIntfPin}
+            "hier" {
+                # If the pin is already connected, get the other interface pin to restore the connection afterwards and delete the net
+                set otherIntfPin [get_bd_intf_pins -quiet -of_objects [get_bd_intf_nets -quiet -boundary_type lower -of_objects ${intfPin}] -filter "PATH != ${intfPin}"]
+                delete_bd_objs -quiet [get_bd_intf_nets -quiet -boundary_type lower -of_objects ${intfPin}]
+                # If the target pin is a hierarchy pin we must treat it as if it were the opposite of its mode
+                switch -- [get_property MODE ${intfPin}] {
+                    "Master" {
+                        set newIntfPin [get_bd_intf_pins ${axisRegSliceIP}/M_AXIS]
+                        connect_bd_intf_net ${newIntfPin} ${intfPin}
+                        connect_bd_intf_net -quiet ${otherIntfPin} [get_bd_intf_pins ${axisRegSliceIP}/S_AXIS]
+                    }
+                    "Slave" {
+                        set newIntfPin [get_bd_intf_pins ${axisRegSliceIP}/S_AXIS]
+                        connect_bd_intf_net ${intfPin} ${newIntfPin}
+                        connect_bd_intf_net -quiet [get_bd_intf_pins ${axisRegSliceIP}/M_AXIS] ${otherIntfPin}
+                    }
+                }
             }
         }
 
@@ -246,26 +264,29 @@ namespace eval AXIS {
 
         set intfPin [get_bd_intf_pins ${intfPin}]
 
-        if {[get_property DIR ${intfPin}] eq "O"} {
-            set streamAdapterIP [create_bd_cell -type module -reference bsc_axiu_hsToStreamAdapter [get_property NAME ${intfPin}]_hsToStream]
-            set_property -dict [list \
-                CONFIG.TID_WIDTH [expr {max(int(ceil(log([dict get ${AIT::project::aitConfig} "num_instances"])/log(2))), 1)}] \
-                CONFIG.ACCID ${accID} \
-            ] ${streamAdapterIP}
-            connect_bd_net [get_bd_pins ${streamAdapterIP}/in_hs_ap_vld] [get_bd_pins -regexp ${intfPin}_ap_vld]
-            connect_bd_net [get_bd_pins ${streamAdapterIP}/in_hs_ap_ack] [get_bd_pins -regexp ${intfPin}_ap_ack]
-            connect_bd_net [get_bd_pins ${streamAdapterIP}/in_hs] ${intfPin}
-            set clk_pin [AIT::clocks::connect_clock [get_bd_pins ${streamAdapterIP}/aclk] [AIT::clocks::get_associated_clk_pin ${intfPin}]]
-            AIT::resets::connect_reset [get_bd_pins ${streamAdapterIP}/aresetn] [AIT::resets::get_synchronous_rst_pin ${clk_pin}]
-            set intfPin [get_bd_intf_pins ${streamAdapterIP}/outStream]
-        } elseif {[get_property DIR ${intfPin}] eq "I"} {
-            set streamAdapterIP [create_bd_cell -type module -reference bsc_axiu_streamToHsAdapter [get_property NAME ${intfPin}]_streamToHs]
-            connect_bd_net [get_bd_pins ${streamAdapterIP}/out_hs_ap_vld] [get_bd_pins -regexp ${intfPin}_ap_vld]
-            connect_bd_net [get_bd_pins ${streamAdapterIP}/out_hs_ap_ack] [get_bd_pins -regexp ${intfPin}_ap_ack]
-            connect_bd_net [get_bd_pins ${streamAdapterIP}/out_hs] ${intfPin}
-            set clk_pin [AIT::clocks::connect_clock [get_bd_pins ${streamAdapterIP}/aclk] [AIT::clocks::get_associated_clk_pin ${intfPin}]]
-            AIT::resets::connect_reset [get_bd_pins ${streamAdapterIP}/aresetn] [AIT::resets::get_synchronous_rst_pin ${clk_pin}]
-            set intfPin [get_bd_intf_pins ${streamAdapterIP}/inStream]
+        switch -- [get_property DIR ${intfPin}] {
+            "O" {
+                set streamAdapterIP [create_bd_cell -type module -reference bsc_axiu_hsToStreamAdapter [get_property NAME ${intfPin}]_hsToStream]
+                set_property -dict [list \
+                    CONFIG.TID_WIDTH [expr {max(int(ceil(log([dict get ${AIT::project::aitConfig} "num_instances"])/log(2))), 1)}] \
+                    CONFIG.ACCID ${accID}
+                ] ${streamAdapterIP}
+                connect_bd_net [get_bd_pins ${streamAdapterIP}/in_hs_ap_vld] [get_bd_pins -regexp ${intfPin}_ap_vld]
+                connect_bd_net [get_bd_pins ${streamAdapterIP}/in_hs_ap_ack] [get_bd_pins -regexp ${intfPin}_ap_ack]
+                connect_bd_net [get_bd_pins ${streamAdapterIP}/in_hs] ${intfPin}
+                set clk_pin [AIT::clocks::connect_clock [get_bd_pins ${streamAdapterIP}/aclk] [AIT::clocks::get_associated_clk_pin ${intfPin}]]
+                AIT::resets::connect_reset [get_bd_pins ${streamAdapterIP}/aresetn] [AIT::resets::get_synchronous_rst_pin ${clk_pin}]
+                set intfPin [get_bd_intf_pins ${streamAdapterIP}/outStream]
+            }
+            "I" {
+                set streamAdapterIP [create_bd_cell -type module -reference bsc_axiu_streamToHsAdapter [get_property NAME ${intfPin}]_streamToHs]
+                connect_bd_net [get_bd_pins ${streamAdapterIP}/out_hs_ap_vld] [get_bd_pins -regexp ${intfPin}_ap_vld]
+                connect_bd_net [get_bd_pins ${streamAdapterIP}/out_hs_ap_ack] [get_bd_pins -regexp ${intfPin}_ap_ack]
+                connect_bd_net [get_bd_pins ${streamAdapterIP}/out_hs] ${intfPin}
+                set clk_pin [AIT::clocks::connect_clock [get_bd_pins ${streamAdapterIP}/aclk] [AIT::clocks::get_associated_clk_pin ${intfPin}]]
+                AIT::resets::connect_reset [get_bd_pins ${streamAdapterIP}/aresetn] [AIT::resets::get_synchronous_rst_pin ${clk_pin}]
+                set intfPin [get_bd_intf_pins ${streamAdapterIP}/inStream]
+            }
         }
 
         save_bd_design -quiet
@@ -295,14 +316,14 @@ namespace eval AXIS {
 
             set_property -dict [list \
                 CONFIG.NUM_MI ${nmasters} \
-                CONFIG.NUM_SI ${num_si} \
+                CONFIG.NUM_SI ${num_si}
             ] ${inter}
 
             # In case there is only one slave do not set arbitration parameters to avoid Vivado warnings
             if {${num_si} > 1} {
                 set_property -dict [list \
                     CONFIG.ARB_ON_MAX_XFERS {0} \
-                    CONFIG.ARB_ON_TLAST {1} \
+                    CONFIG.ARB_ON_TLAST {1}
                 ] ${inter}
             }
 
@@ -342,14 +363,14 @@ namespace eval AXIS {
                         CONFIG.M00_AXIS_BASETDEST {0x00000000} \
                         CONFIG.M00_AXIS_HIGHTDEST {0xFFFFFFFF} \
                         CONFIG.NUM_MI {1} \
-                        CONFIG.NUM_SI ${num_si} \
+                        CONFIG.NUM_SI ${num_si}
                     ] ${inter}
 
                     # In case there is only one slave do not set arbitration parameters to avoid Vivado warnings
                     if {${num_si} > 1} {
                         set_property -dict [list \
                             CONFIG.ARB_ON_MAX_XFERS {0} \
-                            CONFIG.ARB_ON_TLAST {1} \
+                            CONFIG.ARB_ON_TLAST {1}
                         ] ${inter}
                     }
 
@@ -406,14 +427,14 @@ namespace eval AXIS {
 
             set_property -dict [list \
                 CONFIG.NUM_MI {1} \
-                CONFIG.NUM_SI ${nslaves} \
+                CONFIG.NUM_SI ${nslaves}
             ] ${inter}
 
             # In case there is only one slave do not set arbitration parameters to avoid Vivado warnings
             if {${nslaves} > 1} {
                 set_property -dict [list \
                     CONFIG.ARB_ON_MAX_XFERS {0} \
-                    CONFIG.ARB_ON_TLAST {1} \
+                    CONFIG.ARB_ON_TLAST {1}
                 ] ${inter}
             }
 
@@ -424,7 +445,7 @@ namespace eval AXIS {
                 set_property -dict [list \
                     CONFIG.NUM_MI [expr {${j} + 1}] \
                     CONFIG.M${master_num}_AXIS_BASETDEST ${base_dest} \
-                    CONFIG.M${master_num}_AXIS_HIGHTDEST ${high_dest} \
+                    CONFIG.M${master_num}_AXIS_HIGHTDEST ${high_dest}
                 ] ${inter}
             }
 
@@ -462,7 +483,7 @@ namespace eval AXIS {
 
                     set_property -dict [list \
                         CONFIG.NUM_MI {1} \
-                        CONFIG.NUM_SI {1} \
+                        CONFIG.NUM_SI {1}
                     ] ${inter}
 
                     for {set j 0} {${j} < ${num_mi}} {incr j} {
@@ -474,7 +495,7 @@ namespace eval AXIS {
                         set_property -dict [list \
                             CONFIG.NUM_MI [expr {${j} + 1}] \
                             CONFIG.M${master_num}_AXIS_BASETDEST ${base_dest} \
-                            CONFIG.M${master_num}_AXIS_HIGHTDEST ${high_dest} \
+                            CONFIG.M${master_num}_AXIS_HIGHTDEST ${high_dest}
                         ] ${inter}
                     }
 
