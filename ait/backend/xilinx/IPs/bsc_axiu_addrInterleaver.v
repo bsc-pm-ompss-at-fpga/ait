@@ -41,17 +41,11 @@ module bsc_axiu_addrInterleaver #(
 
     assign out_addr = r_out_addr;
 
-    // Only interleave addresses within DDR address space
     always @(*) begin
-    `ifdef __ENABLE__
         r_out_addr <= {in_addr[(`__ADDR_WIDTH__-1)                  : DST_SELECTOR_BIT+NUM_SELECTOR_BITS],
                        in_addr[SRC_SELECTOR_BIT+NUM_SELECTOR_BITS-1 : SRC_SELECTOR_BIT],
                        in_addr[DST_SELECTOR_BIT+NUM_SELECTOR_BITS-1 : SRC_SELECTOR_BIT+NUM_SELECTOR_BITS],
                        in_addr[SRC_SELECTOR_BIT-1                   : 0]};
-    `else
-        r_out_addr <= in_addr;
-    `endif
     end
 
 endmodule
-
