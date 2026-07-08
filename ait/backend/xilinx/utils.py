@@ -24,7 +24,7 @@ import os
 import shutil
 import subprocess
 
-from ait.backend.xilinx.info import MIN_VITIS_HLS_VERSION, MIN_VIVADO_VERSION
+from ait.backend.xilinx.info import info, MIN_VITIS_HLS_VERSION, MIN_VIVADO_VERSION
 from ait.frontend.utils import ait_path, msg
 
 vivado_version = None
@@ -80,6 +80,39 @@ def check_board_support(chip_part):
     os.system(f'rm -rf {tmp_dir}')
     if (int(retval) == 1):
         msg.error(f'Your current version of Vivado ({vivado_version}) does not support part {chip_part}')
+
+
+def cleanup_step_files(project_args, step):
+    step_index = info['steps'].index(step)
+
+    args = project_args['args']
+    project_path = project_args['path']
+
+    project_backend_path = f'{project_path}/{args.backend}'
+
+    if step_index < 5:
+        for ext in 'bit', 'bin', 'bit.bin':
+            file = f'{project_backend_path}/{args.name}.{ext}'
+            if os.path.exists(file):
+                os.remove(file)
+    if step_index < 4:
+        for ext in 'resources-impl.txt', 'timing-impl.txt':
+            file = f'{project_backend_path}/{args.name}.{ext}'
+            if os.path.exists(file):
+                os.remove(file)
+    if step_index < 2:
+        shutil.rmtree(f'{project_backend_path}/tcl', ignore_errors=True)
+        shutil.rmtree(f'{project_backend_path}/IPs', ignore_errors=True)
+        shutil.rmtree(f'{project_backend_path}/constraints', ignore_errors=True)
+        shutil.rmtree(f'{project_backend_path}/user', ignore_errors=True)
+        shutil.rmtree(f'{project_backend_path}/boot', ignore_errors=True)
+        for ext in 'ait.json', 'xtasks.config':
+            file = f'{project_backend_path}/{args.name}.{ext}'
+            if os.path.exists(file):
+                os.remove(file)
+    if step_index < 1:
+        shutil.rmtree(f'{project_backend_path}', ignore_errors=True)
+        shutil.rmtree(f'{project_path}/products', ignore_errors=True)
 
 
 def prepare_step_files(project_args, step):

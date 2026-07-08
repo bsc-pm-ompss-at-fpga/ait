@@ -73,7 +73,8 @@ def synthesize_accelerator(acc):
 
     project_acc_HLS_path = project_backend_path + '/HLS/' + acc.name
 
-    shutil.rmtree(project_acc_HLS_path, ignore_errors=True)
+    # Create project directory and move source code there
+    # This directory should not exist yet, fail otherwise
     os.makedirs(project_acc_HLS_path)
 
     shutil.copy2(acc.full_path, project_acc_HLS_path + '/' + acc.filename)
@@ -142,8 +143,8 @@ def run_step(project_args):
     # Check if HLS requirements are met
     utils.check_vitis_hls()
 
-    # Remove old directories used on the HLS step
-    shutil.rmtree(project_path, ignore_errors=True)
+    # Remove directories and files deprecated by the current step
+    utils.cleanup_step_files(project_args, STEP_NAME)
 
     # Create directories and move files required by the current step
     utils.prepare_step_files(project_args, STEP_NAME)

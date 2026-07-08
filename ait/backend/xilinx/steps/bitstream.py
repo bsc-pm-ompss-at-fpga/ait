@@ -187,6 +187,9 @@ def run_step(project_args):
     # Check if Vivado requirements are met
     utils.check_vivado()
 
+    # Remove directories and files deprecated by the current step
+    utils.cleanup_step_files(project_args, STEP_NAME)
+
     # Create directories and move files required by the current step
     utils.prepare_step_files(project_args, STEP_NAME)
 

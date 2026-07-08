@@ -115,10 +115,7 @@ def run_step(project_args):
     utils.check_vivado()
 
     # Remove directories and files deprecated by the current step
-    shutil.rmtree(f'{project_backend_path}/tcl', ignore_errors=True)
-    shutil.rmtree(f'{project_backend_path}/IPs', ignore_errors=True)
-    shutil.rmtree(f'{project_backend_path}/constraints', ignore_errors=True)
-    shutil.rmtree(f'{user_files_path}', ignore_errors=True)
+    utils.cleanup_step_files(project_args, STEP_NAME)
 
     # Create directories and move files required by the current step
     utils.prepare_step_files(project_args, STEP_NAME)
