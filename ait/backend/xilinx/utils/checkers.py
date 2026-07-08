@@ -23,12 +23,11 @@ import os
 import shutil
 import subprocess
 
-from ait.backend.xilinx.info import MIN_VITIS_HLS_VERSION, MIN_VIVADO_VERSION, MIN_PETALINUX_VERSION
+from ait.backend.xilinx.info import MIN_VITIS_HLS_VERSION, MIN_VIVADO_VERSION
 from ait.frontend.utils import msg
 
 vivado_version = None
 vitis_hls_version = None
-petalinux_version = None
 
 
 def check_vivado():
@@ -61,27 +60,6 @@ def check_bootgen():
     if not shutil.which('bootgen'):
         msg.warning('bootgen not found. .bit.bin file will not be generated')
         return False
-
-    return True
-
-
-def check_petalinux():
-    global petalinux_version
-
-    petalinux_build_path = os.getenv('PETALINUX_BUILD', 'empty')
-    if not os.path.exists(petalinux_build_path):
-        msg.error(f'PETALINUX_BUILD ({petalinux_build_path}) variable not properly set')
-
-    petalinux_version = os.getenv('PETALINUX_VER', '')
-
-    if not shutil.which('petalinux-config'):
-        msg.error('petalinux-config command not found. Please correctly source Petalinux settings.sh')
-    elif not shutil.which('petalinux-build'):
-        msg.error('petalinux-build command not found. Please correctly source Petalinux settings.sh')
-    elif not shutil.which('petalinux-package'):
-        msg.error('petalinux-package command not found. Please correctly source Petalinux settings.sh')
-    elif petalinux_version < MIN_PETALINUX_VERSION:
-        msg.error(f'Installed Petalinux version ({petalinux_version}) not supported (>= {MIN_PETALINUX_VERSION})')
 
     return True
 
