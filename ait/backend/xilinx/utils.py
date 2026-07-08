@@ -100,7 +100,7 @@ def cleanup_step_files(project_args, step):
                 os.remove(file)
     if step_index < 4:
         for ext in 'resources-impl.txt', 'timing-impl.txt':
-            file = f'{project_backend_path}/{args.name}.{ext}'
+            file = f'{project_backend_path}/products/reports/{args.name}.{ext}'
             if os.path.exists(file):
                 os.remove(file)
     if step_index < 2:

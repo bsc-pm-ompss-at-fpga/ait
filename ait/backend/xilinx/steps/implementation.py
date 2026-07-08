@@ -181,6 +181,7 @@ def run_step(project_args):
 
     ait_backend_path = ait_path + '/backend/' + args.backend
     project_backend_path = project_path + '/' + args.backend
+    project_products_path = f'{project_path}/products'
 
     # Check if the requirements are met
     utils.check_vivado()
@@ -208,8 +209,8 @@ def run_step(project_args):
         if retval:
             msg.error('Hardware implementation failed', start_time, False)
         else:
-            gen_utilization_report(f'{project_path}/{args.name}.resources-impl.txt')
-            gen_wns_report(f'{project_path}/{args.name}.timing-impl.txt')
+            gen_utilization_report(f'{project_products_path}/reports/{args.name}.resources-impl.txt')
+            gen_wns_report(f'{project_products_path}/reports/{args.name}.timing-impl.txt')
             msg.success('Hardware implemented')
     else:
         msg.error('No Vivado .xpr file exists for the current project. Hardware implementation failed')

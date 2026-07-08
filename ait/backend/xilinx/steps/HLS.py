@@ -168,7 +168,9 @@ def run_step(project_args):
         for acc in range(args.num_accs, len(accs)):
             synthesize_accelerator(accs[acc])
 
-    resources_file = open(project_path + '/' + args.name + '.resources-hls.txt', 'w')
+    # This directory should not exist yet, fail otherwise
+    os.makedirs(f'{project_path}/products/reports/')
+    resources_file = open(f'{project_path}/products/reports/{args.name}.resources-hls.txt', 'w')
     msg.log('Resources estimation summary')
     for res_name, res_value in sorted(used_resources.items()):
         if res_name in available_resources:
