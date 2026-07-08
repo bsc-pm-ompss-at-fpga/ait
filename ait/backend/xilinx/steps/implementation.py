@@ -20,6 +20,7 @@
 # ------------------------------------------------------------------------ #
 
 import os
+import re
 import subprocess
 import sys
 
@@ -28,6 +29,142 @@ from ait.frontend.utils import ait_path, getNumJobs, msg
 
 script_folder = os.path.basename(os.path.dirname(os.path.realpath(__file__)))
 STEP_NAME = 'implementation'
+
+
+def gen_utilization_report(out_path):
+    used_resources = {}
+    av_resources = {}
+    util_resources = {}
+
+    # Check implementation reports path
+    rpt_path = f'{project_backend_path}/{args.name}/{args.name}.runs/impl_1'
+    rpt_path += f'/{args.name}_design_wrapper_utilization_placed.rpt'
+    if not os.path.exists(rpt_path):
+        msg.warning('Cannot find rpt file. Skipping bitstream utilization report')
+        return
+
+    with open(rpt_path, 'r') as rpt_file:
+        rpt_data = rpt_file.readlines()
+
+        # Search LUT/FF section
+        # NOTE: Possible section names: Slice Logic, CLB Logic
+        ids = [idx for idx in range(len(rpt_data) - 1) if ((re.match(r'^[0-9]\. Slice Logic\n', rpt_data[idx])
+                                                           and rpt_data[idx + 1] == '--------------\n')
+                                                           or (re.match(r'^[0-9]\. CLB Logic\n', rpt_data[idx])
+                                                           and rpt_data[idx + 1] == '------------\n'))]
+        if len(ids) != 1:
+            msg.warning('Cannot find LUT/FF info in rpt file. Skipping bitstream utilization report')
+            return
+
+        # Get LUT
+        elems = rpt_data[ids[0] + 6].split('|')
+        used_resources['LUT'] = elems[2].strip()
+        av_resources['LUT'] = elems[5].strip()
+        util_resources['LUT'] = elems[6].strip()
+
+        # Get FF
+        elems = rpt_data[ids[0] + 11].split('|')
+        used_resources['FF'] = elems[2].strip()
+        av_resources['FF'] = elems[5].strip()
+        util_resources['FF'] = elems[6].strip()
+
+        # Get DSP
+        # NOTE: Possible section names: DSP, ARITHMETIC
+        ids = [idx for idx in range(len(rpt_data) - 1) if ((re.match(r'^[0-9]\. DSP\n', rpt_data[idx])
+                                                           and rpt_data[idx + 1] == '------\n')
+                                                           or (re.match(r'^[0-9]\. ARITHMETIC\n', rpt_data[idx])
+                                                           and rpt_data[idx + 1] == '-------------\n'))]
+        if len(ids) != 1:
+            msg.warning('Cannot find DSP info in rpt file. Skipping bitstream utilization report')
+            return
+        elems = rpt_data[ids[0] + 6].split('|')
+        used_resources['DSP'] = elems[2].strip()
+        av_resources['DSP'] = elems[5].strip()
+        util_resources['DSP'] = elems[6].strip()
+
+        # Search BRAM/URAM
+        # NOTE: Possible section names: Memory, BLOCKRAM
+        ids = [idx for idx in range(len(rpt_data) - 1) if ((re.match(r'^[0-9]\. Memory\n', rpt_data[idx])
+                                                           and rpt_data[idx + 1] == '---------\n')
+                                                           or (re.match(r'^[0-9]\. BLOCKRAM\n', rpt_data[idx])
+                                                           and rpt_data[idx + 1] == '-----------\n'))]
+        if len(ids) != 1:
+            msg.warning('Cannot find BRAM info in rpt file. Skipping bitstream utilization report')
+            return
+
+        # BRAM
+        elems = rpt_data[ids[0] + 6].split('|')
+        used_resources['BRAM'] = str(int(float(elems[2].strip()) * 2))
+        av_resources['BRAM'] = str(int(float(elems[5].strip()) * 2))
+        util_resources['BRAM'] = elems[6].strip()
+
+        # URAM
+        # NOTE: It is not placed in the same offset for all boards (search in some lines)
+        # NOTE: It is not available in all boards, so check if valid data is found
+        ids = [idx for idx in range(ids[0] + 6, ids[0] + 20) if ((re.match(r'^| URAM', rpt_data[idx])))]
+        for idx in ids:
+            elems = rpt_data[idx].split('|')
+            if len(elems) >= 6 and elems[1].strip() == 'URAM':
+                used_resources['URAM'] = elems[2].strip()
+                av_resources['URAM'] = elems[5].strip()
+                util_resources['URAM'] = elems[6].strip()
+                break
+
+    resources_file = open(out_path, 'w')
+    msg.log('Resources utilization summary')
+    for name in ['BRAM', 'DSP', 'FF', 'LUT', 'URAM']:
+        # Check if resource is available
+        if name not in used_resources:
+            continue
+
+        report_string = '{0:<9} {1:>7} used | {2:>7} available - {3:>6}% utilization'
+        report_string_formatted = report_string.format(name, used_resources[name],
+                                                       av_resources[name], util_resources[name])
+        msg.log(report_string_formatted)
+        resources_file.write(f'{report_string_formatted}\n')
+    resources_file.close()
+
+
+def gen_wns_report(out_path):
+    wns = None
+    tns = None
+    num_fail = 0
+    num_total = 0
+
+    # Check implementation reports path
+    rpt_path = f'{project_backend_path}/{args.name}/{args.name}.runs/impl_1'
+    rpt_path += f'/{args.name}_design_wrapper_timing_summary_routed.rpt'
+    if not os.path.exists(rpt_path):
+        msg.warning('Cannot find rpt file. Skipping WNS report')
+        return
+
+    with open(rpt_path, 'r') as rpt_file:
+        rpt_data = rpt_file.readlines()
+
+        # Search header line
+        ids = [idx for idx in range(len(rpt_data) - 1) if (re.match(r'^\s+WNS\(ns\)\s+TNS\(ns\)\s+', rpt_data[idx]))]
+        if len(ids) != 1:
+            msg.warning('Cannot find WNS report table header. Skipping WNS report')
+            return
+
+        # Get information from 1st row
+        elems = rpt_data[ids[0] + 2].split()
+        wns = float(elems[0])
+        tns = float(elems[1])
+        num_fail = int(elems[2])
+        num_total = int(elems[3])
+
+    msg.log('Worst Negative Slack (WNS) summary')
+    if wns >= 0.0:
+        msg.success(f'{num_fail} endpoints of {num_total} have negative slack (WNS: {wns})')
+    else:
+        msg.warning(f'{num_fail} endpoints of {num_total} have negative slack (WNS: {wns}, TNS: {tns})')
+
+    with open(out_path, 'w') as timing_file:
+        timing_file.write(f'WNS {wns}\n')
+        timing_file.write(f'TNS {tns}\n')
+        timing_file.write(f'NUM_ENDPOINTS {num_total}\n')
+        timing_file.write(f'NUM_FAIL_ENDPOINTS {num_fail}')
 
 
 def run_step(project_args):
@@ -71,6 +208,8 @@ def run_step(project_args):
         if retval:
             msg.error('Hardware implementation failed', start_time, False)
         else:
+            gen_utilization_report(f'{project_path}/{args.name}.resources-impl.txt')
+            gen_wns_report(f'{project_path}/{args.name}.timing-impl.txt')
             msg.success('Hardware implemented')
     else:
         msg.error('No Vivado .xpr file exists for the current project. Hardware implementation failed')
