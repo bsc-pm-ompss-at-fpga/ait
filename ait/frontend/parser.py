@@ -467,11 +467,6 @@ class ArgParser:
                                type=HumanReadableType(vmin='1G'),
                                default='5G')
 
-        misc_args.add_argument('-k', '--keep_files',
-                               help='keep files on error',
-                               action='store_true',
-                               default=False)
-
         misc_args.add_argument('-v', '--verbose',
                                help='print vendor backend messages',
                                action='store_true',
@@ -484,6 +479,11 @@ class ArgParser:
 
         # Hidden arguments
         hidden_args = self.parser.add_argument_group('Hidden')
+        hidden_args.add_argument('-k', '--keep_files',
+                                 nargs=0,
+                                 help=argparse.SUPPRESS,
+                                 action=DeprecatedArg)
+
         hidden_args.add_argument('--wrapper_version',
                                  help=argparse.SUPPRESS,
                                  type=int,

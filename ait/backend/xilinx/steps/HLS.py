@@ -112,8 +112,6 @@ def synthesize_accelerator(acc):
 
     retval = p.wait()
     if retval:
-        if not args.keep_files:
-            shutil.rmtree(project_acc_HLS_path, ignore_errors=True)
         msg.error('Synthesis of \'' + acc.name + '\' failed', start_time, False)
     else:
         msg.success('Finished synthesis of \'' + acc.name + '\'')
