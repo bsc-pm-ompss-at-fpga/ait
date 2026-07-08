@@ -30,6 +30,7 @@ from ait.frontend.utils import ait_path, msg
 
 
 script_folder = os.path.basename(os.path.dirname(os.path.realpath(__file__)))
+STEP_NAME = 'HLS'
 
 
 def update_resource_utilization(acc):
@@ -142,8 +143,10 @@ def run_step(project_args):
     utils.check_vitis_hls()
 
     # Remove old directories used on the HLS step
-    shutil.rmtree(project_backend_path + '/HLS', ignore_errors=True)
-    os.makedirs(project_backend_path + '/HLS')
+    shutil.rmtree(project_path, ignore_errors=True)
+
+    # Create directories and move files required by the current step
+    utils.prepare_step_files(project_args, STEP_NAME)
 
     # ompif_message_send and ompif_message_recv accelerators are not synthesized by HLS
     num_accs = args.num_accs - 2 if args.ompif else args.num_accs

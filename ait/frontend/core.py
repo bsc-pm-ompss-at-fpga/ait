@@ -166,10 +166,6 @@ def main():
         'args': args
     }
 
-    ait_config_file = open(f'{project_path}/ait_config.json', 'w')
-    ait_config_file.write(json.dumps(vars(args), indent=4))
-    ait_config_file.close()
-
     for step in backends[args.backend]['steps']:
         if backends[args.backend]['steps'].index(args.from_step) <= backends[args.backend]['steps'].index(step) <= backends[args.backend]['steps'].index(args.to_step):
             step_func = getattr(steps, step)

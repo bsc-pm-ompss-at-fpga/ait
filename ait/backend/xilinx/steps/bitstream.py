@@ -30,6 +30,7 @@ import ait.backend.xilinx.utils as utils
 from ait.frontend.utils import ait_path, getNumJobs, msg
 
 script_folder = os.path.basename(os.path.dirname(os.path.realpath(__file__)))
+STEP_NAME = 'bitstream'
 
 
 def gen_utilization_report(out_path):
@@ -185,6 +186,9 @@ def run_step(project_args):
 
     # Check if Vivado requirements are met
     utils.check_vivado()
+
+    # Create directories and move files required by the current step
+    utils.prepare_step_files(project_args, STEP_NAME)
 
     if os.path.isfile(f'{project_backend_path}/{args.name}/{args.name}.xpr'):
         p = subprocess.Popen('vivado -init -nojournal -nolog -notrace -mode batch '

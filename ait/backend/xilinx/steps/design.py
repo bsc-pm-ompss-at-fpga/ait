@@ -32,6 +32,7 @@ from ait.frontend.config import BITINFO_VERSION,  \
 from ait.frontend.utils import ait_path, msg, json2tcl
 
 script_folder = os.path.basename(os.path.dirname(os.path.realpath(__file__)))
+STEP_NAME = 'design'
 
 
 def generate_Vivado_project_tcl():
@@ -113,58 +114,14 @@ def run_step(project_args):
     # Check if Vivado requirements are met
     utils.check_vivado()
 
-    # Copy AIT tcl scripts and IPs to project directory tree
+    # Remove directories and files deprecated by the current step
     shutil.rmtree(f'{project_backend_path}/tcl', ignore_errors=True)
-    shutil.copytree(f'{ait_backend_path}/tcl', f'{project_backend_path}/tcl')
     shutil.rmtree(f'{project_backend_path}/IPs', ignore_errors=True)
-    shutil.copytree(f'{ait_backend_path}/IPs', f'{project_backend_path}/IPs')
-    shutil.rmtree(f'{project_board_path}', ignore_errors=True)
-    shutil.copytree(f'{ait_backend_path}/board/{board.name}', project_board_path)
-    os.symlink(f'{project_board_path}/baseDesign.tcl', f'{project_backend_path}/tcl/templates/baseDesign.tcl')
     shutil.rmtree(f'{project_backend_path}/constraints', ignore_errors=True)
     shutil.rmtree(f'{user_files_path}', ignore_errors=True)
-    os.mkdir(user_files_path)
 
-    if args.user_config and os.path.exists(args.user_config):
-        shutil.copy2(args.user_config, f'{user_files_path}/config.json')
-    elif args.user_config:
-        msg.error(f'User configuration file not found: {args.user_config}')
-
-    if args.user_constraints and os.path.exists(args.user_constraints):
-        user_constraints_path = f'{user_files_path}/constraints'
-        if not os.path.exists(user_constraints_path):
-            os.mkdir(user_constraints_path)
-        if args.verbose_info:
-            msg.log(f'Adding user constraints file: {args.user_constraints}')
-        shutil.copy2(args.user_constraints, user_constraints_path)
-    elif args.user_constraints:
-        msg.error(f'User constraints file not found: {args.user_constraints}')
-
-    if args.user_pre_design and os.path.exists(args.user_pre_design):
-        user_pre_design_ext = args.user_pre_design.split('.')[-1] if len(args.user_pre_design.split('.')) > 1 else ''
-        if user_pre_design_ext != 'tcl':
-            msg.error(f'Invalid extension for PRE design TCL script: {args.user_pre_design}')
-        elif args.verbose_info:
-            msg.log(f'Adding pre design user script: {args.user_pre_design}')
-        user_tcl_scripts_path = f'{user_files_path}/tcl/scripts'
-        if not os.path.exists(user_tcl_scripts_path):
-            os.makedirs(user_tcl_scripts_path)
-        shutil.copy2(args.user_pre_design, f'{user_files_path}/tcl/scripts/userPreDesign.tcl')
-    elif args.user_pre_design:
-        msg.error(f'User PRE design TCL script not found: {args.user_pre_design}')
-
-    if args.user_post_design and os.path.exists(args.user_post_design):
-        user_post_design_ext = args.user_post_design.split('.')[-1] if len(args.user_post_design.split('.')) > 1 else ''
-        if user_post_design_ext != 'tcl':
-            msg.error(f'Invalid extension for POST design TCL script: {args.user_post_design}')
-        elif args.verbose_info:
-            msg.log(f'Adding post design user script: {args.user_post_design}')
-        user_tcl_scripts_path = f'{user_files_path}/tcl/scripts'
-        if not os.path.exists(user_tcl_scripts_path):
-            os.makedirs(user_tcl_scripts_path)
-        shutil.copy2(args.user_post_design, f'{user_files_path}/tcl/scripts/userPostDesign.tcl')
-    elif args.user_post_design:
-        msg.error(f'User POST design TCL script not found: {args.user_post_design}')
+    # Create directories and move files required by the current step
+    utils.prepare_step_files(project_args, STEP_NAME)
 
     # Generate random USERID to identify the bitstream
     user_id = str(hex(random.randrange(2**32)))

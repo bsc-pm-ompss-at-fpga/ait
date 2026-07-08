@@ -19,12 +19,13 @@
 #     License along with this code. If not, see <www.gnu.org/licenses/>.   #
 # ------------------------------------------------------------------------ #
 
+import json
 import os
 import shutil
 import subprocess
 
 from ait.backend.xilinx.info import MIN_VITIS_HLS_VERSION, MIN_VIVADO_VERSION
-from ait.frontend.utils import msg
+from ait.frontend.utils import ait_path, msg
 
 vivado_version = None
 vitis_hls_version = None
@@ -79,3 +80,64 @@ def check_board_support(chip_part):
     os.system(f'rm -rf {tmp_dir}')
     if (int(retval) == 1):
         msg.error(f'Your current version of Vivado ({vivado_version}) does not support part {chip_part}')
+
+
+def prepare_step_files(project_args, step):
+    args = project_args['args']
+    project_path = project_args['path']
+    board = project_args['board']
+
+    ait_backend_path = f'{ait_path}/backend/{args.backend}'
+    project_backend_path = f'{project_path}/{args.backend}'
+
+    if step == 'HLS':
+        shutil.copytree(f'{ait_backend_path}/board/{board.name}', f'{project_backend_path}/board')
+    elif step == 'design':
+        user_files_path = f'{project_backend_path}/user'
+
+        shutil.copytree(f'{ait_backend_path}/tcl', f'{project_backend_path}/tcl')
+        shutil.copytree(f'{ait_backend_path}/IPs', f'{project_backend_path}/IPs')
+        os.symlink(f'{project_backend_path}/board/baseDesign.tcl', f'{project_backend_path}/tcl/templates/baseDesign.tcl')
+
+        if args.user_config and os.path.exists(args.user_config):
+            os.makedirs(user_files_path)
+            shutil.copy2(args.user_config, f'{user_files_path}/config.json')
+        elif args.user_config:
+            msg.error(f'User configuration file not found: {args.user_config}')
+
+        if args.user_constraints and os.path.exists(args.user_constraints):
+            if args.verbose_info:
+                msg.log(f'Adding user constraints file: {args.user_constraints}')
+            user_constraints_path = f'{user_files_path}/constraints'
+            os.makedirs(user_constraints_path)
+            shutil.copy2(args.user_constraints, user_constraints_path)
+        elif args.user_constraints:
+            msg.error(f'User constraints file not found: {args.user_constraints}')
+
+        if args.user_pre_design and os.path.exists(args.user_pre_design):
+            user_pre_design_ext = args.user_pre_design.split('.')[-1] if len(args.user_pre_design.split('.')) > 1 else ''
+            if user_pre_design_ext != 'tcl':
+                msg.error(f'Invalid extension for PRE design TCL script: {args.user_pre_design}')
+            elif args.verbose_info:
+                msg.log(f'Adding pre design user script: {args.user_pre_design}')
+            user_tcl_scripts_path = f'{user_files_path}/tcl'
+            os.makedirs(user_tcl_scripts_path)
+            shutil.copy2(args.user_pre_design, f'{user_tcl_scripts_path}/userPreDesign.tcl')
+        elif args.user_pre_design:
+            msg.error(f'User PRE design TCL script not found: {args.user_pre_design}')
+
+        if args.user_post_design and os.path.exists(args.user_post_design):
+            user_post_design_ext = args.user_post_design.split('.')[-1] if len(args.user_post_design.split('.')) > 1 else ''
+            if user_post_design_ext != 'tcl':
+                msg.error(f'Invalid extension for POST design TCL script: {args.user_post_design}')
+            elif args.verbose_info:
+                msg.log(f'Adding post design user script: {args.user_post_design}')
+            user_tcl_scripts_path = f'{user_files_path}/tcl'
+            os.makedirs(user_tcl_scripts_path, exist_ok=True)
+            shutil.copy2(args.user_post_design, f'{user_tcl_scripts_path}/userPostDesign.tcl')
+        elif args.user_post_design:
+            msg.error(f'User POST design TCL script not found: {args.user_post_design}')
+
+    ait_config_file = open(f'{project_path}/ait_config.json', 'w+')
+    ait_config_file.write(json.dumps(vars(args), indent=4))
+    ait_config_file.close()
