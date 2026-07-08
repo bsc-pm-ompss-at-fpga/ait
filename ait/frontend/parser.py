@@ -446,7 +446,7 @@ class ArgParser:
                                help='show this help message and exit')
 
         misc_args.add_argument('-i', '--verbose_info',
-                               help='print extra information messages',
+                               help='print all AIT messages',
                                action='store_true',
                                default=False)
 

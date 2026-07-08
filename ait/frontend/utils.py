@@ -41,10 +41,10 @@ class JSONDottedDict(dict):
 class Logger(object):
     def __init__(self, args):
         self.terminal = sys.stdout
-        self.log = open(f'{os.path.normpath(os.path.realpath(args.dir))}/{args.name}_ait/{args.name}.ait.log', 'w+')
-        self.subprocess = subprocess.PIPE if args.verbose else self.log
+        self.log_file = open(f'{os.path.normpath(os.path.realpath(args.dir))}/{args.name}_ait/{args.name}.ait.log', 'w+')
+        self.subprocess = subprocess.PIPE if (args.verbose or args.verbose_info) else self.log_file
         self.re_color = re.compile(r'\033\[[0,1][0-9,;]*m')
-        self.tag = '[AIT] ' if not args.verbose else ''
+        self.tag = '[AIT] ' if not (args.verbose or args.verbose_info) else ''
 
     def write(self, message):
         if self.terminal.isatty():
@@ -52,10 +52,13 @@ class Logger(object):
         else:
             self.terminal.write(self.re_color.sub('', message))
         self.terminal.flush()
+        self.log(message)
+
+    def log(self, message):
         if message != '\n':
-            self.log.write(self.tag)
-        self.log.write(self.re_color.sub('', message))
-        self.log.flush()
+            self.log_file.write(self.tag)
+        self.log_file.write(self.re_color.sub('', message))
+        self.log_file.flush()
 
     def flush(self):
         pass

@@ -21,7 +21,9 @@
 
 import json
 import os
+import re
 import shutil
+import sys
 import subprocess
 
 from ait.backend.xilinx.info import info, MIN_VITIS_HLS_VERSION, MIN_VIVADO_VERSION
@@ -177,3 +179,15 @@ def prepare_step_files(project_args, step):
     ait_config_file = open(f'{project_path}/ait_config.json', 'w+')
     ait_config_file.write(json.dumps(vars(args), indent=4))
     ait_config_file.close()
+
+
+def process_output(args, output):
+    if args.verbose:
+        for line in output:
+            sys.stdout.write(line)
+    elif args.verbose_info:
+        for line in output:
+            if re.match(r'^\[AIT\]', line):
+                sys.stdout.write(line)
+            else:
+                sys.stdout.log(line)

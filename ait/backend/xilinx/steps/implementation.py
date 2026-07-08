@@ -199,11 +199,9 @@ def run_step(project_args):
                              + '-tclargs ' + (str(args.jobs) if args.jobs is not None else str(getNumJobs(args.mem_per_job))),
                              cwd=project_backend_path,
                              stdout=sys.stdout.subprocess,
-                             stderr=sys.stdout.subprocess, shell=True)
+                             stderr=sys.stdout.subprocess, shell=True, text=True)
 
-        if args.verbose:
-            for line in iter(p.stdout.readline, b''):
-                sys.stdout.write(line.decode('utf-8'))
+        utils.process_output(args, p.stdout)
 
         retval = p.wait()
         if retval:

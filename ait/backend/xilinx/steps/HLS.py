@@ -107,10 +107,9 @@ def synthesize_accelerator(acc):
     p = subprocess.Popen('vitis_hls ' + project_acc_HLS_path + '/HLS_' + acc.name + '.tcl'
                          + ' -l ' + project_acc_HLS_path + '/HLS_' + acc.name + '.log',
                          cwd=project_backend_path + '/HLS',
-                         stdout=sys.stdout.subprocess, stderr=sys.stdout.subprocess, shell=True)
-    if args.verbose:
-        for line in iter(p.stdout.readline, b''):
-            sys.stdout.write(line.decode('utf-8'))
+                         stdout=sys.stdout.subprocess, stderr=sys.stdout.subprocess, shell=True, text=True)
+
+    utils.process_output(args, p.stdout)
 
     retval = p.wait()
     if retval:

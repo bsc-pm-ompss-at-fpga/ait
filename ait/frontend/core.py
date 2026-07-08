@@ -134,8 +134,8 @@ def main():
     args = parser.parse_args()
 
     msg.setProjectName(args.name)
-    msg.setPrintTime(args.verbose_info)
-    msg.setVerbose(args.verbose)
+    msg.setPrintTime(args.verbose)
+    msg.setVerbose(args.verbose or args.verbose_info)
 
     # Dump board info json and exit
     if args.dump_board_info:
