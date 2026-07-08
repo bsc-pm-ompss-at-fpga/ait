@@ -36,9 +36,9 @@ def check_board_support(board):
     if args.verbose_info:
         msg.log('Checking vendor support for selected board')
 
-    backend_utils = importlib.import_module(f'ait.backend.{args.backend}.utils')
-    checker = getattr(backend_utils, 'checkers')
-    checker.check_board_support(board.chip_part)
+    backend_utils = importlib.import_module(f'ait.backend.{args.backend}')
+    utils = getattr(backend_utils, 'utils')
+    utils.check_board_support(board.chip_part)
 
 
 def get_accelerators(project_path):

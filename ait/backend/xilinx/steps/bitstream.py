@@ -26,7 +26,7 @@ import shutil
 import subprocess
 import sys
 
-import ait.backend.xilinx.utils.checkers as checkers
+import ait.backend.xilinx.utils as utils
 from ait.frontend.utils import ait_path, getNumJobs, msg
 
 script_folder = os.path.basename(os.path.dirname(os.path.realpath(__file__)))
@@ -184,7 +184,7 @@ def run_step(project_args):
     project_backend_path = f'{project_path}/{args.backend}'
 
     # Check if Vivado requirements are met
-    checkers.check_vivado()
+    utils.check_vivado()
 
     if os.path.isfile(f'{project_backend_path}/{args.name}/{args.name}.xpr'):
         p = subprocess.Popen('vivado -init -nojournal -nolog -notrace -mode batch '
@@ -203,7 +203,7 @@ def run_step(project_args):
         if retval:
             msg.error('Bitstream generation failed', start_time, False)
         else:
-            if board.arch.device == 'zynq' and checkers.check_bootgen():
+            if board.arch.device == 'zynq' and utils.check_bootgen():
                 bif_file = open(f'{project_backend_path}/{args.name}/{args.name}.runs/impl_1/bitstream.bif', 'w')
                 bif_file.write('all:\n'
                                + '{\n'

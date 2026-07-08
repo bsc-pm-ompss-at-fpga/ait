@@ -22,8 +22,8 @@
 import importlib
 import json
 
-import ait.backend.xilinx.utils.checkers as checkers
-import ait.backend.xilinx.utils.parser as parser
+import ait.backend.xilinx.utils as utils
+import ait.backend.xilinx.parser as parser
 from ait.frontend.utils import JSONDottedDict, ait_path, msg
 
 
@@ -37,7 +37,7 @@ def load(args):
     if not args.disable_board_support_check:
         if args.verbose_info:
             msg.log('Checking vendor support for selected board')
-        checkers.check_board_support(board.chip_part)
+        utils.check_board_support(board.chip_part)
 
     # Import backend steps
     steps = importlib.import_module('ait.backend.xilinx.steps')

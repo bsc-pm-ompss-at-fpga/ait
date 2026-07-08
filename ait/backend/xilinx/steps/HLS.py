@@ -25,7 +25,7 @@ import subprocess
 import sys
 import xml.etree.cElementTree as cET
 
-import ait.backend.xilinx.utils.checkers as checkers
+import ait.backend.xilinx.utils as utils
 from ait.frontend.utils import ait_path, msg
 
 
@@ -139,7 +139,7 @@ def run_step(project_args):
     project_backend_path = project_path + '/' + args.backend
 
     # Check if HLS requirements are met
-    checkers.check_vitis_hls()
+    utils.check_vitis_hls()
 
     # Remove old directories used on the HLS step
     shutil.rmtree(project_backend_path + '/HLS', ignore_errors=True)

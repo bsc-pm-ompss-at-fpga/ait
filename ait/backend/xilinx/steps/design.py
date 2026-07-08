@@ -26,7 +26,7 @@ import shutil
 import subprocess
 import sys
 
-import ait.backend.xilinx.utils.checkers as checkers
+import ait.backend.xilinx.utils as utils
 from ait.frontend.config import BITINFO_VERSION,  \
     VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH
 from ait.frontend.utils import ait_path, msg, json2tcl
@@ -111,7 +111,7 @@ def run_step(project_args):
     user_files_path = f'{project_backend_path}/user'
 
     # Check if Vivado requirements are met
-    checkers.check_vivado()
+    utils.check_vivado()
 
     # Copy AIT tcl scripts and IPs to project directory tree
     shutil.rmtree(f'{project_backend_path}/tcl', ignore_errors=True)

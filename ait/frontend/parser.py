@@ -192,7 +192,7 @@ class ArgParser:
         # Load vendor-specific parsers
         self.backend_parser = dict()
         for backend in backends:
-            backend_parser = f'ait.backend.{backend}.utils.parser'
+            backend_parser = f'ait.backend.{backend}.parser'
             if importlib.util.find_spec(backend_parser):
                 self.backend_parser[backend] = importlib.import_module(backend_parser)
 

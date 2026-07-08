@@ -23,7 +23,7 @@ import os
 import subprocess
 import sys
 
-import ait.backend.xilinx.utils.checkers as checkers
+import ait.backend.xilinx.utils as utils
 from ait.frontend.utils import ait_path, getNumJobs, msg
 
 script_folder = os.path.basename(os.path.dirname(os.path.realpath(__file__)))
@@ -45,7 +45,7 @@ def run_step(project_args):
     project_backend_path = project_path + '/' + args.backend
 
     # Check if the requirements are met
-    checkers.check_vivado()
+    utils.check_vivado()
 
     if os.path.isfile(f'{project_backend_path}/{args.name}/{args.name}.xpr'):
         p = subprocess.Popen('vivado -init -nojournal -nolog -notrace -mode batch '
