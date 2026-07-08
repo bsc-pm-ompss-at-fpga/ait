@@ -110,7 +110,7 @@ def cleanup_step_files(project_args, step):
         shutil.rmtree(f'{project_backend_path}/user', ignore_errors=True)
         shutil.rmtree(f'{project_backend_path}/products/boot', ignore_errors=True)
         for ext in 'ait.json', 'xtasks.config':
-            file = f'{project_backend_path}/{args.name}.{ext}'
+            file = f'{project_backend_path}/products/{args.name}.{ext}'
             if os.path.exists(file):
                 os.remove(file)
     if step_index < 1:

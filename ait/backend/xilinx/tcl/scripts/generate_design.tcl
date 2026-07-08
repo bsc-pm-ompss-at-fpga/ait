@@ -589,7 +589,7 @@ save_bd_design -quiet
 AIT::design::generate_bd_addr_segments_dict
 AIT::board::configure_address_map
 
-set xtasksConfigFile [open ${projectRootDir}/../[dict get ${AIT::project::aitConfig} "name"].xtasks.config "w"]
+set xtasksConfigFile [open ${projectRootDir}/../products/[dict get ${AIT::project::aitConfig} "name"].xtasks.config "w"]
 puts ${xtasksConfigFile} ${xtasksConfigStr}
 close ${xtasksConfigFile}
 
@@ -647,6 +647,6 @@ update_compile_order -fileset sources_1
 save_bd_design -quiet
 
 # Generate output files
-set aitJsonFile [open ${projectRootDir}/../[dict get ${AIT::project::aitConfig} "name"].ait.json "w"]
+set aitJsonFile [open ${projectRootDir}/../products/[dict get ${AIT::project::aitConfig} "name"].ait.json "w"]
 puts ${aitJsonFile} [AIT::utils::dict_to_json ${AIT::project::aitJsonDict}]
 close ${aitJsonFile}
