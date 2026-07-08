@@ -28,7 +28,7 @@ from ait.frontend.utils import JSONDottedDict, ait_path, msg
 
 
 def load(args):
-    board = JSONDottedDict(json.load(open(ait_path + '/backend/' + args.backend + '/board/' + args.board + '/board_info.json')))
+    board = JSONDottedDict(json.load(open(f'{ait_path}/backend/{args.backend}/board/{args.board}/board_info.json')))
 
     # Check backend-related board arguments
     parser.parser.check_board_args(args, board)

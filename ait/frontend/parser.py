@@ -221,6 +221,11 @@ class ArgParser:
                                type=PathType(),
                                default='.')
 
+        flow_args.add_argument('--disable_board_support_check',
+                               help='disable board support check',
+                               action='store_true',
+                               default=False)
+
         flow_args.add_argument('--disable_IP_caching',
                                help='disable IP caching\
                                     \nSignificantly increases generation time',
@@ -229,11 +234,6 @@ class ArgParser:
 
         flow_args.add_argument('--disable_utilization_check',
                                help='disable resources utilization check during HLS generation',
-                               action='store_true',
-                               default=False)
-
-        flow_args.add_argument('--disable_board_support_check',
-                               help='disable board support check',
                                action='store_true',
                                default=False)
 
@@ -264,11 +264,6 @@ class ArgParser:
                                     type=int,
                                     default='100')
 
-        bitstream_args.add_argument('--hwcounter',
-                                    help='add a hardware counter to the bitstream',
-                                    action='store_true',
-                                    default=False)
-
         bitstream_args.add_argument('--bitinfo_note',
                                     help='custom note to add to the bitinfo',
                                     type=ascii,
@@ -277,6 +272,11 @@ class ArgParser:
         bitstream_args.add_argument('--disable_static_constraints',
                                     help='disable static constraints \
                                          \nMay impact negatively on timing',
+                                    action='store_true',
+                                    default=False)
+
+        bitstream_args.add_argument('--hwcounter',
+                                    help='add a hardware counter to the bitstream',
                                     action='store_true',
                                     default=False)
 
@@ -298,6 +298,7 @@ class ArgParser:
                                help='maximum length (64-bit words) of the queue for the hwruntime command in\
                                     \nThis argument is mutually exclusive with --cmdin_subqueue_len',
                                type=IntRangeType(imin=4))
+
         cmdin_len.add_argument('--cmdin_subqueue_len',
                                help='length (64-bit words) of each accelerator subqueue for the hwruntime command in\
                                     \nThis argument is mutually exclusive with --cmdin_queue_len\
@@ -323,19 +324,10 @@ class ArgParser:
                                     action='store_true',
                                     default=False)
 
-        hwruntime_args.add_argument('--spawnin_queue_len',
-                                    help='length (64-bit words) of the hwruntime spawn in queue\
-                                         \nMust be power of 2\
-                                         \n(def: 1024)',
-                                    type=IntPowerType(imin=4),
-                                    default=1024)
-
-        hwruntime_args.add_argument('--spawnout_queue_len',
-                                    help='length (64-bit words) of the hwruntime spawn out queue\
-                                         \nMust be power of 2\
-                                         \n(def: 1024)',
-                                    type=IntPowerType(imin=4),
-                                    default=1024)
+        hwruntime_args.add_argument('--enable_pom_axilite',
+                                    help='enable the POM axilite interface with debug counters',
+                                    action='store_true',
+                                    default=False)
 
         hwruntime_args.add_argument('--hwruntime_interconnect',
                                     help='type of hardware runtime interconnection with accelerators\
@@ -352,22 +344,31 @@ class ArgParser:
                                     type=IntRangeType(imin=1),
                                     default=15)
 
-        hwruntime_args.add_argument('--max_deps_per_task',
-                                    help='maximum number of dependencies for any task in the bitstream\
-                                         \n(def: 8)',
-                                    type=IntRangeType(imin=2),
-                                    default=8)
-
         hwruntime_args.add_argument('--max_copies_per_task',
                                     help='maximum number of copies for any task in the bitstream\
                                          \n(def: 15)',
                                     type=IntRangeType(imin=1),
                                     default=15)
 
-        hwruntime_args.add_argument('--enable_pom_axilite',
-                                    help='enable the POM axilite interface with debug counters',
-                                    action='store_true',
-                                    default=False)
+        hwruntime_args.add_argument('--max_deps_per_task',
+                                    help='maximum number of dependencies for any task in the bitstream\
+                                         \n(def: 8)',
+                                    type=IntRangeType(imin=2),
+                                    default=8)
+
+        hwruntime_args.add_argument('--spawnin_queue_len',
+                                    help='length (64-bit words) of the hwruntime spawn in queue\
+                                         \nMust be power of 2\
+                                         \n(def: 1024)',
+                                    type=IntPowerType(imin=4),
+                                    default=1024)
+
+        hwruntime_args.add_argument('--spawnout_queue_len',
+                                    help='length (64-bit words) of the hwruntime spawn out queue\
+                                         \nMust be power of 2\
+                                         \n(def: 1024)',
+                                    type=IntPowerType(imin=4),
+                                    default=1024)
 
         # Picos arguments
         picos_args = self.parser.add_argument_group('Picos')
@@ -378,24 +379,6 @@ class ArgParser:
                                 choices=[1, 2, 4],
                                 metavar='NUM_DCTS',
                                 default=1)
-
-        picos_args.add_argument('--picos_tm_size',
-                                help='size of the TM memory\
-                                     \n(def: 128)',
-                                type=IntRangeType(imin=2),
-                                default=128)
-
-        picos_args.add_argument('--picos_dm_size',
-                                help='size of the DM memory\
-                                     \n(def: 512)',
-                                type=IntRangeType(imin=2),
-                                default=512)
-
-        picos_args.add_argument('--picos_vm_size',
-                                help='size of the VM memory\
-                                     \n(def: 512)',
-                                type=IntRangeType(imin=2),
-                                default=512)
 
         picos_args.add_argument('--picos_dm_ds',
                                 help='data structure of the DM memory\
@@ -415,11 +398,29 @@ class ArgParser:
                                 metavar='HASH_FUN',
                                 default='P_PEARSON')  # TODO: Explain what XOR does
 
+        picos_args.add_argument('--picos_dm_size',
+                                help='size of the DM memory\
+                                     \n(def: 512)',
+                                type=IntRangeType(imin=2),
+                                default=512)
+
         picos_args.add_argument('--picos_hash_t_size',
                                 help='DCT hash table size\
                                      \n(def: 64)',
                                 type=IntRangeType(imin=2),
                                 default=64)
+
+        picos_args.add_argument('--picos_tm_size',
+                                help='size of the TM memory\
+                                     \n(def: 128)',
+                                type=IntRangeType(imin=2),
+                                default=128)
+
+        picos_args.add_argument('--picos_vm_size',
+                                help='size of the VM memory\
+                                     \n(def: 512)',
+                                type=IntRangeType(imin=2),
+                                default=512)
 
         # User-defined files arguments
         user_args = self.parser.add_argument_group('User-defined files')
@@ -431,27 +432,18 @@ class ArgParser:
                                help='path to the user defined constraints file',
                                type=FileType())
 
-        user_args.add_argument('--user_pre_design',
-                               help='path to the user TCL script to be executed before the design step (not after the board base design)',
-                               type=FileType())
-
         user_args.add_argument('--user_post_design',
                                help='path to the user TCL script to be executed after the design step',
                                type=FileType())
 
+        user_args.add_argument('--user_pre_design',
+                               help='path to the user TCL script to be executed before the design step (not after the board base design)',
+                               type=FileType())
+
         # Miscellaneous arguments
         misc_args = self.parser.add_argument_group('Miscellaneous')
-        misc_args.add_argument('-h', '--help',
-                               action='help',
-                               help='show this help message and exit')
-
         misc_args.add_argument('-i', '--verbose_info',
                                help='print all AIT messages',
-                               action='store_true',
-                               default=False)
-
-        misc_args.add_argument('--dump_board_info',
-                               help='dump board info json for the specified board',
                                action='store_true',
                                default=False)
 
@@ -461,16 +453,25 @@ class ArgParser:
                                type=IntRangeType(imin=1),
                                default=None)
 
-        misc_args.add_argument('--mem_per_job',
-                               help='specify the memory per core used to estimate the number of jobs to launch\
-                                    \n(def: 5G)',
-                               type=HumanReadableType(vmin='1G'),
-                               default='5G')
+        misc_args.add_argument('-h', '--help',
+                               action='help',
+                               help='show this help message and exit')
 
         misc_args.add_argument('-v', '--verbose',
                                help='print vendor backend messages',
                                action='store_true',
                                default=False)
+
+        misc_args.add_argument('--dump_board_info',
+                               help='dump board info json for the specified board',
+                               action='store_true',
+                               default=False)
+
+        misc_args.add_argument('--mem_per_job',
+                               help='specify the memory per core used to estimate the number of jobs to launch\
+                                    \n(def: 5G)',
+                               type=HumanReadableType(vmin='1G'),
+                               default='5G')
 
         misc_args.add_argument('--version',
                                help='print AIT version and exits',
@@ -484,16 +485,6 @@ class ArgParser:
                                  help=argparse.SUPPRESS,
                                  action=DeprecatedArg)
 
-        hidden_args.add_argument('--wrapper_version',
-                                 help=argparse.SUPPRESS,
-                                 type=int,
-                                 default=0)
-
-        hidden_args.add_argument('--task_creation',
-                                 help=argparse.SUPPRESS,
-                                 action='store_true',
-                                 default=False)
-
         hidden_args.add_argument('--deps_hwruntime',
                                  help=argparse.SUPPRESS,
                                  action='store_true',
@@ -503,6 +494,16 @@ class ArgParser:
                                  help=argparse.SUPPRESS,
                                  action='store_true',
                                  default=False)
+
+        hidden_args.add_argument('--task_creation',
+                                 help=argparse.SUPPRESS,
+                                 action='store_true',
+                                 default=False)
+
+        hidden_args.add_argument('--wrapper_version',
+                                 help=argparse.SUPPRESS,
+                                 type=int,
+                                 default=0)
 
     def parse_args(self):
         # Check if configuration file exists and parse its values

@@ -36,7 +36,7 @@ class PipelineStagesType:
         elif arg == 'auto':
             return arg
         else:
-            raise argparse.ArgumentTypeError('must be an integer between 1 and 5 in the format x:y:z or \'auto\'')
+            raise argparse.ArgumentTypeError("must be an integer between 1 and 5 in the format x:y:z or 'auto'")
 
 
 class ArgParser():
@@ -69,22 +69,14 @@ class ArgParser():
         self.parser._optionals.title = 'Xilinx-specific arguments'
 
         # Vendor-specific arguments
-        self.parser.add_argument('--regslice_pipeline_stages',
-                                 help='number of register slice pipeline stages per SLR\
-                                      \n\'x:y:z\': add between 1 and 5 stages in master:middle:slave SLRs\
-                                      \nauto: let Vivado choose the number of stages\
-                                      \n(def: auto)',
-                                 type=PipelineStagesType(),
-                                 default='auto')
-
-        self.parser.add_argument('--interconnect_regslices',
-                                 help='enable register slices on AXI interconnects',
-                                 action='store_true',
-                                 default=False)
+        self.parser.add_argument('--ignore_eng_sample',
+                                 help=argparse.SUPPRESS,
+                                 nargs=0,
+                                 action=DeprecatedArg)
 
         self.parser.add_argument('--interconnect_opt',
-                                 help='AXI interconnect optimization strategy: Maximize \'performance\' or minimize \'area\'\
-                                      \n(def: performance)',
+                                 help="AXI interconnect optimization strategy: Maximize 'performance' or minimize 'area'\
+                                      \n(def: performance)",
                                  choices=['performance', 'area'],
                                  metavar='OPT_STRATEGY',
                                  default='performance')
@@ -94,20 +86,23 @@ class ArgParser():
                                  action='store_true',
                                  default=False)
 
+        self.parser.add_argument('--interconnect_regslices',
+                                 help='enable register slices on AXI interconnects',
+                                 action='store_true',
+                                 default=False)
+
         self.parser.add_argument('--power_monitor',
                                  help='enable power monitoring infrastructure',
                                  action='store_true',
                                  default=False)
 
-        self.parser.add_argument('--thermal_monitor',
-                                 help='enable thermal monitoring infrastructure',
-                                 action='store_true',
-                                 default=False)
-
-        self.parser.add_argument('--ignore_eng_sample',
-                                 help=argparse.SUPPRESS,
-                                 nargs=0,
-                                 action=DeprecatedArg)
+        self.parser.add_argument('--regslice_pipeline_stages',
+                                 help="number of register slice pipeline stages per SLR\
+                                      \n'x:y:z': add between 1 and 5 stages in master:middle:slave SLRs\
+                                      \nauto: let Vivado choose the number of stages\
+                                      \n(def: auto)",
+                                 type=PipelineStagesType(),
+                                 default='auto')
 
         self.parser.add_argument('--target_language',
                                  help='choose target language to synthesize files to: vhdl or verilog\
@@ -115,6 +110,11 @@ class ArgParser():
                                  choices=['verilog', 'vhdl'],
                                  metavar='TARGET_LANG',
                                  default='verilog')
+
+        self.parser.add_argument('--thermal_monitor',
+                                 help='enable thermal monitoring infrastructure',
+                                 action='store_true',
+                                 default=False)
 
     def check_args(self, args):
         pass
@@ -126,7 +126,7 @@ class ArgParser():
             elif args.memory_interleaving_stride & (args.memory_interleaving_stride - 1):
                 msg.error('Memory interleaving stride must be power of 2')
             elif int(board.memory.bank_size, 0) < args.memory_interleaving_stride:
-                msg.error('Max allowed interleaving stride in current board: ' + decimalToHumanReadable(int(board.memory.bank_size, 0)))
+                msg.error(f'Max allowed interleaving stride in current board: {decimalToHumanReadable(int(board.memory.bank_size, 0))}')
 
         if args.power_monitor and (board.arch.device == 'zynq' or board.arch.device == 'zynqmp'):
             msg.error('Power monitoring is not available on neither Zynq nor ZynqMP boards')

@@ -28,17 +28,10 @@ import sys
 import ait.backend.xilinx.utils as utils
 from ait.frontend.utils import ait_path, getNumJobs, msg
 
-script_folder = os.path.basename(os.path.dirname(os.path.realpath(__file__)))
 STEP_NAME = 'bitstream'
 
 
 def run_step(project_args):
-    global args
-    global board
-    global start_time
-    global ait_backend_path
-    global project_backend_path
-
     args = project_args['args']
     board = project_args['board']
     start_time = project_args['start_time']
@@ -61,10 +54,11 @@ def run_step(project_args):
         p = subprocess.Popen('vivado -init -nojournal -nolog -notrace -mode batch '
                              + f'-source {project_backend_path}/tcl/ait.tcl '
                              + f'-source {project_backend_path}/tcl/scripts/generate_bitstream.tcl '
-                             + '-tclargs ' + (str(args.jobs) if args.jobs is not None else str(getNumJobs(args.mem_per_job))),
+                             + f'-tclargs {str(args.jobs) if args.jobs is not None else str(getNumJobs(args.mem_per_job))}',
                              cwd=project_backend_path,
                              stdout=sys.stdout.subprocess,
-                             stderr=sys.stdout.subprocess, shell=True, text=True)
+                             stderr=sys.stdout.subprocess,
+                             shell=True, text=True)
 
         utils.process_output(args, p.stdout)
 
@@ -88,7 +82,8 @@ def run_step(project_args):
                 p = subprocess.Popen('bootgen -image bitstream.bif -arch zynq -process_bitstream bin -w',
                                      cwd=f'{project_backend_path}/{args.name}/{args.name}.runs/impl_1',
                                      stdout=sys.stdout.subprocess,
-                                     stderr=sys.stdout.subprocess, shell=True, text=True)
+                                     stderr=sys.stdout.subprocess,
+                                     shell=True, text=True)
 
                 utils.process_output(args, p.stdout)
 

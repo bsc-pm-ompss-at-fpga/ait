@@ -25,9 +25,8 @@ import subprocess
 import sys
 
 import ait.backend.xilinx.utils as utils
-from ait.frontend.utils import ait_path, getNumJobs, msg
+from ait.frontend.utils import getNumJobs, msg
 
-script_folder = os.path.basename(os.path.dirname(os.path.realpath(__file__)))
 STEP_NAME = 'implementation'
 
 
@@ -169,18 +168,14 @@ def gen_wns_report(out_path):
 
 def run_step(project_args):
     global args
-    global board
     global start_time
-    global ait_backend_path
     global project_backend_path
 
     args = project_args['args']
-    board = project_args['board']
     start_time = project_args['start_time']
     project_path = project_args['path']
 
-    ait_backend_path = ait_path + '/backend/' + args.backend
-    project_backend_path = project_path + '/' + args.backend
+    project_backend_path = f'{project_path}/{args.backend}'
     project_products_path = f'{project_path}/products'
 
     # Check if the requirements are met
@@ -196,10 +191,11 @@ def run_step(project_args):
         p = subprocess.Popen('vivado -init -nojournal -nolog -notrace -mode batch '
                              + f'-source {project_backend_path}/tcl/ait.tcl '
                              + f'-source {project_backend_path}/tcl/scripts/implement_design.tcl '
-                             + '-tclargs ' + (str(args.jobs) if args.jobs is not None else str(getNumJobs(args.mem_per_job))),
+                             + f'-tclargs {str(args.jobs) if args.jobs is not None else str(getNumJobs(args.mem_per_job))}',
                              cwd=project_backend_path,
                              stdout=sys.stdout.subprocess,
-                             stderr=sys.stdout.subprocess, shell=True, text=True)
+                             stderr=sys.stdout.subprocess,
+                             shell=True, text=True)
 
         utils.process_output(args, p.stdout)
 

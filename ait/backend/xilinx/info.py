@@ -28,7 +28,7 @@ MIN_VIVADO_VERSION = '2021.1'
 
 
 def get_supported_boards():
-    boards = sorted(next(os.walk(os.path.dirname(__file__) + '/board'))[1])
+    boards = sorted(next(os.walk(f'{os.path.dirname(__file__)}/board'))[1])
     boards.remove('common')
     return boards
 
