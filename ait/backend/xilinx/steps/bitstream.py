@@ -46,6 +46,7 @@ def run_step(project_args):
 
     ait_backend_path = f'{ait_path}/backend/{args.backend}'
     project_backend_path = f'{project_path}/{args.backend}'
+    project_products_path = f'{project_path}/products'
 
     # Check if Vivado requirements are met
     utils.check_vivado()
@@ -73,6 +74,12 @@ def run_step(project_args):
         if retval:
             msg.error('Bitstream generation failed', start_time, False)
         else:
+            os.makedirs(project_products_path, exist_ok=True)
+
+            shutil.copy2(glob.glob(f'{project_backend_path}/{args.name}/'
+                         + f'{args.name}.runs/impl_1/{args.name}*.bit')[0],
+                         f'{project_products_path}/{args.name}.bit')
+
             if board.arch.device == 'zynq' and utils.check_bootgen():
                 bif_file = open(f'{project_backend_path}/{args.name}/{args.name}.runs/impl_1/bitstream.bif', 'w')
                 bif_file.write('all:\n'
@@ -95,16 +102,12 @@ def run_step(project_args):
                 else:
                     shutil.copy2(glob.glob(f'{project_backend_path}/{args.name}/'
                                  + f'{args.name}.runs/impl_1/{args.name}*.bit.bin')[0],
-                                 f'{project_path}/{args.name}.bit.bin')
+                                 f'{project_products_path}/{args.name}.bit.bin')
 
             if board.arch.device == 'zynq' or board.arch.device == 'zynqmp':
                 shutil.copy2(glob.glob(f'{project_backend_path}/{args.name}/'
                              + f'{args.name}.runs/impl_1/{args.name}*.bin')[0],
-                             f'{project_path}/{args.name}.bin')
-
-            shutil.copy2(glob.glob(f'{project_backend_path}/{args.name}/'
-                         + f'{args.name}.runs/impl_1/{args.name}*.bit')[0],
-                         f'{project_path}/{args.name}.bit')
+                             f'{project_products_path}/{args.name}.bin')
 
             msg.success('Bitstream generated')
     else:

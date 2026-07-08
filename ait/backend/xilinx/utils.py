@@ -95,7 +95,7 @@ def cleanup_step_files(project_args, step):
 
     if step_index < 5:
         for ext in 'bit', 'bin', 'bit.bin':
-            file = f'{project_backend_path}/{args.name}.{ext}'
+            file = f'{project_backend_path}/products/{args.name}.{ext}'
             if os.path.exists(file):
                 os.remove(file)
     if step_index < 4:
