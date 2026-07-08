@@ -105,6 +105,13 @@ def run_step(project_args):
                                  f'{project_products_path}/{args.name}.bit.bin')
 
             if board.arch.device == 'zynq' or board.arch.device == 'zynqmp':
+                os.makedirs(f'{project_products_path}/boot')
+                if os.path.exists(f'{ait_backend_path}/board/{board.name}/boot'):
+                    shutil.copytree(f'{ait_backend_path}/board/{board.name}/boot', f'{project_products_path}/boot', dirs_exist_ok=True)
+                shutil.copy2(glob.glob(f'{project_backend_path}/{args.name}/'
+                             + f'{args.name}.sdk/{args.name}*.xsa')[0],
+                             f'{project_products_path}/boot/{args.name}.xsa')
+
                 shutil.copy2(glob.glob(f'{project_backend_path}/{args.name}/'
                              + f'{args.name}.runs/impl_1/{args.name}*.bin')[0],
                              f'{project_products_path}/{args.name}.bin')
