@@ -25,11 +25,7 @@ import re
 import os
 
 from ait.frontend.utils import decimalToHumanReadable, msg
-
-
-class StoreChoiceValue(argparse.Action):
-    def __call__(self, parser, namespace, values, option_string=None):
-        setattr(namespace, self.dest, self.choices.index(values))
+from ait.frontend.parser import DeprecatedArg
 
 
 # Custom argparse type representing the number of pipeline stages
@@ -41,41 +37,6 @@ class PipelineStagesType:
             return arg
         else:
             raise argparse.ArgumentTypeError('must be an integer between 1 and 5 in the format x:y:z or \'auto\'')
-
-
-# Custom argparse type representing a path to a file
-class FileType:
-    def __call__(self, arg):
-        if os.path.isfile(arg):
-            return os.path.realpath(arg)
-        else:
-            raise argparse.ArgumentTypeError('Invalid file')
-
-
-# Custom argparse type representing a bounded int
-class IntRangeType:
-    def __init__(self, imin=None, imax=None):
-        self.imin = imin
-        self.imax = imax
-
-    def __call__(self, arg):
-        try:
-            value = int(arg)
-        except ValueError:
-            raise self.exception()
-        if (self.imin is not None and value < self.imin) or (self.imax is not None and value > self.imax):
-            raise self.exception()
-        return value
-
-    def exception(self):
-        if self.imin is not None and self.imax is not None:
-            return argparse.ArgumentTypeError(f'must be an integer in the range [{self.imin}, {self.imax}]')
-        elif self.imin is not None:
-            return argparse.ArgumentTypeError(f'must be an integer >= {self.imin}')
-        elif self.imax is not None:
-            return argparse.ArgumentTypeError(f'must be an integer <= {self.imax}')
-        else:
-            return argparse.ArgumentTypeError('must be an integer')
 
 
 class ArgParser():
@@ -144,9 +105,9 @@ class ArgParser():
                                  default=False)
 
         self.parser.add_argument('--ignore_eng_sample',
-                                 help='ignore engineering sample status from chip part number',
-                                 action='store_true',
-                                 default=False)
+                                 help=argparse.SUPPRESS,
+                                 nargs=0,
+                                 action=DeprecatedArg)
 
         self.parser.add_argument('--target_language',
                                  help='choose target language to synthesize files to: vhdl or verilog\

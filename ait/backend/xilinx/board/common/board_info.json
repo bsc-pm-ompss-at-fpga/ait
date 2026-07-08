@@ -1,7 +1,6 @@
 {
 	"name": "BOARD_NAME", 
 	"chip_part": "CHIP_PART",
-	"es": "ENGINEERING_SAMPLE_STATUS",
 	"board_part": ["BOARD_PART"],
 
 	"arch": {

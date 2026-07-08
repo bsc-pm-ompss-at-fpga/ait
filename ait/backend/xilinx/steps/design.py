@@ -93,7 +93,6 @@ def run_step(project_args):
     global args
     global board
     global accs
-    global chip_part
     global start_time
     global user_id
     global ait_backend_path
@@ -106,7 +105,6 @@ def run_step(project_args):
     start_time = project_args['start_time']
     project_path = project_args['path']
 
-    chip_part = board.chip_part + ('-' + board.es if (board.es and not args.ignore_eng_sample) else '')
     ait_backend_path = f'{ait_path}/backend/{args.backend}'
     project_backend_path = f'{project_path}/{args.backend}'
     project_board_path = f'{project_backend_path}/board'
@@ -177,7 +175,7 @@ def run_step(project_args):
     generate_Vivado_project_tcl()
 
     # Enable beta device on Vivado init script
-    init_script_str = f'enable_beta_device {chip_part}'
+    init_script_str = f'enable_beta_device {board.chip_part}'
     if os.path.exists(f'{project_board_path}/board_files'):
         init_script_str += f'\nset_param board.repoPaths [list {project_board_path}/board_files]'
 

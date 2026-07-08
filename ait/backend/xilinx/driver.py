@@ -37,8 +37,7 @@ def load(args):
     if not args.disable_board_support_check:
         if args.verbose_info:
             msg.log('Checking vendor support for selected board')
-        chip_part = board.chip_part + ('-' + board.es if board.es and not args.ignore_eng_sample else '')
-        checkers.check_board_support(chip_part)
+        checkers.check_board_support(board.chip_part)
 
     # Import backend steps
     steps = importlib.import_module('ait.backend.xilinx.steps')

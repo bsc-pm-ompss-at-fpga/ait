@@ -33,14 +33,12 @@ from ait.frontend.utils import Logger, JSONDottedDict, ait_path, backends, msg, 
 
 
 def check_board_support(board):
-    chip_part = board.chip_part + ('-' + board.es if board.es and not args.ignore_eng_sample else '')
-
     if args.verbose_info:
         msg.log('Checking vendor support for selected board')
 
     backend_utils = importlib.import_module(f'ait.backend.{args.backend}.utils')
     checker = getattr(backend_utils, 'checkers')
-    checker.check_board_support(chip_part)
+    checker.check_board_support(board.chip_part)
 
 
 def get_accelerators(project_path):

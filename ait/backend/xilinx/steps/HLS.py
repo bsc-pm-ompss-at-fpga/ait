@@ -82,7 +82,7 @@ def synthesize_accelerator(acc):
                      + 'set_top ' + acc.name + '_wrapper\n' \
                      + 'add_files ' + acc.name + '/' + acc.filename + ' -cflags "-std=c++11 -I' + os.getcwd() + '"\n' \
                      + 'open_solution "solution1" -flow_target vivado\n' \
-                     + 'set_part {' + chip_part + '}\n' \
+                     + 'set_part {' + board.chip_part + '}\n' \
                      + 'create_clock -period ' + str(args.clock) + 'MHz -name default\n' \
                      + 'config_rtl -reset_level low -reset_async\n' \
                      + 'config_interface -default_slave_interface none -m_axi_offset off -m_axi_addr64='
@@ -124,7 +124,6 @@ def synthesize_accelerator(acc):
 def run_step(project_args):
     global args
     global board
-    global chip_part
     global start_time
     global ait_backend_path
     global project_backend_path
@@ -138,7 +137,6 @@ def run_step(project_args):
     project_path = project_args['path']
     accs = project_args['accs']
 
-    chip_part = board.chip_part + ('-' + board.es if (board.es and not args.ignore_eng_sample) else '')
     ait_backend_path = ait_path + '/backend/' + args.backend
     project_backend_path = project_path + '/' + args.backend
 

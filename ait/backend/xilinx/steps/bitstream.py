@@ -171,7 +171,6 @@ def gen_wns_report(out_path):
 def run_step(project_args):
     global args
     global board
-    global chip_part
     global start_time
     global ait_backend_path
     global project_backend_path
@@ -181,7 +180,6 @@ def run_step(project_args):
     start_time = project_args['start_time']
     project_path = project_args['path']
 
-    chip_part = board.chip_part + ('-' + board.es if (board.es and not args.ignore_eng_sample) else '')
     ait_backend_path = f'{ait_path}/backend/{args.backend}'
     project_backend_path = f'{project_path}/{args.backend}'
 
