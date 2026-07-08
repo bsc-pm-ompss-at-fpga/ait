@@ -34,12 +34,14 @@ vitis_hls_version = None
 def check_vivado():
     global vivado_version
 
-    if shutil.which('vivado'):
-        vivado_version = subprocess.run('vivado -version | grep -oP "(V|v)ivado v\K([0-9.]*)"', shell=True, capture_output=True, encoding='utf-8').stdout.strip()
-        if vivado_version < MIN_VIVADO_VERSION:
-            msg.error(f'Installed Vivado version ({vivado_version}) not supported (>= {MIN_VIVADO_VERSION})')
-    else:
-        msg.error('vivado not found. Please set PATH correctly')
+    if vivado_version is None:
+        if shutil.which('vivado'):
+            vivado_version = subprocess.run('vivado -version | grep -oP "(V|v)ivado v\K([0-9.]*)"', shell=True, capture_output=True, encoding='utf-8').stdout.strip()
+            return check_vivado()
+        else:
+            msg.error('vivado not found. Please set PATH correctly')
+    elif vivado_version < MIN_VIVADO_VERSION:
+        msg.error(f'Installed Vivado version ({vivado_version}) not supported (>= {MIN_VIVADO_VERSION})')
 
     return True
 
@@ -47,12 +49,14 @@ def check_vivado():
 def check_vitis_hls():
     global vitis_hls_version
 
-    if shutil.which('vitis_hls'):
-        vitis_hls_version = subprocess.run('vitis_hls -version | head -n1 | sed "s/\(Vitis.\+v\)\(\([0-9]\|\.\)\+\).\+/\\2/"', shell=True, capture_output=True, encoding='utf-8').stdout.strip()
-        if vitis_hls_version < MIN_VITIS_HLS_VERSION:
-            msg.error(f'Installed Vitis HLS version ({vitis_hls_version}) not supported (>= {MIN_VITIS_HLS_VERSION})')
-    else:
-        msg.error('vitis_hls not found. Please set PATH correctly')
+    if vitis_hls_version is None:
+        if shutil.which('vitis_hls'):
+            vitis_hls_version = subprocess.run('vitis_hls -version | head -n1 | sed "s/\(Vitis.\+v\)\(\([0-9]\|\.\)\+\).\+/\\2/"', shell=True, capture_output=True, encoding='utf-8').stdout.strip()
+            return check_vitis_hls()
+        else:
+            msg.error('vitis_hls not found. Please set PATH correctly')
+    elif vitis_hls_version < MIN_VITIS_HLS_VERSION:
+        msg.error(f'Installed Vitis HLS version ({vitis_hls_version}) not supported (>= {MIN_VITIS_HLS_VERSION})')
 
     return True
 
@@ -66,7 +70,6 @@ def check_bootgen():
 
 
 def check_board_support(chip_part):
-    global vivado_version
     check_vivado()
 
     tmp_dir = os.popen('mktemp -d --suffix=_ait').read().rstrip()
