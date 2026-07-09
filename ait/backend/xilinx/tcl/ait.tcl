@@ -19,6 +19,7 @@
 #------------------------------------------------------------------------#
 
 package require json
+package require fileutil
 
 namespace eval AIT {
     variable scriptDir [file dirname [file normalize [info script]]]

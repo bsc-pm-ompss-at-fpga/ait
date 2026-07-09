@@ -34,16 +34,16 @@ open_bd_design [get_files [dict get ${AIT::project::aitConfig} "name"]_design.bd
 AIT::utils::info_msg "Launching implementation run with ${numJobs} jobs"
 
 # Launch and wait for implementation
+# We have to ignore wait_on_runs return status because the command fails when a run fails
 launch_runs impl_1 -jobs ${numJobs}
-wait_on_runs impl_1
+wait_on_runs -quiet impl_1
 
 # Check if implementation finished correctly
-if [string match "*ERROR*" [get_property STATUS [get_runs impl_1]]] {
-    if [catch {exec exec grep ^ERROR [dict get ${AIT::project::aitConfig} "name"]/[dict get ${AIT::project::aitConfig} "name"].runs/impl_1/runme.log}] {
-        AIT::utils::info_msg "Failed impl_1 implementation"
-    } else {
-        AIT::utils::info_msg "Failed impl_1 implementation: [exec grep ^ERROR [dict get ${AIT::project::aitConfig} "name"]/[dict get ${AIT::project::aitConfig} "name"].runs/impl_1/runme.log]"
+foreach failedRun [get_runs -quiet -filter {STATUS =~ *ERROR*} impl_1] {
+    AIT::utils::warning_msg "Failed implementation run:"
+    AIT::utils::warning_msg "\t- [get_property NAME ${failedRun}]:"
+    foreach runError [fileutil::grep ^ERROR [get_property DIRECTORY ${failedRun}]/runme.log] {
+        AIT::utils::warning_msg "\t\t[regsub [get_property DIRECTORY ${failedRun}]/runme.log:\[0-9\]*: ${runError} ""]"
     }
     AIT::utils::error_msg "Hardware implementation failed."
 }
-

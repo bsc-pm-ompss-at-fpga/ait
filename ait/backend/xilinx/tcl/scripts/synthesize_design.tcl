@@ -38,16 +38,17 @@ create_ip_run [get_files -of_objects [get_filesets sources_1] [current_bd_design
 AIT::utils::info_msg "Launching synthesis run with ${numJobs} jobs"
 
 # Launch and wait for synthesis
+# We have to ignore wait_on_runs return status because the command fails when a run fails
 launch_runs synth_1 -jobs ${numJobs}
-wait_on_runs synth_1
+wait_on_runs -quiet synth_1
 
 # Check if synthesis finished correctly
-if [string match "*ERROR*" [get_property STATUS [get_runs *synth_1]]] {
-    foreach index [lsearch -all [get_property STATUS [get_runs *synth_1]] *ERROR*] {
-        if [catch {exec grep ^ERROR [dict get ${AIT::project::aitConfig} "name"]/[dict get ${AIT::project::aitConfig} "name"].runs/[lindex [get_runs *synth_1] ${index}]/runme.log}] {
-            AIT::utils::info_msg "Failed OOC synthesis [lindex [get_runs *synth_1] ${index}]"
-        } else {
-            AIT::utils::info_msg "Failed OOC synthesis [lindex [get_runs *synth_1] ${index}]: [exec grep ^ERROR [dict get ${AIT::project::aitConfig} "name"]/[dict get ${AIT::project::aitConfig} "name"].runs/[lindex [get_runs *synth_1] ${index}]/runme.log]"
+if [llength [get_runs -quiet -filter {STATUS =~ *ERROR*} *synth_1]] {
+    AIT::utils::warning_msg "Failed synthesis runs:"
+    foreach failedRun [get_runs -filter {STATUS =~ *ERROR*} *synth_1] {
+        AIT::utils::warning_msg "\t[get_property NAME ${failedRun}]:"
+        foreach runError [fileutil::grep ^ERROR [get_property DIRECTORY ${failedRun}]/runme.log] {
+            AIT::utils::warning_msg "\t\t[regsub [get_property DIRECTORY ${failedRun}]/runme.log:\[0-9\]*: ${runError} ""]"
         }
     }
     AIT::utils::error_msg "Hardware synthesis failed."
