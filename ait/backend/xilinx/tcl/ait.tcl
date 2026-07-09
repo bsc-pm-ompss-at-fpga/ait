@@ -30,51 +30,45 @@ namespace eval AIT {
         exit 1
     }
 
-    # Load design procedures
-    AIT::utils::info_msg "Loading design procedures"
+    AIT::utils::info_msg "Loading AIT procedures..."
+
+    # Design procedures
     if {[catch {source -notrace ${scriptDir}/scripts/design.tcl}]} {
         AIT::utils::error_msg "Failed loading design procedures"
     }
 
-    # Load board procedures
-    AIT::utils::info_msg "Loading board procedures"
+    # Board procedures
     if {[catch {source -notrace ${scriptDir}/scripts/board.tcl}]} {
         AIT::utils::error_msg "Failed loading board procedures"
     }
 
-    # Load templates procedures
-    AIT::utils::info_msg "Loading templates procedures"
+    # Templates procedures
     if {[catch {source -notrace ${scriptDir}/scripts/templates.tcl}]} {
         AIT::utils::error_msg "Failed loading templates procedures"
     }
 
-    # Load AXI utils procedures
-    AIT::utils::info_msg "Loading AXI utils procedures"
+    # AXI utils procedures
     if {[catch {source -notrace ${scriptDir}/scripts/axi_utils.tcl}]} {
         AIT::utils::error_msg "Failed loading AXI utils procedures"
     }
 
-    # Load AXI-Stream utils procedures
-    AIT::utils::info_msg "Loading AXI-Stream utils procedures"
+    # AXI-Stream utils procedures
     if {[catch {source -notrace ${scriptDir}/scripts/axis_utils.tcl}]} {
         AIT::utils::error_msg "Failed loading AXI-Stream utils procedures"
     }
 
-    # Load clocks procedures
-    AIT::utils::info_msg "Loading clocks procedures"
+    # Clocks procedures
     if {[catch {source -notrace ${scriptDir}/scripts/clocks.tcl}]} {
         AIT::utils::error_msg "Failed loading clocks procedures"
     }
 
-    # Load resets procedures
-    AIT::utils::info_msg "Loading resets procedures"
+    # Resets procedures
     if {[catch {source -notrace ${scriptDir}/scripts/resets.tcl}]} {
         AIT::utils::error_msg "Failed loading resets procedures"
     }
 
     # If available, overwrite board-specific procedures
     if {[file exists ${scriptDir}/../board/procs.tcl]} {
-        AIT::utils::info_msg "Loading board-specific procedures"
         if {[catch {source -notrace ${scriptDir}/../board/procs.tcl}]} {
             AIT::utils::error_msg "Failed overwriting board-specific procedures"
         }
@@ -82,7 +76,6 @@ namespace eval AIT {
 
     # If available, load project variables
     if {[file exists ${scriptDir}/project.tcl]} {
-        AIT::utils::info_msg "Loading project variables"
         if {[catch {source -notrace ${scriptDir}/project.tcl}]} {
             AIT::utils::error_msg "Failed loading project variables"
         }
