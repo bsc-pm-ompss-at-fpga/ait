@@ -10,13 +10,13 @@ The Accelerator Integration Tool (AIT) automatically integrates OmpSs@FPGA and O
 
 This README should help you install the AIT component of the OmpSs@FPGA toolchain from the repository.
 However, it is preferred using the pre-built Docker image with the latest stable toolchain.
-They are available at [OmpSs@FPGA pre-built Docker images](https://ompssatfpga.bsc.es/downloads/ompss/docker/) and [OmpSs-2@FPGA pre-built Docker images](https://ompssatfpga.bsc.es/downloads/ompss-2/docker/).
+They are available at [OmpSs-2@FPGA pre-built Docker images](https://ompssatfpga.bsc.es/downloads/ompss-2/docker/).
 
-Moreover, there are pre-built SD images for the current supported board families: Zynq7000 and Ultrascale.
-They are also available at [OmpSs@FPGA pre-built SD images](https://ompssatfpga.bsc.es/downloads/ompss/sd-images/) and [OmpSs-2@FPGA pre-built SD images](https://ompssatfpga.bsc.es/downloads/ompss-2/sd-images/).
+Moreover, there are pre-built SD images for the current supported board families: Zynq and ZynqMP.
+They are also available at [OmpSs-2@FPGA pre-built SD images](https://ompssatfpga.bsc.es/downloads/ompss-2/sd-images/).
 
 # Prerequisites
- - [Python 3.7 or later](https://www.python.org)
+ - [Python 3.8 or later](https://www.python.org)
  - [pip](https://pip.pypa.io)
  - Vendor backends:
    - [Xilinx Vivado 2021.1 or later](https://www.xilinx.com/support/download/index.html/content/xilinx/en/downloadNav/vivado-design-tools/archive.html)
@@ -59,7 +59,7 @@ You can use `pip` to easily install `ait` on your system:
 
     * From our internal GitLab repository (BSC users only):
 
-          git clone https://pm.bsc.es/gitlab/ompss-at-fpga/ait.git
+          git clone https://gitlab.bsc.es/ompss-at-fpga/ait.git
 
 3. Enable Git LFS and install
 
