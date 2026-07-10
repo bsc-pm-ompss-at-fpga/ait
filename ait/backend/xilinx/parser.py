@@ -69,6 +69,11 @@ class ArgParser():
         self.parser._optionals.title = 'Xilinx-specific arguments'
 
         # Vendor-specific arguments
+        self.parser.add_argument('--disable_vivado_reports',
+                                 help='do not generate Vivado implementation reports',
+                                 action='store_true',
+                                 default=False)
+
         self.parser.add_argument('--ignore_eng_sample',
                                  help=argparse.SUPPRESS,
                                  nargs=0,
