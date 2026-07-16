@@ -103,12 +103,16 @@ namespace eval board {
                     assign_bd_address [get_bd_addr_segs ${AIT::templates::OMPIF::messageSenderIP}/cntrl/reg0] -range 16384 -offset 0x108000
                     assign_bd_address [get_bd_addr_segs ${AIT::templates::OMPIF::messageReceiverIP}/cntrl/Reg] -range 16384 -offset 0x114000
                     assign_bd_address [get_bd_addr_segs ${AIT::templates::ethSubsys::jtagGpioIP}/S_AXI/Reg] -range 4096 -offset 0x10C000
-                    assign_bd_address -target_address_space ${AIT::templates::OMPIF::messageReceiverIP}/bufwr [get_bd_addr_segs ${AIT::templates::axi_inter_msg_recv_bufwr::downsizerIP}/slv/reg0]
-                    assign_bd_address -target_address_space ${AIT::templates::OMPIF::messageReceiverIP}/memcpy [get_bd_addr_segs ${AIT::templates::axi_inter_msg_recv_memcpy::downsizerIP}/slv/reg0]
-                    assign_bd_address -target_address_space ${AIT::templates::OMPIF::messageSenderIP}/moMEM [get_bd_addr_segs ${AIT::templates::axi_inter_msg_send::downsizerIP}/slv/reg0]
+                    switch -- [dict get ${AIT::project::board} "name"] {
+                        "alveo_u55c" -
+                        "alveo_u280_hbm" {
+                            assign_bd_address -target_address_space ${AIT::templates::OMPIF::messageReceiverIP}/bufwr [get_bd_addr_segs ${AIT::templates::axi_inter_msg_recv_bufwr::downsizerIP}/slv/reg0]
+                            assign_bd_address -target_address_space ${AIT::templates::OMPIF::messageReceiverIP}/memcpy [get_bd_addr_segs ${AIT::templates::axi_inter_msg_recv_memcpy::downsizerIP}/slv/reg0]
+                            assign_bd_address -target_address_space ${AIT::templates::OMPIF::messageSenderIP}/moMEM [get_bd_addr_segs ${AIT::templates::axi_inter_msg_send::downsizerIP}/slv/reg0]
+                        }
+                    }
                 }
             }
-
         }
 
         # Map hwruntime queues to address space
