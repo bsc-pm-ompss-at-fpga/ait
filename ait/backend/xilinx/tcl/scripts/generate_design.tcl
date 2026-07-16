@@ -19,7 +19,7 @@
 #------------------------------------------------------------------------#
 
 set scriptDir [file dirname [file normalize [info script]]]
-set projectRootDir ${scriptDir}/../..
+set projectRootDir [file normalize ${scriptDir}/../..]
 
 # Cleanup files
 file delete ${projectRootDir}/[dict get ${AIT::project::aitConfig} "name"].ait.json
@@ -92,11 +92,11 @@ if [file isdirectory ${projectRootDir}/IPs] {
     set_property ip_repo_paths "[get_property ip_repo_paths [current_project]] ${projectRootDir}/IPs" [current_project]
     update_ip_catalog
     foreach IP [glob -nocomplain ${projectRootDir}/IPs/*.zip] {
-        AIT::utils::info_msg "Adding auxiliary IP ${IP}..."
+        AIT::utils::info_msg "Adding auxiliary IP ${IP}"
         update_ip_catalog -add_ip ${IP} -repo_path ${projectRootDir}/IPs
     }
     foreach IP [glob -nocomplain ${projectRootDir}/IPs/*.{v,vhdl}] {
-        AIT::utils::info_msg "Adding auxiliary IP ${IP}..."
+        AIT::utils::info_msg "Adding auxiliary IP ${IP}"
         import_files -norecurse ${IP}
         update_ip_catalog
     }
@@ -108,7 +108,7 @@ if [file isdirectory ${projectRootDir}/board/IPs] {
     set_property ip_repo_paths "[get_property ip_repo_paths [current_project]] ${projectRootDir}/board/IPs" [current_project]
     update_ip_catalog
     foreach IP [glob -nocomplain ${projectRootDir}/board/IPs/*.zip] {
-        AIT::utils::info_msg "Adding board IP ${IP}..."
+        AIT::utils::info_msg "Adding board IP ${IP}"
         update_ip_catalog -add_ip ${IP} -repo_path ${projectRootDir}/board/IPs
     }
     AIT::utils::info_msg "Board IPs sucessfully added"

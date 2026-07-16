@@ -30,7 +30,7 @@ namespace eval AIT {
         exit 1
     }
 
-    AIT::utils::info_msg "Loading AIT procedures..."
+    AIT::utils::info_msg "Loading AIT namespace..."
 
     # Design procedures
     if {[catch {source -notrace ${scriptDir}/scripts/design.tcl}]} {
@@ -80,4 +80,6 @@ namespace eval AIT {
             AIT::utils::error_msg "Failed loading project variables"
         }
     }
+
+    AIT::utils::info_msg "AIT namespace loaded"
 }
