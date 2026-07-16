@@ -29,7 +29,7 @@ namespace eval ${instanceName} {
         variable slaveRegsliceIP [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_register_slice slave_regslice]
         variable clkConverterIP [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_clock_converter clk_converter]
         variable middleRegsliceIP [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_register_slice middle_regslice]
-        variable downsizerIP [create_bd_cell -type ip -vlnv bsc:axiu:axiu_dwidth_downsizer_vwrapper downsizer]
+        variable downsizerIP [create_bd_cell -type ip -vlnv bsc:axiu:data_width_downsizer downsizer]
         variable masterRegsliceIP [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_register_slice master_regslice]
         variable protocolConverterIP [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_protocol_converter protocol_converter]
 
