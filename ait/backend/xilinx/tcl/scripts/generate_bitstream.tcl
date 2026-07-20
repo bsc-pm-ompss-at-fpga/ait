@@ -50,18 +50,15 @@ switch -- [dict get ${AIT::project::board} "arch" "device"] {
 AIT::utils::info_msg "Launching bitstream run with ${numJobs} jobs"
 
 # Write bitstream
-reset_runs impl_1 -from_step write_bitstream
+reset_runs -quiet impl_1 -from_step write_bitstream
 launch_runs impl_1 -to_step write_bitstream -jobs ${numJobs}
 
-# We have to ignore wait_on_runs return status because the command fails when a run fails
-wait_on_runs -quiet impl_1
-
 # Check if bitstream generation finished correctly
-foreach failedRun [get_runs -quiet -filter {STATUS =~ *ERROR*} impl_1] {
+if [catch {wait_on_runs impl_1}] {
     AIT::utils::warning_msg "Failed bitstream generation:"
-    AIT::utils::warning_msg "\t- [get_property NAME ${failedRun}]:"
-    foreach runError [fileutil::grep ^ERROR [get_property DIRECTORY ${failedRun}]/runme.log] {
-        AIT::utils::warning_msg "\t\t[regsub [get_property DIRECTORY ${failedRun}]/runme.log:\[0-9\]*: ${runError} ""]"
+    AIT::utils::warning_msg "\t- [get_property NAME impl_1]"
+    foreach runError [fileutil::grep ^ERROR [get_property DIRECTORY impl_1]/runme.log] {
+        AIT::utils::warning_msg "\t\t[regsub [get_property DIRECTORY impl_1]/runme.log:\[0-9\]*: ${runError} ""]"
     }
     AIT::utils::error_msg "Bitstream generation failed."
 }
