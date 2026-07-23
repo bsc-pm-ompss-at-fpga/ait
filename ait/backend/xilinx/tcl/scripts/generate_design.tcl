@@ -142,9 +142,9 @@ open_bd_design [get_files [dict get ${AIT::project::aitConfig} "name"]_design.bd
 set_property synth_checkpoint_mode {Hierarchical} [get_files [current_bd_design].bd]
 
 # If available, execute the user defined pre-design tcl script
-if [file exists ${projectRootDir}/user/tcl/scripts/userPreDesign.tcl] {
+if [file exists ${projectRootDir}/user/tcl/userPreDesign.tcl] {
     AIT::utils::info_msg "Loading user pre-design script"
-    if [catch {source -notrace ${projectRootDir}/user/tcl/scripts/userPreDesign.tcl}] {
+    if [catch {source -notrace ${projectRootDir}/user/tcl/userPreDesign.tcl}] {
         AIT::utils::error_msg "Failed sourcing board pre base design"
     }
 }
@@ -620,9 +620,9 @@ update_ip_catalog -rebuild -scan_changes
 upgrade_ip -quiet [get_ips -filter UPGRADE_VERSIONS != {}]
 
 # If available, execute the user defined post-design tcl script
-if [file exists ${projectRootDir}/user/tcl/scripts/userPostDesign.tcl] {
+if [file exists ${projectRootDir}/user/tcl/userPostDesign.tcl] {
     AIT::utils::info_msg "Loading user post-design script"
-    if [catch {source -notrace ${projectRootDir}/user/tcl/scripts/userPostDesign.tcl}] {
+    if [catch {source -notrace ${projectRootDir}/user/tcl/userPostDesign.tcl}] {
         AIT::utils::error_msg "Failed sourcing board post base design"
     }
 }
