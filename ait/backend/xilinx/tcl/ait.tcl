@@ -47,13 +47,13 @@ namespace eval AIT {
         AIT::utils::error_msg "Failed loading templates procedures"
     }
 
-    # AXI utils procedures
-    if {[catch {source -notrace ${scriptDir}/scripts/axi_utils.tcl}]} {
+    # AXI procedures
+    if {[catch {source -notrace ${scriptDir}/scripts/axi.tcl}]} {
         AIT::utils::error_msg "Failed loading AXI utils procedures"
     }
 
-    # AXI-Stream utils procedures
-    if {[catch {source -notrace ${scriptDir}/scripts/axis_utils.tcl}]} {
+    # AXI-Stream procedures
+    if {[catch {source -notrace ${scriptDir}/scripts/axis.tcl}]} {
         AIT::utils::error_msg "Failed loading AXI-Stream utils procedures"
     }
 
