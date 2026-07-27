@@ -629,6 +629,7 @@ if [file exists ${projectRootDir}/user/tcl/userPostDesign.tcl] {
 
 if {[version -short] >= 2024.2} {
     AIT::utils::info_msg "Migrating available IPs to inline HDL versions"
+    save_bd_design -quiet
     upgrade_project -migrate_to_inline_hdl
 }
 
