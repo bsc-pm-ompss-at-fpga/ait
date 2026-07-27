@@ -168,7 +168,7 @@ set AIT::project::xtasksConfigBin ""
 # Import accelerators json
 dict set AIT::project::aitJsonDict "accs" ${AIT::project::accs}
 if [dict exists ${AIT::project::userConfig} "interface_groups"] {
-  dict set AIT::project::aitJsonDict "interface_groups" [dict get ${AIT::project::userConfig} "interface_groups"]
+    dict set AIT::project::aitJsonDict "interface_groups" [dict get ${AIT::project::userConfig} "interface_groups"]
 }
 
 AIT::utils::info_msg "Instantiating accelerators..."

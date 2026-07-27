@@ -73,12 +73,11 @@ def run_step(project_args):
                          f'{project_products_path}/{args.name}.bit')
 
             if board.arch.device == 'zynq' and utils.check_bootgen():
-                bif_file = open(f'{project_backend_path}/{args.name}/{args.name}.runs/impl_1/bitstream.bif', 'w')
-                bif_file.write('all:\n'
+                with open(f'{project_backend_path}/{args.name}/{args.name}.runs/impl_1/bitstream.bif', 'w') as file:
+                    file.write('all:\n'
                                + '{\n'
                                + f'\t{args.name}_design_wrapper.bit\n'
                                + '}')
-                bif_file.close()
                 p = subprocess.Popen('bootgen -image bitstream.bif -arch zynq -process_bitstream bin -w',
                                      cwd=f'{project_backend_path}/{args.name}/{args.name}.runs/impl_1',
                                      stdout=sys.stdout.subprocess,

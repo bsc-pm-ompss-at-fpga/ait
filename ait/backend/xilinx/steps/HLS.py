@@ -95,9 +95,8 @@ def synthesize_accelerator(acc):
                       + f'export_design -rtl {args.target_language} -format ip_catalog -vendor bsc -library ompss -display_name {acc.name} -taxonomy /BSC/OmpSs\n' \
                       + 'exit\n'
 
-    acc_tcl_script_file = open(f'{project_acc_HLS_path}/HLS_{acc.name}.tcl', 'w')
-    acc_tcl_script_file.write(acc_tcl_script)
-    acc_tcl_script_file.close()
+    with open(f'{project_acc_HLS_path}/HLS_{acc.name}.tcl', 'w') as file:
+        file.write(acc_tcl_script)
 
     msg.info(f"Synthesizing '{acc.name}'")
 
@@ -165,17 +164,16 @@ def run_step(project_args):
 
     # This directory should not exist yet, fail otherwise
     os.makedirs(f'{project_path}/products/reports/')
-    resources_file = open(f'{project_path}/products/reports/{args.name}.resources-hls.txt', 'w')
     msg.log('Resources estimation summary')
-    for res_name, res_value in sorted(used_resources.items()):
-        if res_name in available_resources:
-            available = available_resources[res_name]
-        else:
-            available = 0
-        if available > 0:
-            utilization_percentage = str(round(float(res_value) / float(available) * 100, 2))
-            report_string = '{0:<9} {1:>7} used | {2:>7} available - {3:>6}% utilization'
-            report_string_formatted = report_string.format(res_name, res_value, available, utilization_percentage)
-            msg.log(report_string_formatted)
-            resources_file.write(f'{report_string_formatted}\n')
-    resources_file.close()
+    with open(f'{project_path}/products/reports/{args.name}.{STEP_NAME}.resources.txt', 'w') as file:
+        for res_name, res_value in sorted(used_resources.items()):
+            if res_name in available_resources:
+                available = available_resources[res_name]
+            else:
+                available = 0
+            if available > 0:
+                utilization_percentage = str(round(float(res_value) / float(available) * 100, 2))
+                report_string = '{0:<9} {1:>7} used | {2:>7} available - {3:>6}% utilization'
+                report_string_formatted = report_string.format(res_name, res_value, available, utilization_percentage)
+                msg.log(report_string_formatted)
+                file.write(f'{report_string_formatted}\n')

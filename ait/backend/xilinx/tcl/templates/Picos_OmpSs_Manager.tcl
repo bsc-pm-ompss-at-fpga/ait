@@ -122,7 +122,7 @@ namespace eval hwruntime {
         set_property -dict [list \
             CONFIG.M_TID_WIDTH.VALUE_SRC USER \
             CONFIG.M_TID_WIDTH {1} \
-            CONFIG.TID_REMAP "1'b1" \
+            CONFIG.TID_REMAP "1'b1"
         ] ${axis_spawn_TID}
 
         # Create instance: axis_taskwait_TID, and set properties
@@ -130,7 +130,7 @@ namespace eval hwruntime {
         set_property -dict [list \
             CONFIG.M_TID_WIDTH.VALUE_SRC USER \
             CONFIG.M_TID_WIDTH {1} \
-            CONFIG.TID_REMAP "1'b1" \
+            CONFIG.TID_REMAP "1'b1"
         ] ${axis_taskwait_TID}
     }
 
@@ -158,7 +158,7 @@ namespace eval hwruntime {
         CONFIG.MAX_ACC_TYPES [expr {max([dict size [dict get ${AIT::project::accs}]] + ([dict get ${AIT::project::aitConfig} "ompif"] ? 2 : 0), 2)}] \
         CONFIG.MAX_ARGS_PER_TASK [dict get ${AIT::project::aitConfig} "max_args_per_task"] \
         CONFIG.MAX_COPS_PER_TASK [dict get ${AIT::project::aitConfig} "max_copies_per_task"] \
-        CONFIG.MAX_DEPS_PER_TASK [dict get ${AIT::project::aitConfig} "max_deps_per_task"] \
+        CONFIG.MAX_DEPS_PER_TASK [dict get ${AIT::project::aitConfig} "max_deps_per_task"]
     ]
 
     if {[dict get ${AIT::project::aitConfig} "enable_pom_axilite"]} {
@@ -180,8 +180,8 @@ namespace eval hwruntime {
             CONFIG.HASH_T_SIZE [dict get ${AIT::project::aitConfig} "picos_hash_t_size"] \
             CONFIG.NUM_DCTS [dict get ${AIT::project::aitConfig} "picos_num_dcts"] \
             CONFIG.TM_SIZE [dict get ${AIT::project::aitConfig} "picos_tm_size"] \
-            CONFIG.VM_SIZE [dict get ${AIT::project::aitConfig} "picos_vm_size"] \
-        }
+            CONFIG.VM_SIZE [dict get ${AIT::project::aitConfig} "picos_vm_size"]
+    }
 
     set_property -dict ${POM_Config} ${hwruntimeIP}
 
@@ -209,14 +209,14 @@ namespace eval hwruntime {
         CONFIG.Write_Depth_A [expr {[dict get ${AIT::project::aitConfig} "cmdin_subqueue_len"]*max([dict get ${AIT::project::aitConfig} "num_instances"], 2)}] \
         CONFIG.Write_Width_A {64} \
         CONFIG.Write_Width_B {32} \
-        CONFIG.use_bram_block {Stand_Alone} \
+        CONFIG.use_bram_block {Stand_Alone}
     ] ${cmdInQueue}
 
     # Create instance: cmdInQueue_BRAM_Ctrl, and set properties
     variable cmdInQueue_BRAM_Ctrl [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl cmdInQueue_BRAM_Ctrl]
     set_property -dict [list \
         CONFIG.PROTOCOL {AXI4LITE} \
-        CONFIG.SINGLE_PORT_BRAM {1} \
+        CONFIG.SINGLE_PORT_BRAM {1}
     ] ${cmdInQueue_BRAM_Ctrl}
 
     # Create instance: cmdOutQueue, and set properties
@@ -243,14 +243,14 @@ namespace eval hwruntime {
         CONFIG.Write_Depth_A [expr {[dict get ${AIT::project::aitConfig} "cmdout_subqueue_len"]*max([dict get ${AIT::project::aitConfig} "num_instances"], 2)}] \
         CONFIG.Write_Width_A {64} \
         CONFIG.Write_Width_B {32} \
-        CONFIG.use_bram_block {Stand_Alone} \
+        CONFIG.use_bram_block {Stand_Alone}
     ] ${cmdOutQueue}
 
     # Create instance: cmdOutQueue_BRAM_Ctrl, and set properties
     variable cmdOutQueue_BRAM_Ctrl [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl cmdOutQueue_BRAM_Ctrl]
     set_property -dict [list \
         CONFIG.PROTOCOL {AXI4LITE} \
-        CONFIG.SINGLE_PORT_BRAM {1} \
+        CONFIG.SINGLE_PORT_BRAM {1}
     ] ${cmdOutQueue_BRAM_Ctrl}
 
     if  {![dict get ${AIT::project::aitConfig} "disable_spawn_queues"]} {
@@ -278,14 +278,14 @@ namespace eval hwruntime {
             CONFIG.Write_Depth_A [dict get ${AIT::project::aitConfig} "spawnin_queue_len"] \
             CONFIG.Write_Width_A {64} \
             CONFIG.Write_Width_B {32} \
-            CONFIG.use_bram_block {Stand_Alone} \
+            CONFIG.use_bram_block {Stand_Alone}
         ] ${spawnInQueue}
 
         # Create instance: spawnInQueue_BRAM_Ctrl, and set properties
         variable spawnInQueue_BRAM_Ctrl [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl spawnInQueue_BRAM_Ctrl]
         set_property -dict [list \
             CONFIG.PROTOCOL {AXI4LITE} \
-            CONFIG.SINGLE_PORT_BRAM {1} \
+            CONFIG.SINGLE_PORT_BRAM {1}
         ] ${spawnInQueue_BRAM_Ctrl}
 
         # Create instance: spawnOutQueue, and set properties
@@ -312,14 +312,14 @@ namespace eval hwruntime {
             CONFIG.Write_Depth_A [dict get ${AIT::project::aitConfig} "spawnout_queue_len"] \
             CONFIG.Write_Width_A {64} \
             CONFIG.Write_Width_B {32} \
-            CONFIG.use_bram_block {Stand_Alone} \
+            CONFIG.use_bram_block {Stand_Alone}
         ] ${spawnOutQueue}
 
         # Create instance: spawnOutQueue_BRAM_Ctrl, and set properties
         variable spawnOutQueue_BRAM_Ctrl [create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl spawnOutQueue_BRAM_Ctrl]
         set_property -dict [list \
             CONFIG.PROTOCOL {AXI4LITE} \
-            CONFIG.SINGLE_PORT_BRAM {1} \
+            CONFIG.SINGLE_PORT_BRAM {1}
         ] ${spawnOutQueue_BRAM_Ctrl}
     }
 

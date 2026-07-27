@@ -132,7 +132,7 @@ namespace eval board {
             set intfNum [format %02u [dict get ${intfDict} "num"]]
             set memIP [get_bd_cells -hierarchical -filter {VLNV =~ "xilinx.com:ip:hbm:*"}]
             set_property -dict [list \
-              CONFIG.USER_SAXI_${intfNum} {true}
+                CONFIG.USER_SAXI_${intfNum} {true}
             ] ${memIP}
             AIT::clocks::connect_clock [get_bd_pins ${memIP}/AXI_${intfNum}_ACLK]
             AIT::resets::connect_reset [get_bd_pins ${memIP}/AXI_${intfNum}_ARESET_N]
@@ -141,13 +141,13 @@ namespace eval board {
             set memIP [get_bd_cells -hierarchical -filter {VLNV =~ "xilinx.com:ip:processing_system7:*"}]
             if {[dict get ${intfDict} "role"] eq "slave"} {
                 set_property -dict [list \
-                  CONFIG.PCW_S_AXI_HP${intfNum}_DATA_WIDTH {64} \
-                  CONFIG.PCW_USE_S_AXI_HP${intfNum} {1}
+                    CONFIG.PCW_S_AXI_HP${intfNum}_DATA_WIDTH {64} \
+                    CONFIG.PCW_USE_S_AXI_HP${intfNum} {1}
                 ] ${memIP}
                 AIT::clocks::connect_clock [AIT::clocks::get_associated_clk_pin [dict get ${intfDict} "pinBlock"]]
             } elseif {[dict get ${intfDict} "role"] eq "master"} {
                 set_property -dict [list \
-                  CONFIG.PCW_USE_M_AXI_GP${intfNum} {1}
+                    CONFIG.PCW_USE_M_AXI_GP${intfNum} {1}
                 ] ${memIP}
                 AIT::clocks::connect_clock [AIT::clocks::get_associated_clk_pin [dict get ${intfDict} "pinBlock"]]
             }
@@ -158,14 +158,14 @@ namespace eval board {
                 # We must increment by 2 if the interface is slave, because the HP ports start at 2
                 incr intfNum 2
                 set_property -dict [list \
-                  CONFIG.PSU__SAXIGP${intfNum}__DATA_WIDTH {128} \
-                  CONFIG.PSU__USE__S_AXI_GP${intfNum} {1}
+                    CONFIG.PSU__SAXIGP${intfNum}__DATA_WIDTH {128} \
+                    CONFIG.PSU__USE__S_AXI_GP${intfNum} {1}
                 ] ${memIP}
                 AIT::clocks::connect_clock [AIT::clocks::get_associated_clk_pin [dict get ${intfDict} "pinBlock"]]
             } elseif {[dict get ${intfDict} "role"] eq "master"} {
                 set_property -dict [list \
-                  CONFIG.PSU__MAXIGP${intfNum}__DATA_WIDTH {128} \
-                  CONFIG.PSU__USE__M_AXI_GP${intfNum} {1}
+                    CONFIG.PSU__MAXIGP${intfNum}__DATA_WIDTH {128} \
+                    CONFIG.PSU__USE__M_AXI_GP${intfNum} {1}
                 ] ${memIP}
                 AIT::clocks::connect_clock [AIT::clocks::get_associated_clk_pin [dict get ${intfDict} "pinBlock"]]
             }

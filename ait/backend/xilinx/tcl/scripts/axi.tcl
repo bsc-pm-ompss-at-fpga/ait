@@ -30,14 +30,14 @@ namespace eval AXI {
 
         set intlvPinDict {}
 
-        # If interface has address bus, create addrInterleaver and connect it
         if {([get_property TYPE ${intfPinIP}] ne "hier") || ([string match "xilinx.com:ip:axi_interconnect:*" [get_property VLNV ${intfPinIP}]])} {
+            # If interface has address bus, create addrInterleaver and connect it
             set addrBusList [list]
             set rwMode [get_property CONFIG.READ_WRITE_MODE ${intfPin}]
-            if {($rwMode eq "READ_WRITE") || ($rwMode eq "READ_ONLY")} {
+            if {(${rwMode} eq "READ_WRITE") || (${rwMode} eq "READ_ONLY")} {
                 lappend addrBusList "araddr"
             }
-            if {($rwMode eq "READ_WRITE") || ($rwMode eq "WRITE_ONLY")} {
+            if {(${rwMode} eq "READ_WRITE") || (${rwMode} eq "WRITE_ONLY")} {
                 lappend addrBusList "awaddr"
             }
             foreach addrBus ${addrBusList} {
@@ -59,8 +59,8 @@ namespace eval AXI {
                 connect_bd_net [get_bd_pins ${intfPin}_${addrBus}] [get_bd_pins ${intlvIP}/in_addr]
                 dict set intlvPinDict ${addrBus} [get_bd_pins ${intlvIP}/out_addr]
             }
-        # If interface has no address bus, look for it in a lower boundary
         } else {
+            # If interface has no address bus, look for it in a lower boundary
             set innerIntfPin [get_bd_intf_pins -of_objects [get_bd_intf_nets -boundary_type lower -of_objects ${intfPin}] -filter "PATH != ${intfPin}"]
             set innerIntlvPinDict [add_addrInterleaver ${innerIntfPin} ${intfName} [get_bd_cells -of_objects ${intfPin}]]
             dict for {addrBus innerIntlvPin} ${innerIntlvPinDict} {

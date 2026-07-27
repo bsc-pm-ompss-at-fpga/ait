@@ -109,19 +109,18 @@ def gen_utilization_report(out_path):
                 util_resources['URAM'] = elems[6].strip()
                 break
 
-    resources_file = open(out_path, 'w')
     msg.log('Resources utilization summary')
-    for name in ['BRAM', 'DSP', 'FF', 'LUT', 'URAM']:
-        # Check if resource is available
-        if name not in used_resources:
-            continue
+    with open(out_path, 'w') as file:
+        for name in ['BRAM', 'DSP', 'FF', 'LUT', 'URAM']:
+            # Check if resource is available
+            if name not in used_resources:
+                continue
 
-        report_string = '{0:<9} {1:>7} used | {2:>7} available - {3:>6}% utilization'
-        report_string_formatted = report_string.format(name, used_resources[name],
-                                                       av_resources[name], util_resources[name])
-        msg.log(report_string_formatted)
-        resources_file.write(f'{report_string_formatted}\n')
-    resources_file.close()
+            report_string = '{0:<9} {1:>7} used | {2:>7} available - {3:>6}% utilization'
+            report_string_formatted = report_string.format(name, used_resources[name],
+                                                           av_resources[name], util_resources[name])
+            msg.log(report_string_formatted)
+            file.write(f'{report_string_formatted}\n')
 
 
 def gen_wns_report(out_path):

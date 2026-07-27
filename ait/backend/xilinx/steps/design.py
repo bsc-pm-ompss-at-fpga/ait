@@ -82,9 +82,8 @@ def generate_Vivado_project_tcl():
 
     vivado_project += '}\n'
 
-    vivado_project_file = open(f'{project_backend_path}/tcl/project.tcl', 'w')
-    vivado_project_file.write(vivado_project)
-    vivado_project_file.close()
+    with open(f'{project_backend_path}/tcl/project.tcl', 'w') as file:
+        file.write(vivado_project)
 
 
 def run_step(project_args):

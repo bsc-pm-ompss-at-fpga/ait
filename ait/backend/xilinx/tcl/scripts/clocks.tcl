@@ -44,7 +44,7 @@ namespace eval clocks {
         if {${clkName} eq ""} {
             set clkName "freq_${outFreq}_clk"
         } else {
-                set clkName "${clkName}_clk"
+            set clkName "${clkName}_clk"
         }
 
         # If it does not exist, create clock

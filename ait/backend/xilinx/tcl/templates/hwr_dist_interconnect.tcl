@@ -31,77 +31,77 @@ if {[dict get ${AIT::project::aitConfig} "lock_hwruntime"]} {
     incr num_common_hwruntime_intf
 }
 
-AIT::AXIS::create_inStream_Inter_tree Hardware_Runtime/hwr_inStream/inS_common_Inter $num_common_hwruntime_intf [dict get ${AIT::project::aitConfig} "num_instances"] $pi_clk $pi_inter_rstn $pi_peri_rstn
-set max_level_common [AIT::AXIS::create_outStream_Inter_tree Hardware_Runtime/hwr_outStream/outS_common_Inter $num_common_hwruntime_intf [dict get ${AIT::project::aitConfig} "num_instances"] $po_clk $po_inter_rstn $po_peri_rstn]
+AIT::AXIS::create_inStream_Inter_tree Hardware_Runtime/hwr_inStream/inS_common_Inter ${num_common_hwruntime_intf} [dict get ${AIT::project::aitConfig} "num_instances"] ${pi_clk} ${pi_inter_rstn} ${pi_peri_rstn}
+set max_level_common [AIT::AXIS::create_outStream_Inter_tree Hardware_Runtime/hwr_outStream/outS_common_Inter ${num_common_hwruntime_intf} [dict get ${AIT::project::aitConfig} "num_instances"] ${po_clk} ${po_inter_rstn} ${po_peri_rstn}]
 if {[dict get ${AIT::project::aitConfig} "task_creation"]} {
     # spawn + taskwait
-    AIT::AXIS::create_inStream_Inter_tree Hardware_Runtime/hwr_inStream/inS_ext_Inter 2 [dict get ${AIT::project::aitConfig} "num_acc_creators"] $pi_clk $pi_inter_rstn $pi_peri_rstn
-    set max_level_ext [AIT::AXIS::create_outStream_Inter_tree Hardware_Runtime/hwr_outStream/outS_ext_Inter 2 [dict get ${AIT::project::aitConfig} "num_acc_creators"] $po_clk $po_inter_rstn $po_peri_rstn]
+    AIT::AXIS::create_inStream_Inter_tree Hardware_Runtime/hwr_inStream/inS_ext_Inter 2 [dict get ${AIT::project::aitConfig} "num_acc_creators"] ${pi_clk} ${pi_inter_rstn} ${pi_peri_rstn}
+    set max_level_ext [AIT::AXIS::create_outStream_Inter_tree Hardware_Runtime/hwr_outStream/outS_ext_Inter 2 [dict get ${AIT::project::aitConfig} "num_acc_creators"] ${po_clk} ${po_inter_rstn} ${po_peri_rstn}]
 }
 
 set ninter [expr {int(ceil([dict get ${AIT::project::aitConfig} "num_instances"]/16.))}]
-for {set i 0} {$i < $ninter} {incr i} {
+for {set i 0} {${i} < ${ninter}} {incr i} {
     if {[dict get ${AIT::project::aitConfig} "lock_hwruntime"]} {
         # Accelerator that do not create tasks never use the spawn_in/out nor the taskwait_in/out streams
         set_property -dict [list \
             CONFIG.M00_AXIS_BASETDEST {0x00000000} \
             CONFIG.M00_AXIS_HIGHTDEST {0x00000000} \
             CONFIG.M01_AXIS_BASETDEST {0x00000001} \
-            CONFIG.M01_AXIS_HIGHTDEST {0x00000001} \
-         ] [get_bd_cells Hardware_Runtime/hwr_inStream/inS_common_Inter_lvl0_$i]
+            CONFIG.M01_AXIS_HIGHTDEST {0x00000001}
+        ] [get_bd_cells Hardware_Runtime/hwr_inStream/inS_common_Inter_lvl0_${i}]
     } else {
         # There's no need to filter if there is only one master
         set_property -dict [list \
             CONFIG.M00_AXIS_BASETDEST {0x00000000} \
-            CONFIG.M00_AXIS_HIGHTDEST {0xFFFFFFFF} \
-         ] [get_bd_cells Hardware_Runtime/hwr_inStream/inS_common_Inter_lvl0_$i]
+            CONFIG.M00_AXIS_HIGHTDEST {0xFFFFFFFF}
+        ] [get_bd_cells Hardware_Runtime/hwr_inStream/inS_common_Inter_lvl0_${i}]
     }
 }
 
 if {[dict get ${AIT::project::aitConfig} "task_creation"]} {
     set ninter [expr {int(ceil([dict get ${AIT::project::aitConfig} "num_acc_creators"]/16.))}]
-    for {set i 0} {$i < $ninter} {incr i} {
+    for {set i 0} {${i} < ${ninter}} {incr i} {
         set_property -dict [list \
             CONFIG.M00_AXIS_BASETDEST {0x00000002} \
             CONFIG.M00_AXIS_HIGHTDEST {0x00000002} \
             CONFIG.M01_AXIS_BASETDEST {0x00000003} \
-            CONFIG.M01_AXIS_HIGHTDEST {0x00000003} \
-         ] [get_bd_cells Hardware_Runtime/hwr_inStream/inS_ext_Inter_lvl0_$i]
+            CONFIG.M01_AXIS_HIGHTDEST {0x00000003}
+        ] [get_bd_cells Hardware_Runtime/hwr_inStream/inS_ext_Inter_lvl0_${i}]
     }
 }
 
-for {set i 0} {$i < [dict get ${AIT::project::aitConfig} "num_instances"]} {incr i} {
-    set inter_i [expr {int($i/16)}]
-    set intf_i [format %02u [expr {$i%16}]]
+for {set i 0} {${i} < [dict get ${AIT::project::aitConfig} "num_instances"]} {incr i} {
+    set inter_i [expr {int(${i}/16)}]
+    set intf_i [format %02u [expr {${i}%16}]]
 
-    if {$i < [dict get ${AIT::project::aitConfig} "num_acc_creators"]} {
+    if {${i} < [dict get ${AIT::project::aitConfig} "num_acc_creators"]} {
         set inter_name Hardware_Runtime/hwr_outStream/outS_extacc_Inter_${i}
-        set inter [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_interconnect $inter_name]
+        set inter [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_interconnect ${inter_name}]
         set_property -dict [list \
             CONFIG.ARB_ON_MAX_XFERS {0} \
             CONFIG.ARB_ON_TLAST {1} \
             CONFIG.M00_AXIS_BASETDEST {0x00000000} \
             CONFIG.M00_AXIS_HIGHTDEST {0xFFFFFFFF} \
             CONFIG.NUM_MI {1} \
-            CONFIG.NUM_SI {2} \
-         ] $inter
-        connect_bd_net $po_clk [get_bd_pins $inter/ACLK] [get_bd_pins $inter/S00_AXIS_ACLK] [get_bd_pins $inter/S01_AXIS_ACLK] [get_bd_pins $inter/M00_AXIS_ACLK]
-        connect_bd_net $po_inter_rstn [get_bd_pins $inter/ARESETN]
-        connect_bd_net $po_peri_rstn [get_bd_pins $inter/S00_AXIS_ARESETN] [get_bd_pins $inter/S01_AXIS_ARESETN] [get_bd_pins $inter/M00_AXIS_ARESETN]
+            CONFIG.NUM_SI {2}
+        ] ${inter}
+        connect_bd_net ${po_clk} [get_bd_pins ${inter}/ACLK] [get_bd_pins ${inter}/S00_AXIS_ACLK] [get_bd_pins ${inter}/S01_AXIS_ACLK] [get_bd_pins ${inter}/M00_AXIS_ACLK]
+        connect_bd_net ${po_inter_rstn} [get_bd_pins ${inter}/ARESETN]
+        connect_bd_net ${po_peri_rstn} [get_bd_pins ${inter}/S00_AXIS_ARESETN] [get_bd_pins ${inter}/S01_AXIS_ARESETN] [get_bd_pins ${inter}/M00_AXIS_ARESETN]
 
         set inter_name Hardware_Runtime/hwr_inStream/inS_extacc_Inter_${i}
-        set inter [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_interconnect $inter_name]
+        set inter [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_interconnect ${inter_name}]
         set_property -dict [list \
             CONFIG.M00_AXIS_BASETDEST {0x00000000} \
             CONFIG.M00_AXIS_HIGHTDEST {0x00000001} \
             CONFIG.M01_AXIS_BASETDEST {0x00000002} \
             CONFIG.M01_AXIS_HIGHTDEST {0x00000003} \
             CONFIG.NUM_MI {2} \
-            CONFIG.NUM_SI {1} \
-         ] $inter
-        connect_bd_net $pi_clk [get_bd_pins $inter/ACLK] [get_bd_pins $inter/M00_AXIS_ACLK] [get_bd_pins $inter/M01_AXIS_ACLK] [get_bd_pins $inter/S00_AXIS_ACLK]
-        connect_bd_net $pi_inter_rstn [get_bd_pins $inter/ARESETN]
-        connect_bd_net $pi_peri_rstn [get_bd_pins $inter/M00_AXIS_ARESETN] [get_bd_pins $inter/M01_AXIS_ARESETN] [get_bd_pins $inter/S00_AXIS_ARESETN]
+            CONFIG.NUM_SI {1}
+        ] ${inter}
+        connect_bd_net ${pi_clk} [get_bd_pins ${inter}/ACLK] [get_bd_pins ${inter}/M00_AXIS_ACLK] [get_bd_pins ${inter}/M01_AXIS_ACLK] [get_bd_pins ${inter}/S00_AXIS_ACLK]
+        connect_bd_net ${pi_inter_rstn} [get_bd_pins ${inter}/ARESETN]
+        connect_bd_net ${pi_peri_rstn} [get_bd_pins ${inter}/M00_AXIS_ARESETN] [get_bd_pins ${inter}/M01_AXIS_ARESETN] [get_bd_pins ${inter}/S00_AXIS_ARESETN]
 
         connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_inStream/inS_extacc_Inter_${i}/M00_AXIS] [get_bd_intf_pins Hardware_Runtime/hwr_inStream/inS_common_Inter_lvl0_${inter_i}/S${intf_i}_AXIS]
         connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_inStream/inS_extacc_Inter_${i}/M01_AXIS] [get_bd_intf_pins Hardware_Runtime/hwr_inStream/inS_ext_Inter_lvl0_${inter_i}/S${intf_i}_AXIS]
@@ -116,20 +116,20 @@ for {set i 0} {$i < [dict get ${AIT::project::aitConfig} "num_instances"]} {incr
 }
 
 if {[dict get ${AIT::project::aitConfig} "task_creation"]} {
-    if {$max_level_ext == 0} {
+    if {${max_level_ext} == 0} {
         connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_inStream/inS_ext_Inter_lvl0_0/M00_AXIS] [get_bd_intf_pins Hardware_Runtime/hwr_inStream/spawn_in]
         connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_inStream/inS_ext_Inter_lvl0_0/M01_AXIS] [get_bd_intf_pins Hardware_Runtime/hwr_inStream/taskwait_in]
         connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_outStream/spawn_out] [get_bd_intf_pins Hardware_Runtime/hwr_outStream/outS_ext_Inter_lvl0_0/S00_AXIS]
         connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_outStream/taskwait_out] [get_bd_intf_pins Hardware_Runtime/hwr_outStream/outS_ext_Inter_lvl0_0/S01_AXIS]
     } else {
-        set max_level $max_level_ext
+        set max_level ${max_level_ext}
         connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_inStream/inS_ext_Inter_lvl${max_level}_m0_0/M00_AXIS] [get_bd_intf_pins Hardware_Runtime/hwr_inStream/spawn_in]
         connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_inStream/inS_ext_Inter_lvl${max_level}_m1_0/M00_AXIS] [get_bd_intf_pins Hardware_Runtime/hwr_inStream/taskwait_in]
         connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_outStream/spawn_out] [get_bd_intf_pins Hardware_Runtime/hwr_outStream/outS_ext_Inter_lvl${max_level}_s0_0/S00_AXIS]
         connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_outStream/taskwait_out] [get_bd_intf_pins Hardware_Runtime/hwr_outStream/outS_ext_Inter_lvl${max_level}_s1_0/S00_AXIS]
     }
 }
-if {$max_level_common == 0} {
+if {${max_level_common} == 0} {
     connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_inStream/inS_common_Inter_lvl0_0/M00_AXIS] [get_bd_intf_pins Hardware_Runtime/hwr_inStream/cmdout_in]
     connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_outStream/cmdin_out] [get_bd_intf_pins Hardware_Runtime/hwr_outStream/outS_common_Inter_lvl0_0/S00_AXIS]
     if {[dict get ${AIT::project::aitConfig} "lock_hwruntime"]} {
@@ -137,7 +137,7 @@ if {$max_level_common == 0} {
         connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_outStream/lock_out] [get_bd_intf_pins Hardware_Runtime/hwr_outStream/outS_common_Inter_lvl0_0/S01_AXIS]
     }
 } else {
-    set max_level $max_level_common
+    set max_level ${max_level_common}
     connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_inStream/inS_common_Inter_lvl${max_level}_m0_0/M00_AXIS] [get_bd_intf_pins Hardware_Runtime/hwr_inStream/cmdout_in]
     connect_bd_intf_net [get_bd_intf_pins Hardware_Runtime/hwr_outStream/cmdin_out] [get_bd_intf_pins Hardware_Runtime/hwr_outStream/outS_common_Inter_lvl${max_level}_s0_0/S00_AXIS]
     if {[dict get ${AIT::project::aitConfig} "lock_hwruntime"]} {

@@ -30,9 +30,9 @@ namespace eval ethSubsys {
 
         set proc_sys_reset_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset proc_sys_reset_0 ]
         set_property -dict [list \
-          CONFIG.C_AUX_RST_WIDTH {1} \
-          CONFIG.C_EXT_RST_WIDTH {1}
-        ] $proc_sys_reset_0
+            CONFIG.C_AUX_RST_WIDTH {1} \
+            CONFIG.C_EXT_RST_WIDTH {1}
+        ] ${proc_sys_reset_0}
 
         connect_bd_net [get_bd_pins gt_txusrclk2] [get_bd_pins proc_sys_reset_0/slowest_sync_clk]
         connect_bd_net [get_bd_pins eth_cntrl_rst] [get_bd_pins proc_sys_reset_0/ext_reset_in]
@@ -83,7 +83,7 @@ namespace eval ethSubsys {
             CONFIG.SUPPORTS_NARROW_BURST {0} \
             CONFIG.WUSER_BITS_PER_BYTE {0} \
             CONFIG.WUSER_WIDTH {0}
-        ] $S_AXI
+        ] ${S_AXI}
 
         set S_AXIS [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 S_AXIS ]
         set_property -dict [ list \
@@ -97,39 +97,38 @@ namespace eval ethSubsys {
             CONFIG.TDEST_WIDTH {8} \
             CONFIG.TID_WIDTH {3} \
             CONFIG.TUSER_WIDTH {0}
-        ] $S_AXIS
+        ] ${S_AXIS}
 
         set msg_rx [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 msg_rx ]
         set_property -dict [ list \
             CONFIG.FREQ_HZ {200000000}
-        ] $msg_rx
-
+        ] ${msg_rx}
 
         # Create ports
         set clk_100 [ create_bd_port -dir I -type clk -freq_hz 100000000 clk_100 ]
         set_property -dict [ list \
             CONFIG.ASSOCIATED_BUSIF {S_AXI} \
             CONFIG.ASSOCIATED_RESET {clk_100_rstn:eth_cntrl_rst}
-        ] $clk_100
+        ] ${clk_100}
         set clk_100_rstn [ create_bd_port -dir I -type rst clk_100_rstn ]
         set clk_200 [ create_bd_port -dir I -type clk -freq_hz 200000000 clk_200 ]
         set_property -dict [ list \
             CONFIG.ASSOCIATED_BUSIF {S_AXIS:msg_rx} \
             CONFIG.ASSOCIATED_RESET {clk_200_rstn}
-        ] $clk_200
+        ] ${clk_200}
         set clk_200_rstn [ create_bd_port -dir I -type rst clk_200_rstn ]
         set eth_subsys_rst [ create_bd_port -dir I -type rst eth_subsys_rst ]
         set_property -dict [ list \
             CONFIG.POLARITY {ACTIVE_HIGH}
-        ] $eth_subsys_rst
+        ] ${eth_subsys_rst}
         set init_clk [ create_bd_port -dir I -type clk -freq_hz 50000000 init_clk ]
         set_property -dict [ list \
             CONFIG.ASSOCIATED_RESET {eth_subsys_rst}
-        ] $init_clk
+        ] ${init_clk}
         set eth_cntrl_rst [ create_bd_port -dir I -type rst eth_cntrl_rst ]
         set_property -dict [ list \
             CONFIG.POLARITY {ACTIVE_HIGH}
-        ] $eth_cntrl_rst
+        ] ${eth_cntrl_rst}
 
         # Create instance: axi_clock_converter_0, and set properties
         set axi_clock_converter_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_clock_converter axi_clock_converter_0 ]
@@ -141,7 +140,7 @@ namespace eval ethSubsys {
             CONFIG.R_REGISTER {0} \
             CONFIG.S01_SINGLE_THREAD {1} \
             CONFIG.STRATEGY {1}
-        ] $axi_crossbar_1
+        ] ${axi_crossbar_1}
 
         # Create instance: axis_clock_converter_0, and set properties
         set axis_clock_converter_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_clock_converter axis_clock_converter_0 ]
@@ -151,22 +150,21 @@ namespace eval ethSubsys {
 
         # Create instance: axis_tx_regslice, and set properties
         set axis_tx_regslice [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_register_slice axis_tx_regslice ]
-        set_property CONFIG.REG_CONFIG {8} $axis_tx_regslice
-
+        set_property CONFIG.REG_CONFIG {8} ${axis_tx_regslice}
 
         # Create instance: const_gndx12, and set properties
         set const_gndx12 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant const_gndx12 ]
         set_property -dict [list \
             CONFIG.CONST_VAL {0} \
             CONFIG.CONST_WIDTH {12}
-        ] $const_gndx12
+        ] ${const_gndx12}
 
         # Create instance: const_gndx56, and set properties
         set const_gndx56 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant const_gndx56 ]
         set_property -dict [list \
             CONFIG.CONST_VAL {0} \
             CONFIG.CONST_WIDTH {56}
-        ] $const_gndx56
+        ] ${const_gndx56}
 
         # Create instance: eth100gb, and set properties
         variable eth100gbIP [ create_bd_cell -type ip -vlnv xilinx.com:ip:cmac_usplus eth100gb ]
@@ -184,36 +182,35 @@ namespace eval ethSubsys {
             CONFIG.FRAMEQ_DATA_LEN {512} \
             CONFIG.FRAMEQ_META_LEN {32} \
             CONFIG.MAX_CLUSTER_SIZE {96}
-        ] $eth_100G_controller_0
+        ] ${eth_100G_controller_0}
 
         # Create instance: eth_100G_rx_wrapper_0, and set properties
         set eth_100G_rx_wrapper_0 [ create_bd_cell -type ip -vlnv bsc:ompif:eth_100G_rx_wrapper eth_100G_rx_wrapper_0 ]
         set_property -dict [list \
             CONFIG.FRAME_QUEUE_LEN {512} \
             CONFIG.MAX_CLUSTER_SIZE {96}
-        ] $eth_100G_rx_wrapper_0
+        ] ${eth_100G_rx_wrapper_0}
 
         # Create instance: eth_decoder_rs, and set properties
         set eth_decoder_rs [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_register_slice eth_decoder_rs ]
         set_property -dict [list \
             CONFIG.NUM_SLR_CROSSINGS {1} \
             CONFIG.REG_CONFIG {15}
-        ] $eth_decoder_rs
+        ] ${eth_decoder_rs}
 
         # Create instance: eth_encoder_rs, and set properties
         set eth_encoder_rs [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_register_slice eth_encoder_rs ]
         set_property -dict [list \
             CONFIG.NUM_SLR_CROSSINGS {1} \
             CONFIG.REG_CONFIG {15}
-        ] $eth_encoder_rs
+        ] ${eth_encoder_rs}
 
         # Create instance: eth_reset_logic
         create_eth_reset_logic_hier
 
         # Create instance: xlconstant_0, and set properties
         set xlconstant_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant xlconstant_0 ]
-        set_property CONFIG.CONST_VAL {0} $xlconstant_0
-
+        set_property CONFIG.CONST_VAL {0} ${xlconstant_0}
 
         # Create instance: axis_rx_regslice, and set properties
         set axis_rx_regslice [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_register_slice axis_rx_regslice ]

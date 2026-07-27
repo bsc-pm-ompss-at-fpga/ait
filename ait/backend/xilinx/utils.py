@@ -176,9 +176,8 @@ def prepare_step_files(project_args, step):
         elif args.user_post_design:
             msg.error(f'User POST design TCL script not found: {args.user_post_design}')
 
-    ait_config_file = open(f'{project_path}/ait_config.json', 'w+')
-    ait_config_file.write(json.dumps(vars(args), indent=4))
-    ait_config_file.close()
+    with open(f'{project_path}/ait_config.json', 'w+') as file:
+        file.write(json.dumps(vars(args), indent=4))
 
 
 def process_output(args, output):

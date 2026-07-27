@@ -36,87 +36,87 @@ namespace eval ${instanceName} {
         set_property -dict [list \
             CONFIG.AXI_ADDR_WIDTH [AIT::board::get_addr_width] \
             CONFIG.AXI_SLV_DATA_WIDTH ${srcBitWidth} \
-            CONFIG.AXI_MST_DATA_WIDTH ${dstBitWidth} \
+            CONFIG.AXI_MST_DATA_WIDTH ${dstBitWidth}
         ] ${downsizerIP}
 
         if {${rwMode} eq "read_only"} {
             set_property -dict [list \
                 CONFIG.READ_WRITE_MODE.VALUE_SRC {USER} \
-                CONFIG.READ_WRITE_MODE {READ_ONLY} \
+                CONFIG.READ_WRITE_MODE {READ_ONLY}
             ] ${clkConverterIP}
             set_property -dict [list \
                 CONFIG.READ {1} \
-                CONFIG.WRITE {0} \
+                CONFIG.WRITE {0}
             ] ${downsizerIP}
             set_property -dict [list \
                 CONFIG.READ_WRITE_MODE.VALUE_SRC {USER} \
                 CONFIG.READ_WRITE_MODE {READ_ONLY} \
-                CONFIG.REG_AR {1} \
+                CONFIG.REG_AR {1}
             ] ${slaveRegsliceIP}
             set_property -dict [list \
                 CONFIG.READ_WRITE_MODE.VALUE_SRC {USER} \
                 CONFIG.READ_WRITE_MODE {READ_ONLY} \
-                CONFIG.REG_AR {1} \
+                CONFIG.REG_AR {1}
             ] ${middleRegsliceIP}
             set_property -dict [list \
                 CONFIG.READ_WRITE_MODE.VALUE_SRC {USER} \
                 CONFIG.READ_WRITE_MODE {READ_ONLY} \
-                CONFIG.REG_AR {1} \
+                CONFIG.REG_AR {1}
             ] ${masterRegsliceIP}
             set_property -dict [list \
                 CONFIG.READ_WRITE_MODE.VALUE_SRC {USER} \
-                CONFIG.READ_WRITE_MODE {READ_ONLY} \
+                CONFIG.READ_WRITE_MODE {READ_ONLY}
             ] ${protocolConverterIP}
         } elseif {${rwMode} eq "write_only"} {
             set_property -dict [list \
                 CONFIG.READ_WRITE_MODE.VALUE_SRC {USER} \
-                CONFIG.READ_WRITE_MODE {WRITE_ONLY} \
+                CONFIG.READ_WRITE_MODE {WRITE_ONLY}
             ] ${clkConverterIP}
             set_property -dict [list \
                 CONFIG.READ {0} \
-                CONFIG.WRITE {1} \
+                CONFIG.WRITE {1}
             ] ${downsizerIP}
             set_property -dict [list \
                 CONFIG.READ_WRITE_MODE.VALUE_SRC {USER} \
                 CONFIG.READ_WRITE_MODE {WRITE_ONLY} \
                 CONFIG.REG_AW {1} \
-                CONFIG.REG_B {1} \
+                CONFIG.REG_B {1}
             ] ${slaveRegsliceIP}
             set_property -dict [list \
                 CONFIG.READ_WRITE_MODE.VALUE_SRC {USER} \
                 CONFIG.READ_WRITE_MODE {WRITE_ONLY} \
                 CONFIG.REG_AW {1} \
-                CONFIG.REG_B {1} \
+                CONFIG.REG_B {1}
             ] ${middleRegsliceIP}
             set_property -dict [list \
                 CONFIG.READ_WRITE_MODE.VALUE_SRC {USER} \
                 CONFIG.READ_WRITE_MODE {WRITE_ONLY} \
                 CONFIG.REG_AW {1} \
-                CONFIG.REG_B {1} \
+                CONFIG.REG_B {1}
             ] ${masterRegsliceIP}
             set_property -dict [list \
                 CONFIG.READ_WRITE_MODE.VALUE_SRC {USER} \
-                CONFIG.READ_WRITE_MODE {WRITE_ONLY} \
+                CONFIG.READ_WRITE_MODE {WRITE_ONLY}
             ] ${protocolConverterIP}
         } else {
             set_property -dict [list \
                 CONFIG.READ {1} \
-                CONFIG.WRITE {1} \
+                CONFIG.WRITE {1}
             ] ${downsizerIP}
             set_property -dict [list \
                 CONFIG.REG_AR {1} \
                 CONFIG.REG_AW {1} \
-                CONFIG.REG_B {1} \
+                CONFIG.REG_B {1}
             ] ${slaveRegsliceIP}
             set_property -dict [list \
                 CONFIG.REG_AR {1} \
                 CONFIG.REG_AW {1} \
-                CONFIG.REG_B {1} \
+                CONFIG.REG_B {1}
             ] ${middleRegsliceIP}
             set_property -dict [list \
                 CONFIG.REG_AR {1} \
                 CONFIG.REG_AW {1} \
-                CONFIG.REG_B {1} \
+                CONFIG.REG_B {1}
             ] ${masterRegsliceIP}
         }
 

@@ -48,8 +48,8 @@ namespace eval OMPIF {
             CONFIG.TOTAL_LAT_WIDTH {40} \
             CONFIG.AXI_ADDR_WIDTH [AIT::board::get_addr_width] \
             CONFIG.AXI_DATA_WIDTH {512} \
-            CONFIG.MSG_DATA_SIZE {8960} \
-            ] ${messageSenderIP}
+            CONFIG.MSG_DATA_SIZE {8960}
+        ] ${messageSenderIP}
 
         set axisClkConvInIP [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_clock_converter axis_clk_conv_in]
         set axisClkConvOutIP [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_clock_converter axis_clk_conv_out]
@@ -105,7 +105,7 @@ namespace eval OMPIF {
             CONFIG.MSG_DATA_SIZE {8960} \
             CONFIG.MBUFFER_ADDR_WIDTH {30} \
             CONFIG.MBUFFER_ADDR_PREFIX [expr {2**(${addrWidth} - 30) - 1}] \
-            CONFIG.MAX_OUTSTANDING_WRITES {8} \
+            CONFIG.MAX_OUTSTANDING_WRITES {8}
         ] ${messageReceiverIP}
 
         set axisClkConvInIP [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_clock_converter axis_clk_conv_in]
@@ -163,7 +163,7 @@ namespace eval OMPIF {
         CONFIG.DIN_FROM {7} \
         CONFIG.DIN_TO {0} \
         CONFIG.DIN_WIDTH {16} \
-        CONFIG.DOUT_WIDTH {8} \
+        CONFIG.DOUT_WIDTH {8}
     ] ${clusterSizeSliceIP}
 
     variable clusterRankSliceIP [create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice cluster_rank_slice]
@@ -171,7 +171,7 @@ namespace eval OMPIF {
         CONFIG.DIN_FROM {15} \
         CONFIG.DIN_TO {8} \
         CONFIG.DIN_WIDTH {16} \
-        CONFIG.DOUT_WIDTH {8} \
+        CONFIG.DOUT_WIDTH {8}
     ] ${clusterRankSliceIP}
 
     set ethTxSwitchIP [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_switch eth_tx_switch]
@@ -180,20 +180,20 @@ namespace eval OMPIF {
         CONFIG.HAS_TLAST {1} \
         CONFIG.ARB_ON_MAX_XFERS {0} \
         CONFIG.ARB_ON_TLAST {1} \
-        CONFIG.M00_AXIS_HIGHTDEST {0xFFFFFFFF} \
+        CONFIG.M00_AXIS_HIGHTDEST {0xFFFFFFFF}
     ] ${ethTxSwitchIP}
 
     set packetDecoderIP [create_bd_cell -type ip -vlnv bsc:ompif:packet_decoder packet_decoder]
     set_property -dict [list \
         CONFIG.DATA_WIDTH {512} \
-        CONFIG.MAX_CLUSTER_SIZE {96} \
+        CONFIG.MAX_CLUSTER_SIZE {96}
     ] ${packetDecoderIP}
 
     set packetDecoderSwitchIP [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_switch packet_decoder_switch]
     set_property -dict [list \
         CONFIG.NUM_SI {1} \
         CONFIG.NUM_MI {2} \
-        CONFIG.DECODER_REG {1} \
+        CONFIG.DECODER_REG {1}
     ] ${packetDecoderSwitchIP}
 
     set packetDecoderRegsliceIP [create_bd_cell -type ip -vlnv xilinx.com:ip:axis_register_slice packet_decoder_regslice]
