@@ -57,7 +57,11 @@ def get_accelerators(project_path):
     args.imp = False
 
     for file_ in sorted(glob.glob(f'{os.getcwd()}/ait_*.json')):
-        acc_config_json = json.load(open(file_))
+        try:
+            acc_config_json = json.load(open(file_))
+        except Exception:
+            msg.error(f'Invalid json file {file_}')
+
         for acc_config in acc_config_json:
             acc = JSONDottedDict(acc_config_json[acc_config])
 
