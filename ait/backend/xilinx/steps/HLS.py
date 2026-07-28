@@ -22,7 +22,6 @@
 import os
 import shutil
 import subprocess
-import sys
 import xml.etree.cElementTree as cET
 
 import ait.backend.xilinx.utils as utils
@@ -103,8 +102,8 @@ def synthesize_accelerator(acc):
     p = subprocess.Popen(f'vitis_hls {project_acc_HLS_path}/HLS_{acc.name}.tcl'
                          + f' -l {project_acc_HLS_path}/HLS_{acc.name}.log',
                          cwd=f'{project_backend_path}/HLS',
-                         stdout=sys.stdout.subprocess,
-                         stderr=sys.stdout.subprocess,
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.STDOUT,
                          shell=True, text=True)
 
     utils.process_output(args, p.stdout)
@@ -152,6 +151,9 @@ def run_step(project_args):
     used_resources = dict()
     available_resources = dict()
 
+    # This directory should not exist yet, fail otherwise
+    os.makedirs(f'{project_path}/products/reports/')
+
     for acc_dict in accs:
         for acc_key in acc_dict.keys():
             synthesize_accelerator(acc_dict[acc_key])
@@ -162,8 +164,6 @@ def run_step(project_args):
         for acc in range(args.num_accs, len(accs)):
             synthesize_accelerator(accs[acc])
 
-    # This directory should not exist yet, fail otherwise
-    os.makedirs(f'{project_path}/products/reports/')
     msg.log('Resources estimation summary')
     with open(f'{project_path}/products/reports/{args.name}.{STEP_NAME}.resources.txt', 'w') as file:
         for res_name, res_value in sorted(used_resources.items()):

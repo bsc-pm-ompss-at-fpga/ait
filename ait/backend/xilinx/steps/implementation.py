@@ -22,7 +22,6 @@
 import os
 import re
 import subprocess
-import sys
 
 import ait.backend.xilinx.utils as utils
 from ait.frontend.utils import getNumJobs, msg
@@ -192,8 +191,8 @@ def run_step(project_args):
                              + f'-source {project_backend_path}/tcl/scripts/implement_design.tcl '
                              + f'-tclargs {str(args.jobs) if args.jobs is not None else str(getNumJobs(args.mem_per_job))}',
                              cwd=project_backend_path,
-                             stdout=sys.stdout.subprocess,
-                             stderr=sys.stdout.subprocess,
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.STDOUT,
                              shell=True, text=True)
 
         utils.process_output(args, p.stdout)
@@ -202,8 +201,8 @@ def run_step(project_args):
         if retval:
             msg.error('Hardware implementation failed', start_time, False)
         else:
-            gen_utilization_report(f'{project_products_path}/reports/{args.name}.resources-impl.txt')
-            gen_wns_report(f'{project_products_path}/reports/{args.name}.timing-impl.txt')
+            gen_utilization_report(f'{project_products_path}/reports/{args.name}.{STEP_NAME}.resources.txt')
+            gen_wns_report(f'{project_products_path}/reports/{args.name}.{STEP_NAME}.timing.txt')
             msg.success('Hardware implemented')
     else:
         msg.error('No Vivado .xpr file exists for the current project. Hardware implementation failed')

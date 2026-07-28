@@ -19,6 +19,7 @@
 #     License along with this code. If not, see <www.gnu.org/licenses/>.   #
 # ------------------------------------------------------------------------ #
 
+import glob
 import json
 import os
 import re
@@ -100,9 +101,15 @@ def cleanup_step_files(project_args, step):
             file = f'{project_backend_path}/products/{args.name}.{ext}'
             if os.path.exists(file):
                 os.remove(file)
+        for file in glob.glob(f'{project_backend_path}/products/reports/{args.name}.{step}.*'):
+            if os.path.exists(file):
+                os.remove(file)
     if step_index < 4:
-        for ext in 'resources-impl.txt', 'timing-impl.txt', 'hier-utilization.txt', 'slr-utilization.txt', 'timing-summary.txt':
-            file = f'{project_backend_path}/products/reports/{args.name}.{ext}'
+        for file in glob.glob(f'{project_backend_path}/products/reports/{args.name}.{step}.*'):
+            if os.path.exists(file):
+                os.remove(file)
+    if step_index < 3:
+        for file in glob.glob(f'{project_backend_path}/products/reports/{args.name}.{step}.*'):
             if os.path.exists(file):
                 os.remove(file)
     if step_index < 2:
@@ -115,15 +122,23 @@ def cleanup_step_files(project_args, step):
             file = f'{project_backend_path}/products/{args.name}.{ext}'
             if os.path.exists(file):
                 os.remove(file)
+        for file in glob.glob(f'{project_backend_path}/products/reports/{args.name}.{step}.*'):
+            if os.path.exists(file):
+                os.remove(file)
     if step_index < 1:
         shutil.rmtree(f'{project_backend_path}', ignore_errors=True)
         shutil.rmtree(f'{project_path}/products', ignore_errors=True)
 
 
 def prepare_step_files(project_args, step):
+    global project_path
+    global step_name
+
     args = project_args['args']
     project_path = project_args['path']
     board = project_args['board']
+
+    step_name = step
 
     ait_backend_path = f'{ait_path}/backend/{args.backend}'
     project_backend_path = f'{project_path}/{args.backend}'
@@ -181,12 +196,20 @@ def prepare_step_files(project_args, step):
 
 
 def process_output(args, output):
-    if args.verbose:
-        for line in output:
+    global project_path
+    global step_name
+
+    for line in output:
+        if re.match(r'^CRITICAL WARNING:', line):
+            with open(f'{project_path}/products/reports/{args.name}.{step_name}.critical-warnings.txt', 'w') as file:
+                file.write(line)
+
+        if args.verbose:
             sys.stdout.write(line)
-    elif args.verbose_info:
-        for line in output:
+        elif args.verbose_info:
             if re.match(r'^\[AIT\]', line):
                 sys.stdout.write(line)
             else:
                 sys.stdout.log(line)
+        else:
+            sys.stdout.log(line)

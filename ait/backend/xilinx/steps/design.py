@@ -130,8 +130,8 @@ def run_step(project_args):
                          + f'-source {project_backend_path}/tcl/ait.tcl '
                          + f'-source {project_backend_path}/tcl/scripts/generate_design.tcl',
                          cwd=project_backend_path,
-                         stdout=sys.stdout.subprocess,
-                         stderr=sys.stdout.subprocess,
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.STDOUT,
                          shell=True, text=True)
 
     utils.process_output(args, p.stdout)

@@ -21,7 +21,6 @@
 
 import os
 import subprocess
-import sys
 
 import ait.backend.xilinx.utils as utils
 from ait.frontend.utils import getNumJobs, msg
@@ -51,8 +50,8 @@ def run_step(project_args):
                              + f'-source {project_backend_path}/tcl/scripts/synthesize_design.tcl '
                              + f'-tclargs {str(args.jobs) if args.jobs is not None else str(getNumJobs(args.mem_per_job))}',
                              cwd=project_backend_path,
-                             stdout=sys.stdout.subprocess,
-                             stderr=sys.stdout.subprocess,
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.STDOUT,
                              shell=True, text=True)
 
         utils.process_output(args, p.stdout)

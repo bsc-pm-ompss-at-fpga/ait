@@ -42,21 +42,18 @@ class Logger(object):
     def __init__(self, args):
         self.terminal = sys.stdout
         self.log_file = open(f'{os.path.normpath(os.path.realpath(args.dir))}/{args.name}_ait/{args.name}.ait.log', 'w+')
-        self.subprocess = subprocess.PIPE if (args.verbose or args.verbose_info) else self.log_file
         self.re_color = re.compile(r'\033\[[0,1][0-9,;]*m')
         self.tag = '[AIT] ' if not (args.verbose or args.verbose_info) else ''
 
     def write(self, message):
         if self.terminal.isatty():
-            self.terminal.write(f'{message}')
+            self.terminal.write(message)
         else:
             self.terminal.write(self.re_color.sub('', message))
         self.terminal.flush()
-        self.log(message)
+        self.log((self.tag if message != '\n' else '') + message)
 
     def log(self, message):
-        if message != '\n':
-            self.log_file.write(self.tag)
         self.log_file.write(self.re_color.sub('', message))
         self.log_file.flush()
 
