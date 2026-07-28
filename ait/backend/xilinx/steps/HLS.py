@@ -99,12 +99,20 @@ def synthesize_accelerator(acc):
 
     msg.info(f"Synthesizing '{acc.name}'")
 
-    p = subprocess.Popen(f'vitis_hls {project_acc_HLS_path}/HLS_{acc.name}.tcl'
-                         + f' -l {project_acc_HLS_path}/HLS_{acc.name}.log',
-                         cwd=f'{project_backend_path}/HLS',
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.STDOUT,
-                         shell=True, text=True)
+    if utils.hls_version < '2025.1':
+        p = subprocess.Popen(f'vitis_hls {project_acc_HLS_path}/HLS_{acc.name}.tcl'
+                             + f' -l {project_acc_HLS_path}/HLS_{acc.name}.log',
+                             cwd=f'{project_backend_path}/HLS',
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.STDOUT,
+                             shell=True, text=True)
+    else:
+        p = subprocess.Popen(f'vitis-run --mode hls --tcl {project_acc_HLS_path}/HLS_{acc.name}.tcl'
+                             + f' --log_dir {project_acc_HLS_path}/HLS_{acc.name}.log',
+                             cwd=f'{project_backend_path}/HLS',
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.STDOUT,
+                             shell=True, text=True)
 
     utils.process_output(args, p.stdout)
 
@@ -134,7 +142,7 @@ def run_step(project_args):
     project_backend_path = f'{project_path}/{args.backend}'
 
     # Check if HLS requirements are met
-    utils.check_vitis_hls()
+    utils.check_hls()
 
     # Remove directories and files deprecated by the current step
     utils.cleanup_step_files(project_args, STEP_NAME)

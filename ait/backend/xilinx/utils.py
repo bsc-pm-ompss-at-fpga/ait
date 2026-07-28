@@ -27,11 +27,11 @@ import shutil
 import sys
 import subprocess
 
-from ait.backend.xilinx.info import info, MIN_VITIS_HLS_VERSION, MIN_VIVADO_VERSION
+from ait.backend.xilinx.info import info, MIN_HLS_VERSION, MIN_VIVADO_VERSION
 from ait.frontend.utils import ait_path, msg
 
 vivado_version = None
-vitis_hls_version = None
+hls_version = None
 
 
 def check_vivado():
@@ -49,17 +49,20 @@ def check_vivado():
     return True
 
 
-def check_vitis_hls():
-    global vitis_hls_version
+def check_hls():
+    global hls_version
 
-    if vitis_hls_version is None:
+    if hls_version is None:
         if shutil.which('vitis_hls'):
-            vitis_hls_version = subprocess.run('vitis_hls -version | head -n1 | sed "s/\(Vitis.\+v\)\(\([0-9]\|\.\)\+\).\+/\\2/"', shell=True, capture_output=True, encoding='utf-8').stdout.strip()
-            return check_vitis_hls()
+            hls_version = subprocess.run('vitis_hls -version | head -n1 | sed "s/\(Vitis.\+v\)\(\([0-9]\|\.\)\+\).\+/\\2/"', shell=True, capture_output=True, text=True).stdout
+            return check_hls()
+        elif shutil.which('vitis-run'):
+            hls_version = subprocess.run('vitis-run --version | head -n2 | tail -n1 | sed "s/\(.*vitis-run.\+v\)\(\([0-9]\|\.\)\+\).\+/\\2/"', shell=True, capture_output=True, text=True).stdout
+            return check_hls()
         else:
-            msg.error('vitis_hls not found. Please set PATH correctly')
-    elif vitis_hls_version < MIN_VITIS_HLS_VERSION:
-        msg.error(f'Installed Vitis HLS version ({vitis_hls_version}) not supported (>= {MIN_VITIS_HLS_VERSION})')
+            msg.error('No HLS compiler found. Please set PATH correctly')
+    elif hls_version < MIN_HLS_VERSION:
+        msg.error(f'Installed HLS version ({hls_version}) not supported (>= {MIN_HLS_VERSION})')
 
     return True
 

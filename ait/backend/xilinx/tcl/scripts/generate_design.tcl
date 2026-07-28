@@ -24,22 +24,21 @@ set projectRootDir [file normalize ${scriptDir}/../..]
 # Cleanup files
 file delete ${projectRootDir}/[dict get ${AIT::project::aitConfig} "name"].ait.json
 
-# Create project and set board files
-create_project -force [dict get ${AIT::project::aitConfig} "name"] [dict get ${AIT::project::aitConfig} "name"] -part [dict get ${AIT::project::board} "chip_part"]
-
-dict set AIT::project::aitJsonDict "project_name" [dict get ${AIT::project::aitConfig} "name"]
-dict set AIT::project::aitJsonDict "user_id" ${AIT::project::userID}
-
+# Search for a valid board part
 if [dict exists ${AIT::project::board} "board_part"] {
     set boardFound False
     foreach boardName [dict get ${AIT::project::board} "board_part"] {
-        set boardPart [get_board_parts -latest_file_version ${boardName}:*]
+        lassign [split ${boardName} {:}] vendorName shortName
+        if {[version -short] >= 2025.1} {
+            # In versions newer than 2025.1, we have to install the board part through the Xilinx Board Store
+            xhub::refresh_catalog [xhub::get_xstores xilinx_board_store]
+            xhub::install -quiet [xhub::get_xitems -quiet ${vendorName}:xilinx_board_store:${shortName}:*]
+            xhub::update -quiet [xhub::get_xitems -quiet ${vendorName}:xilinx_board_store:${shortName}:*]
+            set_param board.repoPaths [get_property LOCAL_ROOT_DIR [xhub::get_xstores xilinx_board_store]]
+        }
+        set boardPart [get_board_parts -latest_file_version -quiet ${vendorName}:${shortName}:*]
         if {${boardPart} ne ""} {
             set boardFound True
-            dict set AIT::project::aitJsonDict "board_part" ${boardPart}
-            set_property -dict [list \
-                board_part ${boardPart}
-            ] [current_project]
             break
         }
     }
@@ -48,8 +47,13 @@ if [dict exists ${AIT::project::board} "board_part"] {
     }
 }
 
+# Create project and set board files
+create_project -force [dict get ${AIT::project::aitConfig} "name"] [dict get ${AIT::project::aitConfig} "name"] -part [dict get ${AIT::project::board} "chip_part"]
+
+dict set AIT::project::aitJsonDict "project_name" [dict get ${AIT::project::aitConfig} "name"]
+dict set AIT::project::aitJsonDict "user_id" ${AIT::project::userID}
+
 # Set project properties:
-# Board part
 # Repository path
 # Do not generate simulation scripts
 # Synthesis target language
@@ -58,6 +62,14 @@ set_property -dict [list \
     sim.ip.auto_export_scripts {false} \
     target_language [dict get ${AIT::project::aitConfig} "target_language"]
 ] [current_project]
+
+# Set board part, at this point we should already know that the part is available
+if [dict exists ${AIT::project::board} "board_part"] {
+    dict set AIT::project::aitJsonDict "board_part" ${boardPart}
+    set_property -dict [list \
+        board_part ${boardPart}
+    ] [current_project]
+}
 
 # If enabled, set cache location
 if {![dict get ${AIT::project::aitConfig} "disable_IP_caching"]} {

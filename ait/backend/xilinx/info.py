@@ -23,7 +23,7 @@ import os
 
 NAME = 'xilinx'
 
-MIN_VITIS_HLS_VERSION = '2021.1'
+MIN_HLS_VERSION = '2021.1'
 MIN_VIVADO_VERSION = '2021.1'
 
 
