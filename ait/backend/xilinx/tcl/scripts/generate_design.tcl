@@ -628,9 +628,12 @@ if [file exists ${projectRootDir}/user/tcl/userPostDesign.tcl] {
 }
 
 if {[version -short] >= 2024.2} {
+    # We need to restore current_bd_design because upgrade_project does not maintain it
     AIT::utils::info_msg "Migrating available IPs to inline HDL versions"
+    set oldBdDesign [current_bd_design .]
     save_bd_design -quiet
     upgrade_project -migrate_to_inline_hdl
+    current_bd_design ${oldBdDesign}
 }
 
 # Regenerate layout and validate BD
