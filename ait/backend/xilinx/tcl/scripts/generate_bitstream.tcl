@@ -56,9 +56,9 @@ launch_runs impl_1 -to_step write_bitstream -jobs ${numJobs}
 # Check if bitstream generation finished correctly
 if [catch {wait_on_runs impl_1}] {
     AIT::utils::warning_msg "Failed bitstream generation:"
-    AIT::utils::warning_msg "\t- [get_property NAME impl_1]"
-    foreach runError [fileutil::grep ^ERROR [get_property DIRECTORY impl_1]/runme.log] {
-        AIT::utils::warning_msg "\t\t[regsub [get_property DIRECTORY impl_1]/runme.log:\[0-9\]*: ${runError} ""]"
+    AIT::utils::warning_msg "\t- [get_property NAME [get_runs impl_1]]"
+    foreach runError [fileutil::grep ^ERROR [get_property DIRECTORY [get_runs impl_1]]/runme.log] {
+        AIT::utils::warning_msg "\t\t[regsub [get_property DIRECTORY [get_runs impl_1]]/runme.log:\[0-9\]*: ${runError} ""]"
     }
     AIT::utils::error_msg "Bitstream generation failed."
 }
