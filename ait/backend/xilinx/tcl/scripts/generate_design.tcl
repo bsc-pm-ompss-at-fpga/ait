@@ -98,6 +98,10 @@ set_msg_config -id {[BD::TCL 103-2040]} -severity {WARNING} -suppress
 set_msg_config -id {[xilinx.com:ip:axi_bram_ctrl:4.1-1]} -severity {INFO} -suppress
 # In IP Integrator, please note that memory depth value gets calculated based on the Data Width of the IP and Address range selected in the Address Editor.Incase a validation error occured on the range of this parameter, please check if the selected Data width and the Address Range are valid. For valid Data width and memory depth values, please refer to the AXI BRAM Controller Product Guide.
 set_msg_config -id {[xilinx.com:ip:axi_bram_ctrl:4.1-2]} -severity {INFO} -suppress
+# Inline HDL for utility IPs messages
+set_msg_config -id {[Project 1-5578]} -severity {INFO} -suppress
+set_msg_config -id {[Project 1-5579]} -severity {INFO} -suppress
+set_msg_config -id {[BD 5-1043]} -severity {INFO} -suppress
 
 # Add BSC auxiliary IPs
 if [file isdirectory ${projectRootDir}/IPs] {
