@@ -164,9 +164,8 @@ def prepare_step_files(project_args, step):
         if args.user_constraints and os.path.exists(args.user_constraints):
             if args.verbose_info:
                 msg.log(f'Adding user constraints file: {args.user_constraints}')
-            user_constraints_path = f'{user_files_path}/constraints'
-            os.makedirs(user_constraints_path)
-            shutil.copy2(args.user_constraints, user_constraints_path)
+            os.makedirs(user_files_path, exist_ok=True)
+            shutil.copy2(args.user_constraints, f'{user_files_path}/user_constraints.xdc')
         elif args.user_constraints:
             msg.error(f'User constraints file not found: {args.user_constraints}')
 

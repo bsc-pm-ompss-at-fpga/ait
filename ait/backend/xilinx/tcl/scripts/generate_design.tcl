@@ -643,6 +643,11 @@ if [file exists ${projectRootDir}/user/tcl/userPostDesign.tcl] {
     }
 }
 
+if [file exists ${projectRootDir}/user/user_constraints.xdc] {
+    add_files -fileset constrs_1 -norecurse ${projectRootDir}/user/user_constraints.xdc
+    reorder_files -fileset constrs_1 -back [get_files -quiet user_constraints.xdc]
+}
+
 if {[version -short] >= 2024.2} {
     # We need to restore current_bd_design because upgrade_project does not maintain it
     AIT::utils::info_msg "Migrating available IPs to inline HDL versions"
